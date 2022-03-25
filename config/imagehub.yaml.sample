@@ -73,14 +73,16 @@ parameters:
           photo: 'Photo'
           photographer: 'Photographer'
 
-    cantaloupe_url: 'http://imagehub.vlaamsekunstcollectie.be:8182/iiif/2/'
+    iiif_version: 3
+
+    cantaloupe_url: 'http://imagehub.vlaamsekunstcollectie.be:8182/iiif/3/'
     cantaloupe_curl_opts:
         CURLOPT_SSL_VERIFYHOST: false
         CURLOPT_SSL_VERIFYPEER: false
 #        CURLOPT_CAINFO: /path/to/cacert.pem
 #        CURLOPT_CAPATH: /path/to/cacert.pem
 
-    service_url: 'https://imagehub.vlaamsekunstcollectie.be/public/iiif/2/'
+    service_url: 'https://imagehub.vlaamsekunstcollectie.be/public/iiif/'
 
     resourcespace_manifest_field: 'pidafbeelding'
 
@@ -118,13 +120,49 @@ parameters:
       label: 'Login to the Flemish Art Collection'
       profile: 'http://iiif.io/api/auth/1/login'
 
-    iiif_label: 'nl-titleartwork'
-    iiif_description: 'description'
-    iiif_attribution: 'publisher'
-    iiif_metadata_fields:
+    iiif2_label: 'nl-titleartwork'
+    iiif2_description: 'description'
+    iiif2_attribution: 'publisher'
+    iiif2_metadata_fields:
       nl-titleartwork: 'NL - Title'
       en-titleartwork: 'EN - Title'
       sourceinvnr: 'Object ID'
       publisher: 'Publisher'
       nl-creditline: 'NL - Credit Line'
       en-creditline: 'EN - Credit Line'
+
+    iiif_label:
+      nl: 'nl-titleartwork'
+      en: 'en-titleartwork'
+    iiif_summary:
+      nl: 'description'
+      en: 'description'
+    iiif_required_statement:
+      label:
+        nl: 'NL - Credit Line'
+        en: 'EN - Creddit Line'
+      value:
+        nl: 'nl-creditline'
+        en: 'en-creditline'
+    iiif_metadata_fields:
+      title:
+        label:
+          nl: 'Titel'
+          en: 'Title'
+        value:
+          nl: 'nl-titleartwork'
+          en: 'en-titleartwork'
+      publisher:
+        label:
+          nl: 'Publisher'
+          en: 'Publisher'
+        value:
+          nl: 'publisher'
+          en: 'publisher'
+      inventory_number:
+        label:
+          nl: 'Inventarisnummer'
+          en: 'Object ID'
+        value:
+          nl: 'sourceinvnr'
+          en: 'sourceinvnr'
