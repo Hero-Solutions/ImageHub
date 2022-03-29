@@ -89,7 +89,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->labelV3 = $this->container->getParameter('iiif_label');
         $this->summaryV3 = $this->container->getParameter('iiif_summary');
         $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
-        $this->metadataFieldsV3 = $this->container->getParameter('iiif2_metadata_fields');
+        $this->metadataFieldsV3 = $this->container->getParameter('iiif_metadata_fields');
 
         $this->cantaloupeUrl = $this->container->getParameter('cantaloupe_url');
         $curlOpts = $this->container->getParameter('cantaloupe_curl_opts');
