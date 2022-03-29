@@ -583,7 +583,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $value = $earliestDate;
                     }
                 }
-                $rsData[$d->getName()] = $value;
+                if($d->getName() === 'related_resources') {
+                    $rsData[$d->getName()] = explode(',', $value);
+                } else {
+                    $rsData[$d->getName()] = $value;
+                }
             }
 
             $data = array();

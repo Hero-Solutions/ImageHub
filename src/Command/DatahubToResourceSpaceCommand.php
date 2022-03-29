@@ -83,18 +83,44 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $recommendedForPublication = $this->container->getParameter('recommended_for_publication');
         $iiifSortNumber = $this->container->getParameter('iiif_sort_number');
 
-        $this->rsFieldsToPersist = $this->container->getParameter('iiif_metadata_fields');
-        $iiifLabel = $this->container->getParameter('iiif_label');
+        $this->rsFieldsToPersist = $this->container->getParameter('iiif2_metadata_fields');
+        $iiifLabel = $this->container->getParameter('iiif2_label');
         if(!array_key_exists($iiifLabel, $this->rsFieldsToPersist)) {
             $this->rsFieldsToPersist[$iiifLabel] = $iiifLabel;
         }
-        $iiifDescription = $this->container->getParameter('iiif_description');
+        $iiifDescription = $this->container->getParameter('iiif2_description');
         if(!array_key_exists($iiifDescription, $this->rsFieldsToPersist)) {
             $this->rsFieldsToPersist[$iiifDescription] = $iiifDescription;
         }
-        $iiifAttribution = $this->container->getParameter('iiif_attribution');
+        $iiifAttribution = $this->container->getParameter('iiif2_attribution');
         if(!array_key_exists($iiifAttribution, $this->rsFieldsToPersist)) {
             $this->rsFieldsToPersist[$iiifAttribution] = $iiifAttribution;
+        }
+        $iiif3Label = $this->container->getParameter('iiif_label');
+        foreach($iiif3Label as $language => $fieldName) {
+            if(!array_key_exists($fieldName, $this->rsFieldsToPersist)) {
+                $this->rsFieldsToPersist[$fieldName] = $fieldName;
+            }
+        }
+        $iiif3Summary = $this->container->getParameter('iiif_summary');
+        foreach($iiif3Summary as $language => $fieldName) {
+            if(!array_key_exists($fieldName, $this->rsFieldsToPersist)) {
+                $this->rsFieldsToPersist[$fieldName] = $fieldName;
+            }
+        }
+        $iiif3RequiredStatement = $this->container->getParameter('iiif_required_statement');
+        foreach($iiif3RequiredStatement as $language => $field) {
+            if(!array_key_exists($field['value'], $this->rsFieldsToPersist)) {
+                $this->rsFieldsToPersist[$field['value']] = $field['value'];
+            }
+        }
+        $iiif3MetadataFields = $this->container->getParameter('iiif_metadata_fields');
+        foreach($iiif3RequiredStatement as $fieldName => $field) {
+            foreach($field as $language => $fieldData) {
+                if (!array_key_exists($fieldData['value'], $this->rsFieldsToPersist)) {
+                    $this->rsFieldsToPersist[$fieldData['value']] = $fieldData['value'];
+                }
+            }
         }
 
         $this->resourceSpace = new ResourceSpace($this->container);
