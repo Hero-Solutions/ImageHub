@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class ManifestController extends AbstractController
 {
     /**
-     * @Route("/iiif/{iiif_version}/{manifestId}/manifest.json", name="manifest", requirements={"iiif_version"="2|3"})
+     * @Route("/iiif/{iiifVersion}/{manifestId}/manifest.json", name="manifest", requirements={"iiifVersion"="2|3"})
      */
     public function manifestAction(Request $request, $iiifVersion, $manifestId = '')
     {
