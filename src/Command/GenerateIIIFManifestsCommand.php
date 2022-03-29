@@ -585,6 +585,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
                 if($d->getName() === 'related_resources') {
                     $rsData[$d->getName()] = explode(',', $value);
+                } else if($d->getName() == 'is_recommended_for_pub') {
+                    $rsData['recommended_for_publication'] = $d->getValue() === '1';
                 } else {
                     $rsData[$d->getName()] = $value;
                 }
