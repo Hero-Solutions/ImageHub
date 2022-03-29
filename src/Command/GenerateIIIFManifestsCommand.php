@@ -412,7 +412,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             );
 
             // This image is not for public use, therefore we also don't want this manifest to be public
-            if($isStartCanvas && !$data['public_use']) {
+            if($isStartCanvas && !$publicUse) {
                 $manifest['service'] = $this->getAuthenticationService();
             }
 
@@ -466,9 +466,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     // Update the LIDO data to include the manifest and thumbnail
                     if (!empty($data['sourceinvnr'])) {
                         $sourceinvnr = $data['sourceinvnr'];
-                        if ($data['public_use'] && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
+                        if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
                             $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail);
-                            //if ($data['public_use'] && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
+                            //if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
                                 $this->publicManifestsAdded[] = $sourceinvnr;
                             //}
                         }
