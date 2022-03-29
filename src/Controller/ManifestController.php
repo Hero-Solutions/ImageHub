@@ -12,9 +12,9 @@ use Symfony\Component\Routing\Annotation\Route;
 class ManifestController extends AbstractController
 {
     /**
-     * @Route("/iiif/2/{manifestId}/manifest.json", name="manifest")
+     * @Route("/iiif/{iiif_version}/{manifestId}/manifest.json", name="manifest", requirements={"iiif_version"="2|3"})
      */
-    public function manifestAction(Request $request, $manifestId = '')
+    public function manifestAction(Request $request, $iiifVersion, $manifestId = '')
     {
         // Make sure the service URL name ends with a trailing slash
         $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
@@ -26,7 +26,7 @@ class ManifestController extends AbstractController
                 ->select('m.id')
                 ->from(IIIfManifest::class, 'm')
                 ->where('m.manifestId = :id')
-                ->setParameter('id', $baseUrl . $manifestId . '/manifest.json')
+                ->setParameter('id', $baseUrl . $iiifVersion . '/' . $manifestId . '/manifest.json')
                 ->getQuery()
                 ->getResult();
             if(count($ids) > 0) {
@@ -35,7 +35,7 @@ class ManifestController extends AbstractController
                 return new Response('', 404);
             }
         } else {
-            $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $manifestId . '/manifest.json']);
+            $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/' . $manifestId . '/manifest.json']);
             if ($manifest == null) {
                 return new Response('Sorry, the requested document does not exist.', 404);
             } else {
