@@ -631,8 +631,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         if (!array_key_exists('value', $metadata[$fieldName])) {
                             $metadata[$fieldName]['value'] = array();
                         }
-                        $metadata[$fieldName]['label'][$language] = $field['label'];
-                        $metadata[$fieldName]['value'][$language] = $rsData[$field['value']];
+                        $metadata[$fieldName]['label'][$language] = $fieldData['label'];
+                        $metadata[$fieldName]['value'][$language] = $rsData[$fieldData['value']];
                     }
                 }
             }
