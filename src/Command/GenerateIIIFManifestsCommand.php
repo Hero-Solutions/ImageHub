@@ -602,11 +602,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $label = '';
 
             foreach ($this->labelV3 as $language => $field) {
-                if (array_key_exists($field['value'], $rsData)) {
+                if (array_key_exists($field, $rsData)) {
                     if($label === '') {
-                        $label = $rsData[$field['value']];
+                        $label = $rsData[$field];
                     }
-                    $data->{'label'}->{$language} = array($rsData[$field['value']]);
+                    $data->{'label'}->{$language} = array($rsData[$field]);
                 }
             }
             foreach ($this->summaryV3 as $language => $field) {
