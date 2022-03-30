@@ -736,7 +736,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'label'             => !empty($data['label']) ? $data['label'] : new stdClass(),
                 'metadata'          => !empty($data['metadata']) ? $data['metadata'] : new stdClass(),
                 'summary'           => !empty($data['summary']) ? $data['summary'] : new stdClass(),
-                'requiredStatement' => !empty($data['required_statement']) ? $data['summary'] : new stdClass(),
+                'requiredStatement' => !empty($data['required_statement']) ? $data['required_statement'] : new stdClass(),
                 'viewingDirection'  => 'left-to-right',
                 'items'             => $canvases
             );
