@@ -675,27 +675,45 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $isStartCanvas = $relatedRef == $resourceId;
 
                 $index++;
-                $canvasId = $this->serviceUrl . '3/' . $resourceId . '/canvas/' . $index;
+                $canvasId = $this->imageData[$relatedRef]['canvas_base'] . '3/canvas/' . $index;
                 if($index == 1) {
                     $publicUse = $this->imageData[$relatedRef]['public_use'];
                 }
-                $canvases[] = array(
-                    'id'     => $canvasId,
-                    'type'   => 'Canvas',
-                    'label'  => $label,
-                    'height' => $this->imageData[$relatedRef]['height'],
-                    'width'  => $this->imageData[$relatedRef]['width']
-                );
-
-                $canvasId = $this->imageData[$relatedRef]['canvas_base'] . '3/canvas/' . $index . '.json';
                 $serviceId = $this->imageData[$relatedRef]['service_id'];
                 $imageUrl = $this->imageData[$relatedRef]['image_url'];
                 $publicUse = $this->imageData[$relatedRef]['public_use'];
+
+                $body = array(
+                    'id'     => $imageUrl,
+                    'type'   => 'Image',
+                    'format' => 'image/jpeg',
+                    'height' => $this->imageData[$relatedRef]['height'],
+                    'width'  => $this->imageData[$relatedRef]['width']
+                );
+                $items = array(
+                    'id'         => $this->imageData[$relatedRef]['canvas_base'] . '3/annotation/' . $index . '-image',
+                    'type'       => 'Annotation',
+                    'motivation' => 'painting',
+                    'body'       => $body,
+                    'target'     => $canvasId
+                );
+                $annotationPage = array(
+                    'id'    => $canvasId . '/1',
+                    'type'  => 'AnnotationPage',
+                    'items' => array($items)
+                );
+                $canvases[] = array(
+                    'id'     => $canvasId,
+                    'type'   => 'Canvas',
+                    'height' => $this->imageData[$relatedRef]['height'],
+                    'width'  => $this->imageData[$relatedRef]['width'],
+                    'items'  => array($annotationPage)
+                );
+
                 if ($isStartCanvas && $startCanvas == null) {
                     $startCanvas = $canvasId;
                     $thumbnail = $serviceId;
                 }
-                $canvases[] = $this->generateCanvasV2($serviceId, $relatedRef, $imageUrl, $canvasId, $publicUse);
 
                 /*                // Store the canvas in the database
                                 $canvasDocument = new Canvas();
