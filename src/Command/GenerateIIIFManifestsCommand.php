@@ -616,10 +616,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
             foreach ($this->requiredStatementV3 as $language => $field) {
                 if (array_key_exists($field['value'], $rsData)) {
-                    if (!property_exists( $data{'requiredStatement'},'label')) {
+                    if (!property_exists( $data->{'requiredStatement'},'label')) {
                         $data->{'requiredStatement'}->{'label'} = new stdClass();
                     }
-                    if (!property_exists($data['requiredStatement'], 'value')) {
+                    if (!property_exists($data->{'requiredStatement'}, 'value')) {
                         $data->{'requiredStatement'}->{'value'} = new stdClass();
                     }
                     $data->{'requiredStatement'}->{'label'}->{$language} = array($field['label']);
