@@ -733,7 +733,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 '@context'          => 'http://iiif.io/api/presentation/3/context.json',
                 'id'                => $manifestId,
                 'type'              => 'Manifest',
-                'label'             => !empty($data['label']) ? $data['label'] : json_encode(json_decode('{}')),
+                'label'             => json_encode(json_decode('{}')),
                 'metadata'          => $data['metadata'],
                 'summary'           => $data['summary'],
                 'requiredStatement' => $data['required_statement'],
