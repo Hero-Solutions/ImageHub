@@ -10,7 +10,6 @@ use Exception;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use SQLite3;
-use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -596,9 +595,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $data = array();
             $metadata = array();
             $data['metadata'] = array();
-            $data['label'] = new stdClass();
-            $data['summary'] = new stdClass();
-            $data['required_statement'] = new stdClass();
+            $data['label'] = array();
+            $data['summary'] = array();
+            $data['required_statement'] = array();
             $label = '';
 
             foreach ($this->labelV3 as $language => $field) {
@@ -606,40 +605,40 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     if($label === '') {
                         $label = $rsData[$field];
                     }
-                    $data['label']->{$language} = array($rsData[$field]);
+                    $data['label'][$language] = array($rsData[$field]);
                 }
             }
             foreach ($this->summaryV3 as $language => $field) {
                 if (array_key_exists($field, $rsData)) {
-                    $data['summary']->{$language} = array($rsData[$field]);
+                    $data['summary'][$language] = array($rsData[$field]);
                 }
             }
             foreach ($this->requiredStatementV3 as $language => $field) {
                 if (array_key_exists($field['value'], $rsData)) {
-                    if (!property_exists( $data['required_statement'],'label')) {
-                        $data['required_statement']->{'label'} = new stdClass();
+                    if (!array_key_exists('label', $data['required_statement'])) {
+                        $data['required_statement']['label'] = array();
                     }
-                    if (!property_exists($data['required_statement'], 'value')) {
-                        $data['required_statement']->{'value'} = new stdClass();
+                    if (!array_key_exists('value', $data['required_statement'])) {
+                        $data['required_statement']['value'] = array();
                     }
-                    $data['required_statement']->{'label'}->{$language} = array($field['label']);
-                    $data['required_statement']->{'value'}->{$language} = array($rsData[$field['value']]);
+                    $data['required_statement']['label'][$language] = array($field['label']);
+                    $data['required_statement']['value'][$language] = array($rsData[$field['value']]);
                 }
             }
             foreach ($this->metadataFieldsV3 as $fieldName => $field) {
                 foreach ($field as $language => $fieldData) {
                     if (array_key_exists($fieldData['value'], $rsData)) {
                         if (!array_key_exists($fieldName, $metadata)) {
-                            $metadata[$fieldName] = new stdClass();
+                            $metadata[$fieldName] = array();
                         }
-                        if (!property_exists($metadata[$fieldName], 'label')) {
-                            $metadata[$fieldName]->{'label'} = new stdClass();
+                        if (!array_key_exists('label', $metadata[$fieldName])) {
+                            $metadata[$fieldName]['label'] = array();
                         }
-                        if (!property_exists($metadata[$fieldName], 'value')) {
-                            $metadata[$fieldName]->{'value'} = new stdClass();
+                        if (!array_key_exists('value', $metadata[$fieldName])) {
+                            $metadata[$fieldName]['value'] = array();
                         }
-                        $metadata[$fieldName]->{'label'}->{$language} = array($fieldData['label']);
-                        $metadata[$fieldName]->{'value'}->{$language} = array($rsData[$fieldData['value']]);
+                        $metadata[$fieldName]['label'][$language] = array($fieldData['label']);
+                        $metadata[$fieldName]['value'][$language] = array($rsData[$fieldData['value']]);
                     }
                 }
             }
@@ -733,7 +732,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 '@context'          => 'http://iiif.io/api/presentation/3/context.json',
                 'id'                => $manifestId,
                 'type'              => 'Manifest',
-                'label'             => json_encode(json_decode('{}')),
+                'label'             => $data['label'],
                 'metadata'          => $data['metadata'],
                 'summary'           => $data['summary'],
                 'requiredStatement' => $data['required_statement'],
@@ -829,7 +828,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         // Store the manifest in mongodb
         $manifestDocument = new IIIFManifest();
         $manifestDocument->setManifestId($manifestId);
-        $manifestDocument->setData(json_encode($manifest));
+        $manifestDocument->setData(json_encode($manifest, JSON_FORCE_OBJECT));
         $em->persist($manifestDocument);
         $em->flush();
         $em->clear();
