@@ -597,7 +597,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $data['metadata'] = array();
             $data['label'] = json_encode(json_decode("{}"));
             $data['summary'] = json_encode(json_decode("{}"));
-            $data['requiredStatement'] = json_encode(json_decode("{}"));
+            $data['requiredStatement'] = array();
             $label = '';
 
             foreach ($this->labelV3 as $language => $field) {
@@ -624,6 +624,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $data['requiredStatement']['label'][$language] = $field['label'];
                     $data['requiredStatement']['value'][$language] = $rsData[$field['value']];
                 }
+            }
+            if(empty($data['requiredStatement'])) {
+                $data['requiredStatement'] = json_encode(json_decode("{}"));
             }
             foreach ($this->metadataFieldsV3 as $fieldName => $field) {
                 foreach ($field as $language => $fieldData) {
