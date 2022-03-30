@@ -732,7 +732,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 '@context'          => 'http://iiif.io/api/presentation/3/context.json',
                 'id'                => $manifestId,
                 'type'              => 'Manifest',
-                'label'             => $data['label'],
+                'label'             => !empty($data['label']) ? $data['label'] : new \stdClass(),
                 'metadata'          => $data['metadata'],
                 'summary'           => $data['summary'],
                 'requiredStatement' => $data['required_statement'],
@@ -828,7 +828,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         // Store the manifest in mongodb
         $manifestDocument = new IIIFManifest();
         $manifestDocument->setManifestId($manifestId);
-        $manifestDocument->setData(json_encode($manifest, JSON_FORCE_OBJECT));
+        $manifestDocument->setData(json_encode($manifest));
         $em->persist($manifestDocument);
         $em->flush();
         $em->clear();

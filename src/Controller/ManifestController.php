@@ -49,8 +49,8 @@ class ManifestController extends AbstractController
                     }
                 }
 
-                $data = json_decode($manifest->getData(), true);
-                if (!$whitelisted) {
+                $data = json_decode($manifest->getData());
+/*                if (!$whitelisted) {
                     if (array_key_exists('service', $data)) {
                         if (array_key_exists('@id', $data['service'])) {
                             if (strpos($data['service']['@id'], 'auth') > -1) {
@@ -58,7 +58,7 @@ class ManifestController extends AbstractController
                             }
                         }
                     }
-                }
+                }*/
                 if (!$authenticated) {
                     // Authenticate the user through the AD FS with SAML
                     if (Authenticator::authenticate($this->getParameter('adfs_requirements'))) {
@@ -72,7 +72,7 @@ class ManifestController extends AbstractController
                         'Content-Type' => 'application/json',
                         'Access-Control-Allow-Origin' => '*'
                     );
-                    return new Response(json_encode($data, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE + JSON_FORCE_OBJECT), 200, $headers);
+                    return new Response(json_encode($data, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE), 200, $headers);
                 }
             }
         }
