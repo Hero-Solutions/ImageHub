@@ -134,12 +134,8 @@ parameters:
       en-creditline: 'EN - Credit Line'
 
     iiif_label:
-      nl:
-        label: 'Titel'
-        value: 'nl-titleartwork'
-      en:
-        label: 'Title'
-        value: 'en-titleartwork'
+      nl: 'nl-titleartwork'
+      en: 'en-titleartwork'
     iiif_summary:
       nl: 'description'
       en: 'description'
