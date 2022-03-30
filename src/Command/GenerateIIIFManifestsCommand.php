@@ -10,6 +10,7 @@ use Exception;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use SQLite3;
+use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -592,61 +593,59 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
-            $data = array();
+            $data = new stdClass();
             $metadata = array();
-            $data['metadata'] = array();
-            $data['label'] = json_encode(json_decode("{}"));
-            $data['summary'] = json_encode(json_decode("{}"));
-            $data['requiredStatement'] = array();
+            $data{'metadata'} = array();
+            $data{'label'} = new stdClass();
+            $data{'summary'} = new stdClass();
+            $data{'requiredStatement'} = new stdClass();
             $label = '';
 
             foreach ($this->labelV3 as $language => $field) {
-                if (array_key_exists($field, $rsData)) {
+                if (array_key_exists($field['value'], $rsData)) {
                     if($label === '') {
-                        $label = $rsData[$field];
+                        $label = $rsData[$field['value']];
                     }
-                    $data['label'][$language] = $rsData[$field];
+                    $data{'label'}{$language} = array($field['label']);
+                    $data{'value'}{$language} = array($rsData[$field['value']]);
                 }
             }
             foreach ($this->summaryV3 as $language => $field) {
                 if (array_key_exists($field, $rsData)) {
-                    $data['summary'][$language] = $rsData['field'];
+                    $data{'summary'}{$language} = array($rsData[$field]);
                 }
             }
             foreach ($this->requiredStatementV3 as $language => $field) {
                 if (array_key_exists($field['value'], $rsData)) {
-                    if (!array_key_exists('label', $data['requiredStatement'])) {
-                        $data['requiredStatement']['label'] = json_encode(json_decode("{}"));
+                    if (!property_exists( $data{'requiredStatement'},'label')) {
+                        $data{'requiredStatement'}{'label'} = new stdClass();
                     }
-                    if (!array_key_exists('value', $data['requiredStatement'])) {
-                        $data['requiredStatement']['value'] = json_encode(json_decode("{}"));
+                    if (!property_exists($data['requiredStatement'], 'value')) {
+                        $data{'requiredStatement'}{'value'} = new stdClass();
                     }
-                    $data['requiredStatement']['label'][$language] = $field['label'];
-                    $data['requiredStatement']['value'][$language] = $rsData[$field['value']];
+                    $data{'requiredStatement'}{'label'}{$language} = array($field['label']);
+                    $data{'requiredStatement'}{'value'}{$language} = array($rsData[$field['value']]);
                 }
-            }
-            if(empty($data['requiredStatement'])) {
-                $data['requiredStatement'] = json_encode(json_decode("{}"));
             }
             foreach ($this->metadataFieldsV3 as $fieldName => $field) {
                 foreach ($field as $language => $fieldData) {
                     if (array_key_exists($fieldData['value'], $rsData)) {
                         if (!array_key_exists($fieldName, $metadata)) {
-                            $metadata[$fieldName] = array();
+                            $metadata[$fieldName] = new stdClass();
                         }
-                        if (!array_key_exists('label', $metadata[$fieldName])) {
-                            $metadata[$fieldName]['label'] = json_encode(json_decode("{}"));
+                        if (!property_exists($metadata[$fieldName], 'label')) {
+                            $metadata[$fieldName]{'label'} = new stdClass();
                         }
-                        if (!array_key_exists('value', $metadata[$fieldName])) {
-                            $metadata[$fieldName]['value'] = json_encode(json_decode("{}"));
+                        if (!property_exists($metadata[$fieldName], 'value')) {
+                            $metadata[$fieldName]{'value'} = new stdClass();
                         }
-                        $metadata[$fieldName]['label'][$language] = $fieldData['label'];
-                        $metadata[$fieldName]['value'][$language] = $rsData[$fieldData['value']];
+                        $metadata[$fieldName]{'label'}{$language} = array($fieldData['label']);
+                        $metadata[$fieldName]{'value'}{$language} = array($rsData[$fieldData['value']]);
                     }
                 }
             }
             foreach ($metadata as $fieldName => $field) {
-                $data['metadata'][] = $field;
+                $data{'metadata'}[] = $field;
             }
 
             // Generate the canvases
