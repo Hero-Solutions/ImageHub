@@ -595,9 +595,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $data = array();
             $metadata = array();
             $data['metadata'] = array();
-            $data['label'] = array();
-            $data['summary'] = array();
-            $data['required_statement'] = array();
+            $data['label'] = json_encode(json_decode("{}"));
+            $data['summary'] = json_encode(json_decode("{}"));
+            $data['requiredStatement'] = json_encode(json_decode("{}"));
             $label = '';
 
             foreach ($this->labelV3 as $language => $field) {
@@ -615,14 +615,14 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
             foreach ($this->requiredStatementV3 as $language => $field) {
                 if (array_key_exists($field['value'], $rsData)) {
-                    if (!array_key_exists('label', $data['required_statement'])) {
-                        $data['required_statement']['label'] = array();
+                    if (!array_key_exists('label', $data['requiredStatement'])) {
+                        $data['requiredStatement']['label'] = json_encode(json_decode("{}"));
                     }
-                    if (!array_key_exists('value', $data['required_statement'])) {
-                        $data['required_statement']['value'] = array();
+                    if (!array_key_exists('value', $data['requiredStatement'])) {
+                        $data['requiredStatement']['value'] = json_encode(json_decode("{}"));
                     }
-                    $data['required_statement']['label'][$language] = $field['label'];
-                    $data['required_statement']['value'][$language] = $rsData[$field['value']];
+                    $data['requiredStatement']['label'][$language] = $field['label'];
+                    $data['requiredStatement']['value'][$language] = $rsData[$field['value']];
                 }
             }
             foreach ($this->metadataFieldsV3 as $fieldName => $field) {
@@ -632,10 +632,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                             $metadata[$fieldName] = array();
                         }
                         if (!array_key_exists('label', $metadata[$fieldName])) {
-                            $metadata[$fieldName]['label'] = array();
+                            $metadata[$fieldName]['label'] = json_encode(json_decode("{}"));
                         }
                         if (!array_key_exists('value', $metadata[$fieldName])) {
-                            $metadata[$fieldName]['value'] = array();
+                            $metadata[$fieldName]['value'] = json_encode(json_decode("{}"));
                         }
                         $metadata[$fieldName]['label'][$language] = $fieldData['label'];
                         $metadata[$fieldName]['value'][$language] = $rsData[$fieldData['value']];
