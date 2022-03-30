@@ -595,10 +595,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
             $data = new stdClass();
             $metadata = array();
-            $data->{'metadata'} = array();
-            $data->{'label'} = new stdClass();
-            $data->{'summary'} = new stdClass();
-            $data->{'requiredStatement'} = new stdClass();
+            $data['metadata'] = array();
+            $data['label'] = new stdClass();
+            $data['summary'] = new stdClass();
+            $data['required_statement'] = new stdClass();
             $label = '';
 
             foreach ($this->labelV3 as $language => $field) {
@@ -606,24 +606,24 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     if($label === '') {
                         $label = $rsData[$field];
                     }
-                    $data->{'label'}->{$language} = array($rsData[$field]);
+                    $data['label']->{$language} = array($rsData[$field]);
                 }
             }
             foreach ($this->summaryV3 as $language => $field) {
                 if (array_key_exists($field, $rsData)) {
-                    $data->{'summary'}->{$language} = array($rsData[$field]);
+                    $data['summary']->{$language} = array($rsData[$field]);
                 }
             }
             foreach ($this->requiredStatementV3 as $language => $field) {
                 if (array_key_exists($field['value'], $rsData)) {
-                    if (!property_exists( $data->{'requiredStatement'},'label')) {
-                        $data->{'requiredStatement'}->{'label'} = new stdClass();
+                    if (!property_exists( $data['required_statement'],'label')) {
+                        $data['required_statement']->{'label'} = new stdClass();
                     }
-                    if (!property_exists($data->{'requiredStatement'}, 'value')) {
-                        $data->{'requiredStatement'}->{'value'} = new stdClass();
+                    if (!property_exists($data['required_statement'], 'value')) {
+                        $data['required_statement']->{'value'} = new stdClass();
                     }
-                    $data->{'requiredStatement'}->{'label'}->{$language} = array($field['label']);
-                    $data->{'requiredStatement'}->{'value'}->{$language} = array($rsData[$field['value']]);
+                    $data['required_statement']->{'label'}->{$language} = array($field['label']);
+                    $data['required_statement']->{'value'}->{$language} = array($rsData[$field['value']]);
                 }
             }
             foreach ($this->metadataFieldsV3 as $fieldName => $field) {
@@ -644,7 +644,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
             foreach ($metadata as $fieldName => $field) {
-                $data->{'metadata'}[] = $field;
+                $data['metadata'][] = $field;
             }
 
             // Generate the canvases
