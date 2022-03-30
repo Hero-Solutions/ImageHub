@@ -72,7 +72,7 @@ class ManifestController extends AbstractController
                         'Content-Type' => 'application/json',
                         'Access-Control-Allow-Origin' => '*'
                     );
-                    return new Response(json_encode($data, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE), 200, $headers);
+                    return new Response(json_encode($data, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE + JSON_FORCE_OBJECT), 200, $headers);
                 }
             }
         }
