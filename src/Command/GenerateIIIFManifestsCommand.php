@@ -10,6 +10,7 @@ use Exception;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use SQLite3;
+use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -732,10 +733,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 '@context'          => 'http://iiif.io/api/presentation/3/context.json',
                 'id'                => $manifestId,
                 'type'              => 'Manifest',
-                'label'             => !empty($data['label']) ? $data['label'] : new \stdClass(),
-                'metadata'          => $data['metadata'],
-                'summary'           => $data['summary'],
-                'requiredStatement' => $data['required_statement'],
+                'label'             => !empty($data['label']) ? $data['label'] : new stdClass(),
+                'metadata'          => !empty($data['metadata']) ? $data['metadata'] : new stdClass(),
+                'summary'           => !empty($data['summary']) ? $data['summary'] : new stdClass(),
+                'requiredStatement' => !empty($data['required_statement']) ? $data['summary'] : new stdClass(),
                 'viewingDirection'  => 'left-to-right',
                 'items'             => $canvases
             );
