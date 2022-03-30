@@ -593,7 +593,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
-            $data = new stdClass();
+            $data = array();
             $metadata = array();
             $data['metadata'] = array();
             $data['label'] = new stdClass();
