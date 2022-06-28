@@ -206,23 +206,24 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $validatorUrl = $this->container->getParameter('validator_url');
 
         // Top-level collection containing a link to all manifests
-        $manifests = array();
+        $manifestsv2 = array();
+        $manifestsv3 = array();
 
         if($this->createTopLevelCollection) {
             $this->deleteAllManifests($em);
         }
 
         if(in_array('2', $this->iiifVersions)) {
-            $this->generateAndStoreManifestsV2($em, in_array('3', $this->iiifVersions), $validate, $validatorUrl, $manifests);
+            $this->generateAndStoreManifestsV2($em, in_array('3', $this->iiifVersions), $validate, $validatorUrl, $manifestsv2);
         }
         if(in_array('3', $this->iiifVersions)) {
-            $this->generateAndStoreManifestsV3($em, true, $validate, $validatorUrl, $manifests);
+            $this->generateAndStoreManifestsV3($em, true, $validate, $validatorUrl, $manifestsv3);
         }
 
         //TODO do we actually need a top-level manifest?
         // If so, we need to store the 'label' of each manifest separately and then do a SELECT to get all ID's and labels for the top-level manifest
 
-        if($this->createTopLevelCollection && count($manifests) > 0) {
+        if($this->createTopLevelCollection && count($manifestsv2) > 0) {
             // Generate the top-level collection and store it in mongoDB
             $collectionId = $this->serviceUrl . '2/collection/top';
             $collection = array(
@@ -231,8 +232,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 '@type' => 'sc:Collection',
                 'label' => 'Top Level Collection for Imagehub',
                 'viewingHint' => 'top',
-                'description' => 'This collection lists all the IIIF manifests available in this Imagehub instance',
-                'manifests' => $manifests
+                'description' => 'This collection lists all the IIIF 2 manifests available in this Imagehub instance',
+                'manifests' => $manifestsv2
             );
 
             $this->deleteManifest($em, $collectionId);
@@ -254,12 +255,51 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             if ($this->verbose) {
                 if ($valid) {
 //                    echo 'Created and stored top-level collection' . PHP_EOL;
-                    $this->logger->info('Created and stored top-level collection');
+                    $this->logger->info('Created and stored IIIF 2 top-level collection');
                 }
 //                echo 'Done, created and stored ' . count($manifests) . ' manifests.' . PHP_EOL;
-                $this->logger->info('Done, created and stored ' . count($manifests) . ' manifests.');
             }
         }
+        $this->logger->info('Done, created and stored ' . count($manifestsv2) . ' IIIF 2 manifests.');
+
+
+        if($this->createTopLevelCollection && count($manifestsv3) > 0) {
+            // Generate the top-level collection and store it in mongoDB
+            $collectionId = $this->serviceUrl . '3/collection/top';
+            $collection = array(
+                '@context' => 'http://iiif.io/api/presentation/3/context.json',
+                'id' => $collectionId,
+                'type' => 'Collection',
+                'label' => 'Top Level Collection for Imagehub',
+                'summary' => [ 'en' => [ 'This collection lists all the IIIF 3 manifests available in this Imagehub instance' ]],
+                'items' => $manifestsv3
+            );
+
+            $this->deleteManifest($em, $collectionId);
+
+            $manifestDocument = $this->storeManifest($em, $collection, $collectionId);
+
+            $valid = true;
+            if ($validate) {
+                $valid = $this->validateManifest($validatorUrl, $collectionId);
+                if (!$valid) {
+//                    echo 'Top-level collection ' . $collectionId . ' is not valid.' . PHP_EOL;
+                    $this->logger->error('Top-level collection ' . $collectionId . ' is not valid.');
+                    $em->remove($manifestDocument);
+                    $em->flush();
+                    $em->clear();
+                }
+            }
+
+            if ($this->verbose) {
+                if ($valid) {
+//                    echo 'Created and stored top-level collection' . PHP_EOL;
+                    $this->logger->info('Created and stored IIIF 3 top-level collection');
+                }
+//                echo 'Done, created and stored ' . count($manifests) . ' manifests.' . PHP_EOL;
+            }
+        }
+        $this->logger->info('Done, created and stored ' . count($manifestsv3) . ' IIIF 3 manifests.');
     }
 
     private function generateAndStoreManifestsV2(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
@@ -771,10 +811,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
                 // Add to manifests array to add to the top-level collection
                 $manifests[] = array(
-                    '@id' => $manifestId,
-                    '@type' => 'sc:Manifest',
-                    'label' => $label,
-                    'metadata' => $manifestMetadata
+                    'id' => $manifestId,
+                    'type' => 'Manifest',
+                    'label' => [ 'en' => [ $label ]]
                 );
 
                 //Add to ResourceSpace metadata (if enabled)
