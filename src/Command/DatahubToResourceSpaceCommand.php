@@ -115,8 +115,8 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             }
         }
         $iiif3MetadataFields = $this->container->getParameter('iiif_metadata_fields');
-        foreach($iiif3MetadataFields['value'] as $fieldName => $field) {
-            foreach($field as $language => $fieldData) {
+        foreach($iiif3MetadataFields as $fieldName => $field) {
+            foreach($field['value'] as $language => $fieldData) {
                 if (!array_key_exists($fieldData, $this->rsFieldsToPersist)) {
                     $this->rsFieldsToPersist[$fieldData] = $fieldData;
                 }
