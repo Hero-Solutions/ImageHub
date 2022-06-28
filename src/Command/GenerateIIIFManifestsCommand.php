@@ -43,6 +43,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $publicManifestsAdded;
 
     private $iiifVersions;
+    private $mainIiifVersion;
     private $serviceUrl;
     private $createTopLevelCollection;
     private $resourceSpaceManifestField;
@@ -76,6 +77,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->verbose = $input->getOption('verbose');
 
         $this->iiifVersions = $this->container->getParameter('iiif_versions');
+        $this->mainIiifVersion = $this->container->getParameter('main_iiif_version');
         // Make sure the service URL name ends with a trailing slash
         $this->serviceUrl = rtrim($this->container->getParameter('service_url'), '/') . '/';
 
@@ -503,7 +505,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                 }
 
-                if($storeInLido && $this->createTopLevelCollection && $data['recommended_for_publication']) {
+                if($this->mainIiifVersion == '2' && $storeInLido && $this->createTopLevelCollection && $data['recommended_for_publication']) {
                     // Update the LIDO data to include the manifest and thumbnail
                     if (!empty($data['sourceinvnr'])) {
                         $sourceinvnr = $data['sourceinvnr'];
@@ -827,7 +829,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                 }
 
-                if ($storeInLido && $this->createTopLevelCollection && $rsData['recommended_for_publication']) {
+                if($this->mainIiifVersion == '3' && $storeInLido && $this->createTopLevelCollection && $rsData['recommended_for_publication']) {
                     // Update the LIDO data to include the manifest and thumbnail
                     if (!empty($rsData['sourceinvnr'])) {
                         $sourceinvnr = $rsData['sourceinvnr'];

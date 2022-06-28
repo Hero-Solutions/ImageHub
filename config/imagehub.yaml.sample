@@ -77,6 +77,8 @@ parameters:
       - 2
       - 3
 
+    main_iiif_version: 3
+
     cantaloupe_url: 'http://imagehub.vlaamsekunstcollectie.be:8182/iiif/3/'
     cantaloupe_curl_opts:
         CURLOPT_SSL_VERIFYHOST: false
