@@ -6875,7 +6875,7 @@
         "ext-ctype": "*",
         "ext-curl": "*",
         "ext-iconv": "*",
-        "ext-json": "^7.4",
+        "ext-json": "*",
         "ext-sqlite3": "*"
     },
     "platform-dev": [],
