@@ -34,7 +34,11 @@
         "platform": {
             "php": "7.2"
         },
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "simplesamlphp/composer-module-installer": true,
+            "symfony/flex": true
+        }
     },
     "autoload": {
         "psr-4": {
