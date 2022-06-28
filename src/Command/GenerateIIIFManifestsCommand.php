@@ -654,21 +654,21 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $data['summary'][$language] = array($rsData[$field]);
                 }
             }
-            foreach ($this->requiredStatementV3 as $language => $field) {
-                if (array_key_exists($field['value'], $rsData)) {
+            foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                if (array_key_exists($field, $rsData)) {
                     if (!array_key_exists('label', $data['required_statement'])) {
                         $data['required_statement']['label'] = array();
                     }
                     if (!array_key_exists('value', $data['required_statement'])) {
                         $data['required_statement']['value'] = array();
                     }
-                    $data['required_statement']['label'][$language] = array($field['label']);
-                    $data['required_statement']['value'][$language] = array($rsData[$field['value']]);
+                    $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
+                    $data['required_statement']['value'][$language] = array($rsData[$field]);
                 }
             }
             foreach ($this->metadataFieldsV3 as $fieldName => $field) {
-                foreach ($field as $language => $fieldData) {
-                    if (array_key_exists($fieldData['value'], $rsData)) {
+                foreach ($field['value'] as $language => $fieldData) {
+                    if (array_key_exists($fieldData, $rsData)) {
                         if (!array_key_exists($fieldName, $metadata)) {
                             $metadata[$fieldName] = array();
                         }
@@ -678,8 +678,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         if (!array_key_exists('value', $metadata[$fieldName])) {
                             $metadata[$fieldName]['value'] = array();
                         }
-                        $metadata[$fieldName]['label'][$language] = array($fieldData['label']);
-                        $metadata[$fieldName]['value'][$language] = array($rsData[$fieldData['value']]);
+                        $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
+                        $metadata[$fieldName]['value'][$language] = array($rsData[$fieldData]);
                     }
                 }
             }
