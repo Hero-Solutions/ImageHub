@@ -122,6 +122,11 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 $value = null;
                 if(array_key_exists($headerName, $line)) {
                     $value = $line[$headerName];
+                    if($key === 'url') {
+                        $data['canvas_base'] = $this->meemoo['iiif_url'];
+                        $data['image_url'] = $value;
+                        $data['service_id'] = preg_replace($this->meemoo['url_regex_replace'], $this->meemoo['url_regex_replace_with'], $value);
+                    }
                     $data[$key] = $value;
                     if($key === 'inventory_number') {
                         $inventoryNumber = $value;
@@ -129,6 +134,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 }
             }
             if($inventoryNumber !== null) {
+                $data['is_public'] = true;
                 $this->imageData[$inventoryNumber] = $data;
             }
         }
