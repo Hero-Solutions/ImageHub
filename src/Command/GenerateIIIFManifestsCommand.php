@@ -24,9 +24,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $cantaloupeUrl;
     private $cantaloupeCurlOpts;
     private $publicUse;
-    private $recommendedForPublication;
-    private $namespace;
-    private $metadataPrefix;
 
     private $labelFieldV2;
     private $descriptionFieldV2;
@@ -81,9 +78,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         // Make sure the service URL name ends with a trailing slash
         $this->serviceUrl = rtrim($this->container->getParameter('service_url'), '/') . '/';
 
-        $this->namespace = $this->container->getParameter('datahub_namespace');
-        $this->metadataPrefix = $this->container->getParameter('datahub_metadataprefix');
-
         $this->labelFieldV2 = $this->container->getParameter('iiif2_label');
         $this->descriptionFieldV2 = $this->container->getParameter('iiif2_description');
         $this->attributionFieldV2 = $this->container->getParameter('iiif2_attribution');
@@ -121,7 +115,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->publicManifestsAdded = array();
 
         $this->publicUse = $this->container->getParameter('public_use');
-        $this->recommendedForPublication = $this->container->getParameter('recommended_for_publication');
         $em = $this->container->get('doctrine')->getManager();
         //Disable SQL logging to improve performance
         $em->getConnection()->getConfiguration()->setSQLLogger(null);
@@ -216,10 +209,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         }
 
         if(in_array('2', $this->iiifVersions)) {
-            $this->generateAndStoreManifestsV2($em, in_array('3', $this->iiifVersions), $validate, $validatorUrl, $manifestsv2);
+            $this->generateAndStoreManifestsV2($em, $this->mainIiifVersion == '2', $validate, $validatorUrl, $manifestsv2);
         }
         if(in_array('3', $this->iiifVersions)) {
-            $this->generateAndStoreManifestsV3($em, true, $validate, $validatorUrl, $manifestsv3);
+            $this->generateAndStoreManifestsV3($em, $this->mainIiifVersion == '3', $validate, $validatorUrl, $manifestsv3);
         }
 
         //TODO do we actually need a top-level manifest?
@@ -505,7 +498,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                 }
 
-                if($this->mainIiifVersion == '2' && $storeInLido && $this->createTopLevelCollection && $data['recommended_for_publication']) {
+                if($storeInLido && $this->createTopLevelCollection && $data['recommended_for_publication']) {
                     // Update the LIDO data to include the manifest and thumbnail
                     if (!empty($data['sourceinvnr'])) {
                         $sourceinvnr = $data['sourceinvnr'];
@@ -829,7 +822,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                 }
 
-                if($this->mainIiifVersion == '3' && $storeInLido && $this->createTopLevelCollection && $rsData['recommended_for_publication']) {
+                if($storeInLido && $this->createTopLevelCollection && $rsData['recommended_for_publication']) {
                     // Update the LIDO data to include the manifest and thumbnail
                     if (!empty($rsData['sourceinvnr'])) {
                         $sourceinvnr = $rsData['sourceinvnr'];
