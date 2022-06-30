@@ -247,6 +247,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 ->getResult();
 
             $resourceId = $data['id'];
+            $publicUse = true;
 
             $data['metadata'] = array();
             $data['label'] = '';

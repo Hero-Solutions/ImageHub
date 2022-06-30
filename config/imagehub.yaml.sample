@@ -55,6 +55,21 @@ parameters:
             xpath: 'administrativeMetadata[@xml:lang="{language}"]/rightsWorkWrap/rightsWorkSet/creditLine'
             field: 'copyrightnoticeofart'
 
+    meemoo:
+      service_url: ''
+      iiif_url: 'https://images.meemoo.be/iiif/'
+      inventory_url: 'https://images.meemoo.be/inventory'
+      csv_headers:
+        id: 'Dynamic.PID'
+        inventory_number: 'Dynamic.dc_identifier_localids.Inventarisnummer'
+        copyright: 'Dynamic.dc_rights_credit'
+        width: 'Technical.Width'
+        height: 'Technical.Height'
+        photographer: 'Descriptive.Authors.Author'
+        url: 'url'
+      url_regex_replace: '/^(https:\/\/images\.meemoo\.be\/iiif\/.*)\/full\/full\/0\/default\.jpg$/'
+      url_regex_replace_with: '$1'
+
     credit_line:
         nl:
           field: 'nl-creditline'
