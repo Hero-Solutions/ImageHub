@@ -137,7 +137,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 }
             }
             if($id !== null && $inventoryNumber !== null) {
-                $data['is_public'] = true;
+                $data['public_use'] = true;
                 $this->imageData[$id] = $data;
             }
         }
@@ -527,7 +527,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
 
             $rsData = [
                 'recommended_for_publication' => true,
-                'is_public' => true,
+                'public_use' => true,
                 'sourceinvnr' => $inventoryNumber
             ];
             /* @var $d DatahubData */
