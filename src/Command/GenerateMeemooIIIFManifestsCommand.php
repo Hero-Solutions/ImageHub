@@ -117,6 +117,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
 
             $line = array_combine($columns, $row);
             $data = [];
+            $id = null;
             $inventoryNumber = null;
             foreach($this->meemooCsvHeaders as $key => $headerName) {
                 $value = null;
@@ -128,14 +129,16 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                         $data['service_id'] = preg_replace($this->meemoo['url_regex_replace'], $this->meemoo['url_regex_replace_with'], $value);
                     }
                     $data[$key] = $value;
-                    if($key === 'inventory_number') {
+                    if($key === 'id') {
+                        $id = $value;
+                    } else if($key === 'inventory_number') {
                         $inventoryNumber = $value;
                     }
                 }
             }
-            if($inventoryNumber !== null) {
+            if($id !== null && $inventoryNumber !== null) {
                 $data['is_public'] = true;
-                $this->imageData[$inventoryNumber] = $data;
+                $this->imageData[$id] = $data;
             }
         }
     }
@@ -236,7 +239,9 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
 
     private function generateAndStoreManifestsV2(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
     {
-        foreach($this->imageData as $inventoryNumber => $data) {
+        foreach($this->imageData as $resourceId => $data) {
+
+            $inventoryNumber = $data['inventory_number'];
 
             $rsData = $em->createQueryBuilder()
                 ->select('i')
@@ -246,7 +251,6 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 ->getQuery()
                 ->getResult();
 
-            $resourceId = $data['id'];
             $publicUse = true;
 
             $data['metadata'] = array();
@@ -509,9 +513,9 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
 
     public function generateAndStoreManifestsV3(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
     {
-        foreach($this->imageData as $inventoryNumber => $imageData) {
+        foreach($this->imageData as $resourceId => $imageData) {
 
-            $resourceId = $imageData['id'];
+            $inventoryNumber = $imageData['inventory_number'];
 
             $rsDataRaw = $em->createQueryBuilder()
                 ->select('i')
