@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class MeemooCollectionController extends AbstractController
 {
     /**
-     * @Route("/meemoo/iiif/{iiifVersion}/collection/top", name="collection", requirements={"iiifVersion"="2|3"})
+     * @Route("/meemoo/iiif/{iiifVersion}/collection/top", name="meemoo_collection", requirements={"iiifVersion"="2|3"})
      */
     public function collectionAction(Request $request, $iiifVersion)
     {
