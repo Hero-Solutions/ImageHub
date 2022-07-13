@@ -511,9 +511,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $sourceinvnr = $data['sourceinvnr'];
                         if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
                             $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail);
-                            //if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
-                                $this->publicManifestsAdded[] = $sourceinvnr;
-                            //}
+                            $this->publicManifestsAdded[] = $sourceinvnr;
                         }
                     }
                 }
