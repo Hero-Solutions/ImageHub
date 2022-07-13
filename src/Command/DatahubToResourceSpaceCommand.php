@@ -706,7 +706,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             if($update) {
                 if($this->verbose) {
 //                        echo 'Mismatching field ' . $key . ', should be ' . $value . ', is ' . $oldData[$key] . PHP_EOL;
-                    $this->logger->info('Mismatching field ' . $key . '. Should be "' . $value . '", is "' . $rsData[$key] . '"');
+                    $this->logger->info('Mismatching field ' . $key . '. Should be "' . $value . '", is "' . (array_key_exists($key, $rsData) ? $rsData[$key] : '') . '"');
                 }
                 $result = $this->resourceSpace->updateField($resourceId, $key, $value);
                 if($result !== 'true') {

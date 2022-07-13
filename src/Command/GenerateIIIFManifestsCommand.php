@@ -46,6 +46,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $resourceSpaceManifestField;
 
     private $manifestDb;
+    private $placeholderId;
 
     protected function configure()
     {
@@ -87,6 +88,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->summaryV3 = $this->container->getParameter('iiif_summary');
         $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
         $this->metadataFieldsV3 = $this->container->getParameter('iiif_metadata_fields');
+
+        $this->placeholderId = $this->container->getParameter('placeholder_id');
 
         $this->cantaloupeUrl = $this->container->getParameter('cantaloupe_url');
         $curlOpts = $this->container->getParameter('cantaloupe_curl_opts');
@@ -486,6 +489,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'label' => $data['label'],
                     'metadata' => $manifestMetadata
                 );
+
+                if($resourceId == $this->placeholderId) {
+                    $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail);
+                }
 
                 //Add to ResourceSpace metadata (if enabled)
                 if($storeInLido && $this->resourceSpaceManifestField !== '') {
