@@ -705,7 +705,16 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 'label'             => !empty($data['label']) ? $data['label'] : new stdClass(),
                 'metadata'          => !empty($data['metadata']) ? $data['metadata'] : new stdClass(),
                 'summary'           => !empty($data['summary']) ? $data['summary'] : new stdClass(),
-                'requiredStatement' => !empty($data['required_statement']) ? $data['required_statement'] : new stdClass(),
+                'requiredStatement' => array(
+                    'label' => array(
+                            'en' => array('Attribution'),
+                            'nl' => 'Attributie'
+                        ),
+                    'value' => !empty($data['required_statement']) ? array(
+                        'en' => array($data['required_statement'],
+                        'nl' => array($data['required_statement'])
+                        )
+                    ) : array('en' => array(), 'nl' => array())),
                 'viewingDirection'  => 'left-to-right',
                 'items'             => $canvases
             );
