@@ -35,7 +35,7 @@ parameters:
             xpath: 'descriptiveMetadata[@xml:lang="{language}"]/eventWrap/eventSet/event[eventType/term="production"]/eventActor[not(actorInRole/attributionQualifierActor)]/actorInRole/actor/nameActorSet/appellationValue[@pref="preferred"]'
             field: 'creatorofartworkobje'
         creator_role:
-            xpath: 'descriptiveMetadata[@xml:lang="{language}"]/eventWrap/eventSet/event[eventType/term="production"]/eventActor[not(actorInRole/attributionQualifierActor)]/actorInRole/roleActor/term'
+            xpath: 'descriptiveMetadata[@xml:lang="{language}"]/eventWrap/eventSet/event[eventType/term="production"]/eventActor[not(actorInRole/attributionQualifierActor)]/actorInRole/roleActor/term[@xml:lang="nl"]'
             field: 'roleofcreatorofartworkobje'
         earliest_date:
             xpath: 'descriptiveMetadata[@xml:lang="{language}"]/eventWrap/eventSet/event[eventType/term="production"]/eventDate/date/earliestDate'
