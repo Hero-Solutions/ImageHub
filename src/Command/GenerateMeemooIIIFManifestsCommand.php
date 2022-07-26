@@ -454,8 +454,8 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
             '@type'   => 'dctypes:Image',
             'format'  => 'image/jpeg',
             'service' => $service,
-            'height'  => $this->imageData[$relatedRef]['height'],
-            'width'   => $this->imageData[$relatedRef]['width']
+            'height'  => intval($this->imageData[$relatedRef]['height']),
+            'width'   => intval($this->imageData[$relatedRef]['width'])
         );
         $image = array(
             '@context'   => 'http://iiif.io/api/presentation/2/context.json',
@@ -472,8 +472,8 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
             '@id'    => $canvasId,
             '@type'  => 'sc:Canvas',
             'label'  => $relatedRef,
-            'height' => $this->imageData[$relatedRef]['height'],
-            'width'  => $this->imageData[$relatedRef]['width'],
+            'height' => intval($this->imageData[$relatedRef]['height']),
+            'width'  => intval($this->imageData[$relatedRef]['width']),
             'images' => array($image)
         );
         return $newCanvas;
@@ -656,8 +656,8 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                     'id'     => $imageUrl,
                     'type'   => 'Image',
                     'format' => 'image/jpeg',
-                    'height' => $this->imageData[$relatedRef]['height'],
-                    'width'  => $this->imageData[$relatedRef]['width']
+                    'height' => intval($this->imageData[$relatedRef]['height']),
+                    'width'  => intval($this->imageData[$relatedRef]['width'])
                 );
                 $items = array(
                     'id'         => $this->imageData[$relatedRef]['canvas_base'] . '3/annotation/' . $index . '-image',
@@ -674,8 +674,8 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 $canvases[] = array(
                     'id'     => $canvasId,
                     'type'   => 'Canvas',
-                    'height' => $this->imageData[$relatedRef]['height'],
-                    'width'  => $this->imageData[$relatedRef]['width'],
+                    'height' => intval($this->imageData[$relatedRef]['height']),
+                    'width'  => intval($this->imageData[$relatedRef]['width']),
                     'items'  => array($annotationPage)
                 );
 
