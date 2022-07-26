@@ -708,7 +708,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 'requiredStatement' => array(
                     'label' => array(
                             'en' => array('Attribution'),
-                            'nl' => 'Attributie'
+                            'nl' => array('Attributie')
                         ),
                     'value' => !empty($data['required_statement']) ? array(
                         'en' => array($data['required_statement'],
