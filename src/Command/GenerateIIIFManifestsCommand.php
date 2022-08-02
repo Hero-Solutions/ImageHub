@@ -342,14 +342,15 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
                 foreach ($this->metadataFieldsV2 as $field => $name) {
                     if($d->getName() == $field) {
-                        $data['metadata'][$name] = $d->getValue();
+                        $value = $d->getValue();
+                        foreach($this->requiredStatementV3['value'] as $language => $field_) {
+                            if($field == $field_) {
+                                $value .= '<br/><br/>' . $this->requiredStatementV3['extra_info'][$language];
+                                break;
+                            }
+                        }
+                        $data['metadata'][$name] = $value;
                     }
-                }
-            }
-
-            foreach($this->requiredStatementV3['value'] as $language => $field) {
-                if(array_key_exists($field, $data['metadata'])) {
-                    $data['metadata'][$field] .= '<br/><br/>' . $this->requiredStatementV3['extra_info'][$language];
                 }
             }
 
