@@ -163,7 +163,7 @@ parameters:
     iiif_required_statement:
       label:
         nl: 'NL - Credit Line'
-        en: 'EN - Creddit Line'
+        en: 'EN - Credit Line'
       value:
         nl: 'nl-creditline'
         en: 'en-creditline'
