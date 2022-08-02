@@ -25,6 +25,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $cantaloupeCurlOpts;
     private $publicUse;
 
+    private $manifestLanguages;
+
     private $labelFieldV2;
     private $descriptionFieldV2;
     private $attributionFieldV2;
@@ -34,6 +36,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $summaryV3;
     private $requiredStatementV3;
     private $metadataFieldsV3;
+    private $extraIIIFMetadata;
 
     private $resourceSpace;
     private $imageData;
@@ -79,6 +82,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         // Make sure the service URL name ends with a trailing slash
         $this->serviceUrl = rtrim($this->container->getParameter('service_url'), '/') . '/';
 
+        $this->manifestLanguages = $this->container->getParameter('manifest_languages');
         $this->labelFieldV2 = $this->container->getParameter('iiif2_label');
         $this->descriptionFieldV2 = $this->container->getParameter('iiif2_description');
         $this->attributionFieldV2 = $this->container->getParameter('iiif2_attribution');
@@ -88,6 +92,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->summaryV3 = $this->container->getParameter('iiif_summary');
         $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
         $this->metadataFieldsV3 = $this->container->getParameter('iiif_metadata_fields');
+        $this->extraIIIFMetadata = $this->container->getParameter('extra_iiif_metadata');
 
         $this->placeholderId = $this->container->getParameter('placeholder_id');
 
@@ -430,6 +435,15 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 */
             }
 
+            foreach ($this->extraIIIFMetadata as $fieldName => $field) {
+                foreach ($field['value'] as $language => $fieldData) {
+                    $manifestMetadata[] = array(
+                        'label' => strtoupper($language) . ' - ' . $this->extraIIIFMetadata[$fieldName]['label'][$language],
+                        'value' => $fieldData
+                    );
+                }
+            }
+
             $manifestId = $this->serviceUrl . '2/' . $resourceId . '/manifest.json';
             $manifestMetadata[] = array(
                 'label' => 'Manifest',
@@ -683,6 +697,39 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                 }
             }
+
+            foreach ($this->extraIIIFMetadata as $fieldName => $field) {
+                foreach ($field['value'] as $language => $fieldData) {
+                    if (!array_key_exists($fieldName, $metadata)) {
+                        $metadata[$fieldName] = array();
+                    }
+                    if (!array_key_exists('label', $metadata[$fieldName])) {
+                        $metadata[$fieldName]['label'] = array();
+                    }
+                    if (!array_key_exists('value', $metadata[$fieldName])) {
+                        $metadata[$fieldName]['value'] = array();
+                    }
+                    $metadata[$fieldName]['label'][$language] = array($this->extraIIIFMetadata[$fieldName]['label'][$language]);
+                    $metadata[$fieldName]['value'][$language] = array($fieldData);
+                }
+            }
+
+            $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
+            $fieldName = 'manifest_url';
+            foreach($this->manifestLanguages as $language) {
+                if (!array_key_exists($fieldName, $metadata)) {
+                    $metadata[$fieldName] = array();
+                }
+                if (!array_key_exists('label', $metadata[$fieldName])) {
+                    $metadata[$fieldName]['label'] = array();
+                }
+                if (!array_key_exists('value', $metadata[$fieldName])) {
+                    $metadata[$fieldName]['value'] = array();
+                }
+                $metadata[$fieldName]['label'][$language] = array('Manifest URL');
+                $metadata[$fieldName]['value'][$language] = array('<a href="' . $manifestId . '">' . $manifestId . '</a>');
+            }
+
             foreach ($metadata as $fieldName => $field) {
                 $data['metadata'][] = $field;
             }
@@ -762,12 +809,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                                 $dm->persist($canvasDocument);
                 */
             }
-
-            $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
-            $manifestMetadata[] = array(
-                'label' => 'Manifest',
-                'value' => '<a href="' . $manifestId . '">' . $manifestId . '</a>'
-            );
 
             $manifest = array(
                 '@context'          => 'http://iiif.io/api/presentation/3/context.json',
