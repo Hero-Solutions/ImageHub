@@ -36,7 +36,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $summaryV3;
     private $requiredStatementV3;
     private $metadataFieldsV3;
-    private $extraIIIFMetadata;
 
     private $resourceSpace;
     private $imageData;
@@ -92,7 +91,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->summaryV3 = $this->container->getParameter('iiif_summary');
         $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
         $this->metadataFieldsV3 = $this->container->getParameter('iiif_metadata_fields');
-        $this->extraIIIFMetadata = $this->container->getParameter('extra_iiif_metadata');
 
         $this->placeholderId = $this->container->getParameter('placeholder_id');
 
@@ -309,6 +307,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     {
         foreach($this->imageData as $resourceId => $data) {
 
+            /* @var $rsData ResourceData[] */
             $rsData = $em->createQueryBuilder()
                 ->select('i')
                 ->from(ResourceData::class, 'i')
@@ -345,6 +344,12 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     if($d->getName() == $field) {
                         $data['metadata'][$name] = $d->getValue();
                     }
+                }
+            }
+
+            foreach($this->requiredStatementV3['value'] as $language => $field) {
+                if(array_key_exists($field, $data['metadata'])) {
+                    $data['metadata'][$field] .= '<br/><br/>' . $this->requiredStatementV3['extra_info'][$language];
                 }
             }
 
@@ -433,15 +438,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $canvasDocument->setData(json_encode($newCanvas));
                 $dm->persist($canvasDocument);
 */
-            }
-
-            foreach ($this->extraIIIFMetadata as $fieldName => $field) {
-                foreach ($field['value'] as $language => $fieldData) {
-                    $manifestMetadata[] = array(
-                        'label' => strtoupper($language) . ' - ' . $this->extraIIIFMetadata[$fieldName]['label'][$language],
-                        'value' => $fieldData
-                    );
-                }
             }
 
             $manifestId = $this->serviceUrl . '2/' . $resourceId . '/manifest.json';
@@ -677,7 +673,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $data['required_statement']['value'] = array();
                     }
                     $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                    $data['required_statement']['value'][$language] = array($rsData[$field]);
+                    $data['required_statement']['value'][$language] = array($rsData[$field] . '<br/><br/>' . $this->requiredStatementV3['extra_info'][$language]);
                 }
             }
             foreach ($this->metadataFieldsV3 as $fieldName => $field) {
@@ -695,22 +691,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
                         $metadata[$fieldName]['value'][$language] = array($rsData[$fieldData]);
                     }
-                }
-            }
-
-            foreach ($this->extraIIIFMetadata as $fieldName => $field) {
-                foreach ($field['value'] as $language => $fieldData) {
-                    if (!array_key_exists($fieldName, $metadata)) {
-                        $metadata[$fieldName] = array();
-                    }
-                    if (!array_key_exists('label', $metadata[$fieldName])) {
-                        $metadata[$fieldName]['label'] = array();
-                    }
-                    if (!array_key_exists('value', $metadata[$fieldName])) {
-                        $metadata[$fieldName]['value'] = array();
-                    }
-                    $metadata[$fieldName]['label'][$language] = array($this->extraIIIFMetadata[$fieldName]['label'][$language]);
-                    $metadata[$fieldName]['value'][$language] = array($fieldData);
                 }
             }
 
