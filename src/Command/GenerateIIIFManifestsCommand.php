@@ -307,6 +307,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     {
         foreach($this->imageData as $resourceId => $data) {
 
+            /* @var $rsData ResourceData[] */
             $rsData = $em->createQueryBuilder()
                 ->select('i')
                 ->from(ResourceData::class, 'i')
@@ -343,6 +344,12 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     if($d->getName() == $field) {
                         $data['metadata'][$name] = $d->getValue();
                     }
+                }
+            }
+
+            foreach($this->requiredStatementV3['value'] as $language => $field) {
+                if(array_key_exists($field, $data['metadata'])) {
+                    $data['metadata'][$field] .= '<br/><br/>' . $this->requiredStatementV3['extra_info'][$language];
                 }
             }
 
@@ -666,7 +673,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $data['required_statement']['value'] = array();
                     }
                     $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                    $data['required_statement']['value'][$language] = array($rsData[$field]);
+                    $data['required_statement']['value'][$language] = array($rsData[$field] . '<br/><br/>' . $this->requiredStatementV3['extra_info'][$language]);
                 }
             }
             foreach ($this->metadataFieldsV3 as $fieldName => $field) {

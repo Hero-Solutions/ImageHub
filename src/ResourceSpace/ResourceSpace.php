@@ -57,7 +57,7 @@ class ResourceSpace
                 $suffix = '<br/>' . $suffix;
             }
 
-            $datahubData[$definition['field']] = $prefix . implode('<br/>', $creditLine) . $suffix . $definition['extra_info'];
+            $datahubData[$definition['field']] = $prefix . implode('<br/>', $creditLine) . $suffix;
         }
     }
 
