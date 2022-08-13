@@ -102,11 +102,9 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 $this->rsFieldsToPersist[$fieldName] = $fieldName;
             }
         }
-        $iiif3Summary = $this->container->getParameter('iiif_summary');
-        foreach($iiif3Summary as $language => $fieldName) {
-            if(!array_key_exists($fieldName, $this->rsFieldsToPersist)) {
-                $this->rsFieldsToPersist[$fieldName] = $fieldName;
-            }
+        $iiif3RightsSource = $this->container->getParameter('iiif_rights_source');
+        if(!array_key_exists($iiif3RightsSource, $this->rsFieldsToPersist)) {
+            $this->rsFieldsToPersist[$iiif3RightsSource] = $iiif3RightsSource;
         }
         $iiif3RequiredStatement = $this->container->getParameter('iiif_required_statement');
         foreach($iiif3RequiredStatement['value'] as $language => $field) {

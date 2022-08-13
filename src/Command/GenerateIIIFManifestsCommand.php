@@ -33,7 +33,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $metadataFieldsV2;
 
     private $labelV3;
-    private $summaryV3;
+    private $rightsSourceV3;
     private $requiredStatementV3;
     private $metadataFieldsV3;
 
@@ -88,7 +88,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->metadataFieldsV2 = $this->container->getParameter('iiif2_metadata_fields');
 
         $this->labelV3 = $this->container->getParameter('iiif_label');
-        $this->summaryV3 = $this->container->getParameter('iiif_summary');
+        $this->rightsSourceV3 = $this->container->getParameter('iiif_rights_source');
         $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
         $this->metadataFieldsV3 = $this->container->getParameter('iiif_metadata_fields');
 
@@ -648,9 +648,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $metadata = array();
             $data['metadata'] = array();
             $data['label'] = array();
-            $data['summary'] = array();
             $data['required_statement'] = array();
             $label = '';
+            $rights = '';
 
             foreach ($this->labelV3 as $language => $field) {
                 if (array_key_exists($field, $rsData)) {
@@ -660,9 +660,18 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $data['label'][$language] = array($rsData[$field]);
                 }
             }
-            foreach ($this->summaryV3 as $language => $field) {
-                if (array_key_exists($field, $rsData)) {
-                    $data['summary'][$language] = array($rsData[$field]);
+            //Ensure there is always a label for each specified language
+            foreach ($this->labelV3 as $language => $field) {
+                if (!array_key_exists($field, $rsData)) {
+                    $data['label'][$language] = array($label);
+                }
+            }
+            if(array_key_exists($this->rightsSourceV3, $rsData)) {
+                $rightsSource = $rsData[$this->rightsSourceV3];
+                if($rightsSource === 'CC0') {
+                    $rights = 'http://creativecommons.org/publicdomain/zero/1.0/';
+                } else if(strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
+                    $rights = 'http://rightsstatements.org/vocab/InC/1.0/';
                 }
             }
             foreach ($this->requiredStatementV3['value'] as $language => $field) {
@@ -797,11 +806,13 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'type'              => 'Manifest',
                 'label'             => !empty($data['label']) ? $data['label'] : new stdClass(),
                 'metadata'          => !empty($data['metadata']) ? $data['metadata'] : new stdClass(),
-                'summary'           => !empty($data['summary']) ? $data['summary'] : new stdClass(),
                 'requiredStatement' => !empty($data['required_statement']) ? $data['required_statement'] : new stdClass(),
                 'viewingDirection'  => 'left-to-right',
                 'items'             => $canvases
             );
+            if($rights !== '') {
+                $manifest['rights'] = $rights;
+            }
 
             // This image is not for public use, therefore we also don't want this manifest to be public
             if ($isStartCanvas && !$publicUse) {
