@@ -670,6 +670,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $rightsSource = $rsData[$this->rightsSourceV3];
                 if($rightsSource === 'CC0') {
                     $rights = 'http://creativecommons.org/publicdomain/zero/1.0/';
+                } else if($rightsSource === 'Public domain / CC-PDM') {
+                    $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
                 } else if(strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
                     $rights = 'http://rightsstatements.org/vocab/InC/1.0/';
                 }
