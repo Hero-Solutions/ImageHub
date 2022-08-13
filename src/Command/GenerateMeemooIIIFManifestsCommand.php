@@ -21,11 +21,6 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
 {
     private $verbose;
 
-    private $labelFieldV2;
-    private $descriptionFieldV2;
-    private $attributionFieldV2;
-    private $metadataFieldsV2;
-
     private $labelV3;
     private $summaryV3;
     private $requiredStatementV3;
@@ -34,8 +29,6 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
     private $imageData;
     private $publicManifestsAdded;
 
-    private $iiifVersions;
-    private $mainIiifVersion;
     private $serviceUrl;
     private $createTopLevelCollection;
 
@@ -74,11 +67,6 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
         $this->meemoo = $this->container->getParameter('meemoo');
         $this->serviceUrl = rtrim($this->meemoo['service_url'], '/') . '/';
         $this->meemooCsvHeaders = $this->meemoo['csv_headers'];
-
-        $this->labelFieldV2 = $this->container->getParameter('iiif2_label');
-        $this->descriptionFieldV2 = $this->container->getParameter('iiif2_description');
-        $this->attributionFieldV2 = $this->container->getParameter('iiif2_attribution');
-        $this->metadataFieldsV2 = $this->container->getParameter('iiif2_metadata_fields');
 
         $this->labelV3 = $this->container->getParameter('iiif_label');
         $this->summaryV3 = $this->container->getParameter('iiif_summary');
@@ -149,54 +137,9 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
         $validatorUrl = $this->container->getParameter('validator_url');
 
         // Top-level collection containing a link to all manifests
-        $manifestsv2 = array();
         $manifestsv3 = array();
 
-        if(in_array('2', $this->iiifVersions)) {
-            $this->generateAndStoreManifestsV2($em, $this->mainIiifVersion == '2', $validate, $validatorUrl, $manifestsv2);
-        }
-        if(in_array('3', $this->iiifVersions)) {
-            $this->generateAndStoreManifestsV3($em, $this->mainIiifVersion == '3', $validate, $validatorUrl, $manifestsv3);
-        }
-
-        if($this->createTopLevelCollection && count($manifestsv2) > 0) {
-            // Generate the top-level collection and store it in mongoDB
-            $collectionId = $this->serviceUrl . '2/collection/top';
-            $collection = array(
-                '@context' => 'http://iiif.io/api/presentation/2/context.json',
-                '@id' => $collectionId,
-                '@type' => 'sc:Collection',
-                'label' => 'Top Level Collection for Meemoo Imagehub',
-                'viewingHint' => 'top',
-                'description' => 'This collection lists all the meemoo IIIF 2 manifests available in this Imagehub instance',
-                'manifests' => $manifestsv2
-            );
-
-            $this->deleteManifest($em, $collectionId);
-
-            $manifestDocument = $this->storeManifest($em, $collection, $collectionId);
-
-            $valid = true;
-            if ($validate) {
-                $valid = $this->validateManifest($validatorUrl, $collectionId);
-                if (!$valid) {
-//                    echo 'Top-level collection ' . $collectionId . ' is not valid.' . PHP_EOL;
-                    $this->logger->error('Top-level collection ' . $collectionId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
-                }
-            }
-
-            if ($this->verbose) {
-                if ($valid) {
-//                    echo 'Created and stored top-level collection' . PHP_EOL;
-                    $this->logger->info('Created and stored IIIF 2 top-level collection');
-                }
-//                echo 'Done, created and stored ' . count($manifests) . ' manifests.' . PHP_EOL;
-            }
-        }
-        $this->logger->info('Done, created and stored ' . count($manifestsv2) . ' IIIF 2 manifests.');
+        $this->generateAndStoreManifestsV3($em, true, $validate, $validatorUrl, $manifestsv3);
 
         if($this->createTopLevelCollection && count($manifestsv3) > 0) {
             // Generate the top-level collection and store it in mongoDB
@@ -235,280 +178,6 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
             }
         }
         $this->logger->info('Done, created and stored ' . count($manifestsv3) . ' IIIF 3 manifests.');
-    }
-
-    private function generateAndStoreManifestsV2(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
-    {
-        foreach($this->imageData as $resourceId => $data) {
-
-            $inventoryNumber = $data['inventory_number'];
-
-            $rsData = $em->createQueryBuilder()
-                ->select('i')
-                ->from(DatahubData::class, 'i')
-                ->where('i.id = :id')
-                ->setParameter('id', $inventoryNumber)
-                ->getQuery()
-                ->getResult();
-
-            $publicUse = true;
-
-            $data['metadata'] = array();
-            $data['label'] = '';
-            $data['attribution'] = '';
-            $data['description'] = '';
-            $data['recommended_for_publication'] = true;
-            $data['sourceinvnr'] = $inventoryNumber;
-            foreach($rsData as $d) {
-                if($d->getName() == $this->labelFieldV2) {
-                    $data['label'] = $d->getValue();
-                }
-                if($d->getName() == $this->descriptionFieldV2) {
-                    $data['description'] = $d->getValue();
-                }
-                if($d->getName() == $this->attributionFieldV2) {
-                    $data['attribution'] = $d->getValue();
-                }
-                if($d->getName() == 'related_resources') {
-                    $data['related_resources'] = explode(',', $d->getValue());
-                }
-                foreach ($this->metadataFieldsV2 as $field => $name) {
-                    if($d->getName() == $field) {
-                        $data['metadata'][$name] = $d->getValue();
-                    }
-                }
-            }
-
-            // Fill in (multilingual) manifest data
-            $manifestMetadata = array();
-            foreach($data['metadata'] as $key => $metadata) {
-/*                $arr = array();
-                foreach($metadata as $language => $value) {
-                    // Change nl into nl-BE, en into en-GB, etc.
-                    if(array_key_exists($language, $this->localisations)) {
-                        $language = $this->localisations[$language];
-                    }
-                    $arr[] = array(
-                        '@language' => $language,
-                        '@value'    => $value
-                    );
-                }*/
-
-                // Replace comma by ' - ' for date ranges
-                if(preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $metadata)) {
-                    $metadata = str_replace(' ', '', $metadata);
-                    $metadata = str_replace(',', ' - ', $metadata);
-
-                    // Remove date and month when the exact date is clearly unknown
-                    if(preg_match('/^[0-9]{3,4}\-01\-01 \- [0-9]{3,4}\-12\-31$/', $metadata)) {
-                        $metadata = str_replace('-01-01', '', $metadata);
-                        $metadata = str_replace('-12-31', '', $metadata);
-                    }
-
-                    // Remove latest date if it is the same as the earliest date
-                    $dashIndex = strpos($metadata, ' - ');
-                    $earliestDate = substr($metadata, 0, $dashIndex);
-                    $latestDate = substr($metadata, $dashIndex + 3);
-                    if($earliestDate === $latestDate) {
-                        $metadata = $earliestDate;
-                    }
-                }
-
-                $manifestMetadata[] = array(
-                    'label' => $key,
-                    'value' => $metadata
-                );
-            }
-
-            // Generate the canvases
-            $canvases = array();
-            $index = 0;
-            $startCanvas = null;
-            $thumbnail = null;
-            $isStartCanvas = false;
-
-            if(!array_key_exists('related_resources', $data)) {
-                $data['related_resources'] = array();
-            }
-            // Just to make sure that the 'related resources' always contains a reference to itself
-            if(!in_array($resourceId, $data['related_resources'])) {
-                $data['related_resources'][] = $resourceId;
-            }
-
-            // Loop through all resources related to this resource (including itself)
-            foreach($data['related_resources'] as $relatedRef) {
-
-                if(!array_key_exists($relatedRef, $this->imageData)) {
-                    continue;
-                }
-
-                // When the related resource ID is the ID of the resource we're currently processing,
-                // we know that this canvas is in fact the main canvas.
-                $isStartCanvas = $relatedRef == $resourceId;
-
-                $index++;
-                $canvasId = $this->imageData[$relatedRef]['canvas_base'] . '/canvas/' . $index . '.json';
-//                $serviceId = $this->serviceUrl . $relatedRef;
-                $serviceId = $this->imageData[$relatedRef]['service_id'];
-                $imageUrl = $this->imageData[$relatedRef]['image_url'];
-                $publicUse = $this->imageData[$relatedRef]['public_use'];
-                if($isStartCanvas && $startCanvas == null) {
-                    $startCanvas = $canvasId;
-                    $thumbnail = $serviceId;
-                }
-                $canvases[] = $this->generateCanvasV2($serviceId, $relatedRef, $imageUrl, $canvasId, $publicUse);
-
-/*                // Store the canvas in the database
-                $canvasDocument = new Canvas();
-                $canvasDocument->setCanvasId($canvasId);
-                $canvasDocument->setData(json_encode($newCanvas));
-                $dm->persist($canvasDocument);
-*/
-            }
-
-            $manifestId = $this->serviceUrl . '2/' . $resourceId . '/manifest.json';
-            $manifestMetadata[] = array(
-                'label' => 'Manifest',
-                'value' => '<a href="' . $manifestId . '">' . $manifestId . '</a>'
-            );
-
-            // Generate the whole manifest
-            $manifest = array(
-                '@context'         => 'http://iiif.io/api/presentation/2/context.json',
-                '@type'            => 'sc:Manifest',
-                '@id'              => $manifestId,
-                'label'            => $data['label'],
-                'attribution'      => $data['attribution'],
-                'description'      => empty($data['description']) ? 'n/a' : $data['description'],
-                'metadata'         => $manifestMetadata,
-                'viewingDirection' => 'left-to-right',
-                'viewingHint'      => 'individuals',
-                'sequences'        => $this->createSequenceV2($canvases, $startCanvas)
-            );
-
-            // This image is not for public use, therefore we also don't want this manifest to be public
-            if($isStartCanvas && !$publicUse) {
-                $manifest['service'] = $this->getAuthenticationService();
-            }
-
-            if(!$this->createTopLevelCollection) {
-                $this->deleteManifest($em, $manifestId);
-            }
-
-            $manifestDocument = $this->storeManifest($em, $manifest, $manifestId);
-
-            // Validate the manifest
-            // We can only pass a URL to the validator, so the manifest needs to be stored and served already before validation
-            // If it does not pass validation, remove from the database
-            $valid = true;
-            if($validate) {
-                $valid = $this->validateManifest($validatorUrl, $manifestId);
-                if (!$valid) {
-//                    echo 'Manifest ' . $manifestId . ' is not valid.' . PHP_EOL;
-                    $this->logger->error('Manifest ' . $manifestId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
-                }
-            }
-
-            if($valid) {
-                if($this->verbose) {
-//                    echo 'Generated manifest ' . $manifestId . ' for resource ' . $resourceId . PHP_EOL;
-                    $this->logger->info('Generated manifest ' . $manifestId . ' for resource ' . $resourceId);
-                }
-
-                // Add to manifests array to add to the top-level collection
-                $manifests[] = array(
-                    '@id' => $manifestId,
-                    '@type' => 'sc:Manifest',
-                    'label' => $data['label'],
-                    'metadata' => $manifestMetadata
-                );
-
-                if($storeInLido && $this->createTopLevelCollection && $data['recommended_for_publication']) {
-                    // Update the LIDO data to include the manifest and thumbnail
-                    if (!empty($data['sourceinvnr'])) {
-                        $sourceinvnr = $data['sourceinvnr'];
-                        if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
-                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail);
-                            //if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
-                            $this->publicManifestsAdded[] = $sourceinvnr;
-                            //}
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private function generateCanvasV2($serviceId, $relatedRef, $imageUrl, $canvasId, $publicUse)
-    {
-        $service = array(
-            '@context' => 'http://iiif.io/api/image/2/context.json',
-            '@id'      => $serviceId,
-            'profile'  => 'http://iiif.io/api/image/2/level2.json'
-        );
-        $resource = array(
-            '@id'     => $imageUrl,
-            '@type'   => 'dctypes:Image',
-            'format'  => 'image/jpeg',
-            'service' => $service,
-            'height'  => intval($this->imageData[$relatedRef]['height']),
-            'width'   => intval($this->imageData[$relatedRef]['width'])
-        );
-        $image = array(
-            '@context'   => 'http://iiif.io/api/presentation/2/context.json',
-            '@type'      => 'oa:Annotation',
-            '@id'        => $canvasId . '/image',
-            'motivation' => 'sc:painting',
-            'resource'   => $resource,
-            'on'         => $canvasId
-        );
-        if(!$publicUse) {
-            $image['service'] = $this->getAuthenticationService();
-        }
-        $newCanvas = array(
-            '@id'    => $canvasId,
-            '@type'  => 'sc:Canvas',
-            'label'  => $relatedRef,
-            'height' => intval($this->imageData[$relatedRef]['height']),
-            'width'  => intval($this->imageData[$relatedRef]['width']),
-            'images' => array($image)
-        );
-        return $newCanvas;
-    }
-
-    private function getAuthenticationService()
-    {
-        $arr = array(
-            '@context' => 'http://iiif.io/api/auth/1/context.json',
-            '@id'      => $this->container->getParameter('authentication_url'),
-        );
-        foreach($this->container->getParameter('authentication_service_description') as $key => $value) {
-            $arr[$key] = $value;
-        }
-        return $arr;
-    }
-
-    private function createSequenceV2($canvases, $startCanvas)
-    {
-        // Fill in sequence data
-        if($startCanvas == null) {
-            $manifestSequence = array(
-                '@type'    => 'sc:Sequence',
-                '@context' => 'http://iiif.io/api/presentation/2/context.json',
-                'canvases' => $canvases
-            );
-        } else {
-            $manifestSequence = array(
-                '@type'       => 'sc:Sequence',
-                '@context'    => 'http://iiif.io/api/presentation/2/context.json',
-                'startCanvas' => $startCanvas,
-                'canvases'    => $canvases
-            );
-        }
-        return array($manifestSequence);
     }
 
     public function generateAndStoreManifestsV3(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
