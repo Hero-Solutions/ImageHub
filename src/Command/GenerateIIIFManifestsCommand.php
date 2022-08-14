@@ -345,7 +345,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $value = $d->getValue();
                         foreach($this->requiredStatementV3['value'] as $language => $field_) {
                             if($field == $field_) {
-                                $value .= '<br/><br/>' . $this->requiredStatementV3['extra_info'][$language];
+                                $value .= $this->requiredStatementV3['extra_info'][$language];
                                 break;
                             }
                         }
