@@ -10,6 +10,9 @@ parameters:
     datahub_namespace: 'lido'
     datahub_metadataprefix: 'oai_lido'
     datahub_related_works_xpath: 'descriptiveMetadata[@xml:lang="{language}"]/objectRelationWrap/relatedWorksWrap/relatedWorkSet'
+    store_datahub_record_ids: false
+
+    placeholder_id: -1
 
     # The value of 'field' within each definition is the shorthand name of the field in ResourceSpace where this data is sent.
     # These fields should not be manually edited in ResourceSpace, as any data within will automatically be overwritten with data from the Datahub!
@@ -93,8 +96,8 @@ parameters:
       - 3
 
     manifest_languages:
-      - nl
       - en
+      - nl
 
     main_iiif_version: 3
 
@@ -156,65 +159,65 @@ parameters:
 
     iiif_rights_source: 'copyrightnoticeofart'
     iiif_label:
-      nl: 'nl-titleartwork'
       en: 'en-titleartwork'
+      nl: 'nl-titleartwork'
     iiif_required_statement:
       label:
-        nl: 'Attributie/Collectie'
         en: 'Attribution/Collection'
+        nl: 'Attributie/Collectie'
       value:
-        nl: 'publisher'
         en: 'publisher'
+        nl: 'publisher'
       extra_info:
-        nl: '<p>De originele TIFF-bestanden van dit werk, in hoogste resolutie en met kleurencode, kunnen worden besteld bij <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). Wanneer dit beeld gebruikt wordt voor een gedrukte publicatie of een commercieel product, dan stellen we het op prijs dat drie exemplaren worden toegestuurd naar ons.</p>'
         en: '<p>The original TIFF files of this work, in highest resolution and color-coded, can be ordered from <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). If this image is used for a printed publication or a commercial product, we would appreciate having three copies sent to us.</p>'
+        nl: '<p>De originele TIFF-bestanden van dit werk, in hoogste resolutie en met kleurencode, kunnen worden besteld bij <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). Wanneer dit beeld gebruikt wordt voor een gedrukte publicatie of een commercieel product, dan stellen we het op prijs dat drie exemplaren worden toegestuurd naar ons.</p>'
     iiif_metadata_fields:
       title:
         label:
-          nl: 'Titel'
           en: 'Title'
+          nl: 'Titel'
         value:
-          nl: 'nl-titleartwork'
           en: 'en-titleartwork'
+          nl: 'nl-titleartwork'
       creator:
         label:
-          nl: 'Vervaardiger'
           en: 'Creator'
+          nl: 'Vervaardiger'
         value:
-          nl: 'creatorofartworkobje'
           en: 'creatorofartworkobje'
+          nl: 'creatorofartworkobje'
       date:
         label:
-          nl: 'Vervaardigingsdatum'
           en: 'Date created'
+          nl: 'Vervaardigingsdatum'
         value:
           en: 'datecreatedofartwork'
           nl: 'datecreatedofartwork'
       inventory_number:
         label:
-          nl: 'Inventarisnummer'
           en: 'Inventory no.'
+          nl: 'Inventarisnummer'
         value:
-          nl: 'sourceinvnr'
           en: 'sourceinvnr'
+          nl: 'sourceinvnr'
       description:
         label:
-          nl: 'Beschrijving'
           en: 'Description'
+          nl: 'Beschrijving'
         value:
-          nl: 'description'
           en: 'description'
+          nl: 'description'
       creator_of_image:
         label:
-          nl: 'Fotograaf'
           en: 'Photographer'
+          nl: 'Fotograaf'
         value:
-          nl: 'creatorofimage'
           en: 'creatorofimage'
+          nl: 'creatorofimage'
       photographer:
         label:
-          nl: 'Fotograaf'
           en: 'Photographer'
+          nl: 'Fotograaf'
         value:
-          nl: 'photographer'
           en: 'photographer'
+          nl: 'photographer'

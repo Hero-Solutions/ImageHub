@@ -14,6 +14,7 @@ use Phpoaipmh\Exception\HttpException;
 use Phpoaipmh\Exception\OaipmhException;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
+use SQLite3;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -30,6 +31,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
     private $dataDefinition;
     private $creditLineDefinition;
     private $relatedWorksXpath;
+    private $storeDatahubRecordIds;
 
     private $rsFieldsToPersist;
 
@@ -77,6 +79,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $this->namespace = $this->container->getParameter('datahub_namespace');
         $this->metadataPrefix = $this->container->getParameter('datahub_metadataprefix');
         $this->relatedWorksXpath = $this->container->getParameter('datahub_related_works_xpath');
+        $this->storeDatahubRecordIds = $this->container->getParameter('store_datahub_record_ids');
         $this->dataDefinition = $this->container->getParameter('datahub_data_definition');
         $this->creditLineDefinition = $this->container->getParameter('credit_line');
         $publicUse = $this->container->getParameter('public_use');
@@ -525,6 +528,9 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                     $em->flush();
 
                     $datahubData['dh_record_id'] = $recordId;
+                    if($this->storeDatahubRecordIds) {
+                        $this->storeDatahubRecordId($id, $recordId);
+                    }
                     //Store all relevant Datahub data in mysql
                     foreach($datahubData as $key => $value) {
                         $data = new DatahubData();
@@ -538,6 +544,9 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 }
             }
 //            var_dump($relations);
+            if($this->storeDatahubRecordIds) {
+                rename('/tmp/import.datahub_record_ids.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.datahub_record_ids.sqlite');
+            }
         }
         catch(OaipmhException $e) {
 //            echo 'OAI-PMH error: ' . $e . PHP_EOL;
@@ -736,5 +745,15 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         }
         $xpath = 'descendant::' . $xpath;
         return $xpath;
+    }
+
+    private function storeDatahubRecordId($sourceinvnr, $recordId)
+    {
+        if($this->manifestDb == null) {
+            $this->manifestDb = new SQLite3('/tmp/import.datahub_record_ids.sqlite');
+            $this->manifestDb->exec('DROP TABLE IF EXISTS data');
+            $this->manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
+        }
+        $this->manifestDb->exec('INSERT INTO data(data, id) VALUES(\'{"record_id":"' . $recordId . '"}\', \'' . $sourceinvnr . '\')');
     }
 }
