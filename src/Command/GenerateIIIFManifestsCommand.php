@@ -666,6 +666,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $data['label'][$language] = array($label);
                 }
             }
+
             if(array_key_exists($this->rightsSourceV3, $rsData)) {
                 $rightsSource = $rsData[$this->rightsSourceV3];
                 if($rightsSource === 'CC0') {
@@ -676,19 +677,35 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $rights = 'http://rightsstatements.org/vocab/InC/1.0/';
                 }
             }
+
+            $fallbackValue = '';
             foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                if (!array_key_exists('label', $data['required_statement'])) {
+                    $data['required_statement']['label'] = array();
+                }
+                if (!array_key_exists('value', $data['required_statement'])) {
+                    $data['required_statement']['value'] = array();
+                }
                 if (array_key_exists($field, $rsData)) {
-                    if (!array_key_exists('label', $data['required_statement'])) {
-                        $data['required_statement']['label'] = array();
-                    }
-                    if (!array_key_exists('value', $data['required_statement'])) {
-                        $data['required_statement']['value'] = array();
+                    if(empty($fallbackValue)) {
+                        $fallbackValue = $rsData[$field] . $this->requiredStatementV3['extra_info'][$language];
                     }
                     $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                    $data['required_statement']['value'][$language] = array($rsData[$field] . '<br/><br/>' . $this->requiredStatementV3['extra_info'][$language]);
+                    $data['required_statement']['value'][$language] = array($rsData[$field] . $this->requiredStatementV3['extra_info'][$language]);
                 }
             }
+            if(empty($fallbackValue)) {
+                $fallbackValue = $this->requiredStatementV3['extra_info'][$language];
+            }
+            foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                if (!array_key_exists($field, $rsData)) {
+                    $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
+                    $data['required_statement']['value'][$language] = array($fallbackValue);
+                }
+            }
+
             foreach ($this->metadataFieldsV3 as $fieldName => $field) {
+                $fallbackValue = '';
                 foreach ($field['value'] as $language => $fieldData) {
                     if (array_key_exists($fieldData, $rsData)) {
                         if (!array_key_exists($fieldName, $metadata)) {
@@ -700,8 +717,19 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         if (!array_key_exists('value', $metadata[$fieldName])) {
                             $metadata[$fieldName]['value'] = array();
                         }
+                        if(empty($fallbackValue)) {
+                            $fallbackValue = $rsData[$fieldData];
+                        }
                         $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
                         $metadata[$fieldName]['value'][$language] = array($rsData[$fieldData]);
+                    }
+                }
+                if(!empty($fallbackValue)) {
+                    foreach ($field['value'] as $language => $fieldData) {
+                        if (array_key_exists($fieldData, $rsData)) {
+                            $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
+                            $metadata[$fieldName]['value'][$language] = array($fallbackValue);
+                        }
                     }
                 }
             }
