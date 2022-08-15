@@ -39,6 +39,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
     private $resourceSpace;
 
+    private $datahubRecordDb;
     private $relations = array();
 
     protected function configure()
@@ -749,11 +750,11 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
     private function storeDatahubRecordId($sourceinvnr, $recordId)
     {
-        if($this->manifestDb == null) {
-            $this->manifestDb = new SQLite3('/tmp/import.datahub_record_ids.sqlite');
-            $this->manifestDb->exec('DROP TABLE IF EXISTS data');
-            $this->manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
+        if($this->datahubRecordDb == null) {
+            $this->datahubRecordDb = new SQLite3('/tmp/import.datahub_record_ids.sqlite');
+            $this->datahubRecordDb->exec('DROP TABLE IF EXISTS data');
+            $this->datahubRecordDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         }
-        $this->manifestDb->exec('INSERT INTO data(data, id) VALUES(\'{"record_id":"' . $recordId . '"}\', \'' . $sourceinvnr . '\')');
+        $this->datahubRecordDb->exec('INSERT INTO data(data, id) VALUES(\'{"record_id":"' . $recordId . '"}\', \'' . $sourceinvnr . '\')');
     }
 }
