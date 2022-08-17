@@ -823,12 +823,12 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $thumbnail = $serviceId;
                 }
 
-                /*                // Store the canvas in the database
-                                $canvasDocument = new Canvas();
-                                $canvasDocument->setCanvasId($canvasId);
-                                $canvasDocument->setData(json_encode($newCanvas));
-                                $dm->persist($canvasDocument);
-                */
+/*                // Store the canvas in the database
+                $canvasDocument = new Canvas();
+                $canvasDocument->setCanvasId($canvasId);
+                $canvasDocument->setData(json_encode($newCanvas));
+                $dm->persist($canvasDocument);
+*/
             }
 
             $manifest = array(

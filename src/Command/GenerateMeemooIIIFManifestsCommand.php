@@ -21,8 +21,12 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
 {
     private $verbose;
 
+    private $manifestLanguages;
+
+    private $meemoo;
+
     private $labelV3;
-    private $summaryV3;
+    private $rightsSourceV3;
     private $requiredStatementV3;
     private $metadataFieldsV3;
 
@@ -68,8 +72,10 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
         $this->serviceUrl = rtrim($this->meemoo['service_url'], '/') . '/';
         $this->meemooCsvHeaders = $this->meemoo['csv_headers'];
 
+        $this->manifestLanguages = $this->container->getParameter('manifest_languages');
+
         $this->labelV3 = $this->container->getParameter('iiif_label');
-        $this->summaryV3 = $this->container->getParameter('iiif_summary');
+        $this->rightsSourceV3 = $this->container->getParameter('iiif_rights_source');
         $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
         $this->metadataFieldsV3 = $this->container->getParameter('iiif_metadata_fields');
 
@@ -111,16 +117,18 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 $value = null;
                 if(array_key_exists($headerName, $line)) {
                     $value = $line[$headerName];
-                    if($key === 'url') {
-                        $data['canvas_base'] = $this->meemoo['iiif_url'];
-                        $data['image_url'] = $value;
-                        $data['service_id'] = preg_replace($this->meemoo['url_regex_replace'], $this->meemoo['url_regex_replace_with'], $value);
-                    }
-                    $data[$key] = $value;
-                    if($key === 'id') {
-                        $id = $value;
-                    } else if($key === 'inventory_number') {
-                        $inventoryNumber = $value;
+                    if(!empty($value)) {
+                        if ($key === 'url') {
+                            $data['canvas_base'] = $this->meemoo['iiif_url'];
+                            $data['image_url'] = $value;
+                            $data['service_id'] = preg_replace($this->meemoo['url_regex_replace'], $this->meemoo['url_regex_replace_with'], $value);
+                        }
+                        $data[$key] = $value;
+                        if ($key === 'id') {
+                            $id = $value;
+                        } else if ($key === 'inventory_number') {
+                            $inventoryNumber = $value;
+                        }
                     }
                 }
             }
@@ -238,33 +246,116 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
             $data['summary'] = array();
             $data['required_statement'] = array();
             $label = '';
+            $rights = '';
 
             foreach ($this->labelV3 as $language => $field) {
                 if (array_key_exists($field, $rsData)) {
-                    if($label === '') {
+                    if ($label === '') {
                         $label = $rsData[$field];
                     }
                     $data['label'][$language] = array($rsData[$field]);
                 }
             }
-            foreach ($this->summaryV3 as $language => $field) {
-                if (array_key_exists($field, $rsData)) {
-                    $data['summary'][$language] = array($rsData[$field]);
+            if(!empty($label)) {
+                //Ensure there is always a label for each specified language
+                foreach ($this->labelV3 as $language => $field) {
+                    if (!array_key_exists($field, $rsData)) {
+                        $data['label'][$language] = array($label);
+                    }
+                }
+            } else {
+                foreach($this->meemoo['iiif_label'] as $language => $field) {
+                    if (array_key_exists($field, $imageData)) {
+                        if($label === '') {
+                            $label = $imageData[$field];
+                        }
+                        $data['label'][$language] = array($imageData[$field]);
+                    }
+                }
+                //Ensure there is always a label for each specified language
+                foreach ($this->labelV3 as $language => $field) {
+                    if (!array_key_exists($field, $imageData)) {
+                        $data['label'][$language] = array($label);
+                    }
                 }
             }
+
+            if(array_key_exists($this->rightsSourceV3, $rsData)) {
+                $rightsSource = $rsData[$this->rightsSourceV3];
+                if($rightsSource === 'CC0') {
+                    $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
+                } else if($rightsSource === 'Public domain / CC-PDM') {
+                    $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
+                } else if(strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
+                    $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
+                }
+            }
+            if(empty($rights)) {
+                if(array_key_exists($this->meemoo['iiif_rights_source'], $imageData)) {
+                    $rightsSource = $imageData[$this->meemoo['iiif_rights_source']];
+                    if ($rightsSource === 'CC0') {
+                        $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
+                    } else if ($rightsSource === 'Public domain / CC-PDM') {
+                        $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
+                    } else if (strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
+                        $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
+                    } else {
+                        $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                    }
+                } else {
+                    $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                }
+            }
+
+            $fallbackValue = '';
             foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                if (!array_key_exists('label', $data['required_statement'])) {
+                    $data['required_statement']['label'] = array();
+                }
+                if (!array_key_exists('value', $data['required_statement'])) {
+                    $data['required_statement']['value'] = array();
+                }
                 if (array_key_exists($field, $rsData)) {
+                    if(empty($fallbackValue)) {
+                        $fallbackValue = $rsData[$field];
+                    }
+                    $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
+                    $data['required_statement']['value'][$language] = array($rsData[$field] . $this->requiredStatementV3['extra_info'][$language]);
+                }
+            }
+            if(!empty($fallbackValue)) {
+                foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                    if (!array_key_exists($field, $rsData)) {
+                        $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
+                        $data['required_statement']['value'][$language] = array($fallbackValue . $this->requiredStatementV3['extra_info'][$language]);
+                    }
+                }
+            } else {
+                foreach ($this->meemoo['iiif_required_statement']['value'] as $language => $field) {
                     if (!array_key_exists('label', $data['required_statement'])) {
                         $data['required_statement']['label'] = array();
                     }
                     if (!array_key_exists('value', $data['required_statement'])) {
                         $data['required_statement']['value'] = array();
                     }
-                    $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                    $data['required_statement']['value'][$language] = array($rsData[$field]);
+                    if (array_key_exists($field, $imageData)) {
+                        if(empty($fallbackValue)) {
+                            $fallbackValue = $imageData[$field];
+                        }
+                        $data['required_statement']['label'][$language] = array($this->meemoo['iiif_required_statement']['label'][$language]);
+                        $data['required_statement']['value'][$language] = array($imageData[$field] . $this->meemoo['iiif_required_statement']['extra_info'][$language]);
+                    }
+                }
+                foreach ($this->meemoo['iiif_required_statement']['value'] as $language => $field) {
+                    if (!array_key_exists($field, $imageData)) {
+                        $data['required_statement']['label'][$language] = array($this->meemoo['iiif_required_statement']['label'][$language]);
+                        $data['required_statement']['value'][$language] = array($fallbackValue . $this->meemoo['iiif_required_statement']['extra_info'][$language]);
+                    }
                 }
             }
+
             foreach ($this->metadataFieldsV3 as $fieldName => $field) {
+                $fallbackValue = '';
                 foreach ($field['value'] as $language => $fieldData) {
                     if (array_key_exists($fieldData, $rsData)) {
                         if (!array_key_exists($fieldName, $metadata)) {
@@ -276,11 +367,64 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                         if (!array_key_exists('value', $metadata[$fieldName])) {
                             $metadata[$fieldName]['value'] = array();
                         }
+                        if(empty($fallbackValue)) {
+                            $fallbackValue = $rsData[$fieldData];
+                        }
                         $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
                         $metadata[$fieldName]['value'][$language] = array($rsData[$fieldData]);
                     }
                 }
+                if(!empty($fallbackValue)) {
+                    foreach ($field['value'] as $language => $fieldData) {
+                        if (!array_key_exists($fieldData, $rsData)) {
+                            $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
+                            $metadata[$fieldName]['value'][$language] = array($fallbackValue);
+                        }
+                    }
+                } else {
+                    foreach ($this->meemoo['iiif_metadata_fields'][$fieldName]['value'] as $language => $fieldData) {
+                        if (array_key_exists($fieldData, $imageData)) {
+                            if (!array_key_exists($fieldName, $metadata)) {
+                                $metadata[$fieldName] = array();
+                            }
+                            if (!array_key_exists('label', $metadata[$fieldName])) {
+                                $metadata[$fieldName]['label'] = array();
+                            }
+                            if (!array_key_exists('value', $metadata[$fieldName])) {
+                                $metadata[$fieldName]['value'] = array();
+                            }
+                            if (empty($fallbackValue)) {
+                                $fallbackValue = $imageData[$fieldData];
+                            }
+                            $metadata[$fieldName]['label'][$language] = array($this->meemoo['iiif_metadata_fields'][$fieldName]['label'][$language]);
+                            $metadata[$fieldName]['value'][$language] = array($imageData[$fieldData]);
+                        }
+                    }
+                    foreach ($this->meemoo['iiif_metadata_fields'][$fieldName]['value'] as $language => $fieldData) {
+                        if (!array_key_exists($fieldData, $imageData)) {
+                            $metadata[$fieldName]['label'][$language] = array($this->meemoo['iiif_metadata_fields'][$fieldName]['label'][$language]);
+                            $metadata[$fieldName]['value'][$language] = array($fallbackValue);
+                        }
+                    }
+                }
             }
+
+            $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
+            $fieldName = 'manifest_url';
+            foreach($this->manifestLanguages as $language) {
+                if (!array_key_exists($fieldName, $metadata)) {
+                    $metadata[$fieldName] = array();
+                }
+                if (!array_key_exists('label', $metadata[$fieldName])) {
+                    $metadata[$fieldName]['label'] = array();
+                }
+                if (!array_key_exists('value', $metadata[$fieldName])) {
+                    $metadata[$fieldName]['value'] = array();
+                }
+                $metadata[$fieldName]['label'][$language] = array('Manifest URL');
+                $metadata[$fieldName]['value'][$language] = array('<a href="' . $manifestId . '">' . $manifestId . '</a>');
+            }
+
             foreach ($metadata as $fieldName => $field) {
                 $data['metadata'][] = $field;
             }
@@ -361,32 +505,19 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
 */
             }
 
-            $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
-            $manifestMetadata[] = array(
-                'label' => 'Manifest',
-                'value' => '<a href="' . $manifestId . '">' . $manifestId . '</a>'
-            );
-
             $manifest = array(
                 '@context'          => 'http://iiif.io/api/presentation/3/context.json',
                 'id'                => $manifestId,
                 'type'              => 'Manifest',
                 'label'             => !empty($data['label']) ? $data['label'] : new stdClass(),
                 'metadata'          => !empty($data['metadata']) ? $data['metadata'] : new stdClass(),
-                'summary'           => !empty($data['summary']) ? $data['summary'] : new stdClass(),
-                'requiredStatement' => array(
-                    'label' => array(
-                            'en' => array('Attribution'),
-                            'nl' => array('Attributie')
-                        ),
-                    'value' => !empty($data['required_statement']) ? array(
-                        'en' => array($data['required_statement'],
-                        'nl' => array($data['required_statement'])
-                        )
-                    ) : array('en' => array(), 'nl' => array())),
+                'requiredStatement' => !empty($data['required_statement']) ? $data['required_statement'] : new stdClass(),
                 'viewingDirection'  => 'left-to-right',
                 'items'             => $canvases
             );
+            if($rights !== '') {
+                $manifest['rights'] = $rights;
+            }
 
             // This image is not for public use, therefore we also don't want this manifest to be public
             if ($isStartCanvas && !$publicUse) {
@@ -492,6 +623,18 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
             }
         }
         return $valid;
+    }
+
+    private function getAuthenticationService()
+    {
+        $arr = array(
+            '@context' => 'http://iiif.io/api/auth/1/context.json',
+            '@id'      => $this->container->getParameter('authentication_url'),
+        );
+        foreach($this->container->getParameter('authentication_service_description') as $key => $value) {
+            $arr[$key] = $value;
+        }
+        return $arr;
     }
 
     private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail)
