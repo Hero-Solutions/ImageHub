@@ -374,7 +374,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                         $metadata[$fieldName]['value'][$language] = array($rsData[$fieldData]);
                     }
                 }
-                if(!empty($fallbackValue)) {
+                if(!empty($fallbackValue) || !array_key_exists($fieldName, $this->meemoo['iiif_metadata_fields'])) {
                     foreach ($field['value'] as $language => $fieldData) {
                         if (!array_key_exists($fieldData, $rsData)) {
                             $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
