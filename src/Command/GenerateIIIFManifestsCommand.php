@@ -615,6 +615,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             /* @var $d ResourceData */
             foreach ($rsDataRaw as $d) {
                 $value = $d->getValue();
+                if(empty($value)) {
+                    continue;
+                }
 
                 // Replace comma by ' - ' for date ranges
                 if(preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $value)) {
