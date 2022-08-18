@@ -52,9 +52,9 @@ class ManifestController extends AbstractController
                 $data = json_decode($manifest->getData());
                 if (!$whitelisted) {
                     if($iiifVersion === '2') {
-                        if (array_key_exists('service', $data)) {
-                            if (array_key_exists('@id', $data['service'])) {
-                                if (strpos($data['service']['@id'], 'auth') > -1) {
+                        if (property_exists($data, 'service')) {
+                            if (property_exists($data->{'service'}, '@id')) {
+                                if (strpos($data->{'service'}->{'@id'}, 'auth') > -1) {
                                     $authenticated = false;
                                 }
                             }
