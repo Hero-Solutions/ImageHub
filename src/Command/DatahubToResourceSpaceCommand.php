@@ -158,6 +158,8 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $qb->delete(ResourceData::class, 'data')->getQuery()->execute();
         $em->flush();
 
+        $rsIdsToInventoryNumbers = array();
+
         $total = count($resources);
         $n = 0;
         foreach($resources as $resource) {
