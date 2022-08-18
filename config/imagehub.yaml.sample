@@ -143,6 +143,7 @@ parameters:
       en-creditline: 'EN - Credit Line'
 
     iiif_rights_source: 'copyrightnoticeofart'
+    iiif_behavior: 'iiifbehavior'
     iiif_label:
       en: 'en-titleartwork'
       nl: 'nl-titleartwork'
