@@ -321,7 +321,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $data['description'] = '';
             $data['recommended_for_publication'] = false;
             $data['sourceinvnr'] = '';
+            $data['iiifbehavior'] = 'individuals';
             foreach($rsData as $d) {
+                if(empty($d->getValue())) {
+                    continue;
+                }
                 if($d->getName() == $this->labelFieldV2) {
                     $data['label'] = $d->getValue();
                 }
@@ -339,6 +343,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
                 if($d->getName() == 'related_resources') {
                     $data['related_resources'] = explode(',', $d->getValue());
+                }
+                if($d->getName() == 'iiifbehavior') {
+                    $data['iiifbehavior'] = strtolower($d->getValue());
                 }
                 foreach ($this->metadataFieldsV2 as $field => $name) {
                     if($d->getName() == $field) {
@@ -457,7 +464,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'description'      => empty($data['description']) ? 'n/a' : $data['description'],
                 'metadata'         => $manifestMetadata,
                 'viewingDirection' => 'left-to-right',
-                'viewingHint'      => 'individuals',
+                'viewingHint'      => $data['iiifbehavior'],
                 'sequences'        => $this->createSequenceV2($canvases, $startCanvas)
             );
 
@@ -611,7 +618,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 ->getQuery()
                 ->getResult();
 
-            $rsData = [];
+            $rsData = [
+                'iiifbehavior' => 'individuals'
+            ];
             /* @var $d ResourceData */
             foreach ($rsDataRaw as $d) {
                 $value = $d->getValue();
@@ -842,6 +851,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'metadata'          => !empty($data['metadata']) ? $data['metadata'] : new stdClass(),
                 'requiredStatement' => !empty($data['required_statement']) ? $data['required_statement'] : new stdClass(),
                 'viewingDirection'  => 'left-to-right',
+                'behavior'          => strtolower($rsData['iiifbehavior']),
                 'items'             => $canvases
             );
             if($rights !== '') {
