@@ -210,8 +210,8 @@ parameters:
       nl: 'nl-titleartwork'
     iiif_required_statement:
       label:
-        en: 'Attribution/Collection'
-        nl: 'Attributie/Collectie'
+        en: 'Collection'
+        nl: 'Collectie'
       value:
         en: 'publisher'
         nl: 'publisher'
@@ -247,13 +247,6 @@ parameters:
         value:
           en: 'sourceinvnr'
           nl: 'sourceinvnr'
-      description:
-        label:
-          en: 'Description'
-          nl: 'Beschrijving'
-        value:
-          en: 'description'
-          nl: 'description'
       creator_of_image:
         label:
           en: 'Photographer'
@@ -268,3 +261,10 @@ parameters:
         value:
           en: 'photographer'
           nl: 'photographer'
+      description:
+        label:
+          en: 'Description'
+          nl: 'Beschrijving'
+        value:
+          en: 'description'
+          nl: 'description'
