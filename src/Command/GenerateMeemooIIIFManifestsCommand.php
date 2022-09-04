@@ -25,6 +25,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
 
     private $meemoo;
 
+    private $publishers;
     private $labelV3;
     private $rightsSourceV3;
     private $requiredStatementV3;
@@ -74,6 +75,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
 
         $this->manifestLanguages = $this->container->getParameter('manifest_languages');
 
+        $this->publishers = $this->container->getParameter('publishers');
         $this->labelV3 = $this->container->getParameter('iiif_label');
         $this->rightsSourceV3 = $this->container->getParameter('iiif_rights_source');
         $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
@@ -207,6 +209,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 'public_use' => true,
                 'sourceinvnr' => $inventoryNumber
             ];
+            $publisher = '';
             /* @var $d DatahubData */
             foreach ($rsDataRaw as $d) {
                 $value = $d->getValue();
@@ -232,6 +235,9 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                     if($earliestDate === $latestDate) {
                         $value = $earliestDate;
                     }
+                }
+                if($d->getName() === 'publisher') {
+                    $publisher = $d->getValue();
                 }
                 if($d->getName() === 'related_resources') {
                     $rsData[$d->getName()] = explode(',', $value);
@@ -323,7 +329,20 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                         $fallbackValue = $rsData[$field];
                     }
                     $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                    $data['required_statement']['value'][$language] = array($rsData[$field] . $this->requiredStatementV3['extra_info'][$language]);
+                    $val = $rsData[$field];
+                    $extra = $this->requiredStatementV3['extra_info'][$language];
+                    if(!empty($publisher)) {
+                        if(array_key_exists($publisher, $this->publishers)) {
+                            $pub = $this->publishers[$publisher];
+                            if(array_key_exists($language, $pub['translations'])) {
+                                $val = $pub['translations'][$language];
+                            }
+                            if(array_key_exists($language, $pub['creditline'])) {
+                                $extra = $pub['creditline'][$language];
+                            }
+                        }
+                    }
+                    $data['required_statement']['value'][$language] = array($val . $extra);
                 }
             }
             if(!empty($fallbackValue)) {
