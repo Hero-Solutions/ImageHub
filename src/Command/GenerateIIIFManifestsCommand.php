@@ -28,7 +28,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $manifestLanguages;
 
     private $labelFieldV2;
-    private $descriptionFieldV2;
     private $attributionFieldV2;
 
     private $publishers;
@@ -83,7 +82,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
         $this->manifestLanguages = $this->container->getParameter('manifest_languages');
         $this->labelFieldV2 = $this->container->getParameter('iiif2_label');
-        $this->descriptionFieldV2 = $this->container->getParameter('iiif2_description');
         $this->attributionFieldV2 = $this->container->getParameter('iiif2_attribution');
 
         $this->publishers = $this->container->getParameter('publishers');
@@ -328,9 +326,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
                 if ($d->getName() == $this->labelFieldV2) {
                     $data['label'] = $d->getValue();
-                }
-                if ($d->getName() == $this->descriptionFieldV2) {
-                    $data['description'] = $d->getValue();
                 }
                 if ($d->getName() == $this->attributionFieldV2) {
                     $data['attribution'] = $d->getValue();
