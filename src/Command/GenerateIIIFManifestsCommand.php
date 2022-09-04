@@ -392,6 +392,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
                 if(!empty($fallbackValue)) {
                     foreach ($field['value'] as $language => $fieldData) {
+                        $fieldExists = false;
                         foreach ($rsData as $d) {
                             if (!empty($d->getValue()) && $d->getName() === $fieldData) {
                                 $fieldExists = true;
