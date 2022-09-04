@@ -347,25 +347,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             $metadataValues = [];
-            $creditlines = [];
-            foreach ($this->requiredStatementV3['value'] as $language => $field) {
-                $val = $publisher;
-                $extra = $this->requiredStatementV3['extra_info'][$language];
-                if (!empty($publisher)) {
-                    if (array_key_exists($publisher, $this->publishers)) {
-                        $pub = $this->publishers[$publisher];
-                        if (array_key_exists($language, $pub['translations'])) {
-                            $val = $pub['translations'][$language];
-                        }
-                        if (array_key_exists($language, $pub['creditline'])) {
-                            $extra = $pub['creditline'][$language];
-                        }
-                    }
-                }
-                $creditlines[] = array('@language' => $language, '@value' => $val . $extra);
-            }
-            $metadataValues['Credit line'] = $creditlines;
-
             foreach ($this->metadataFieldsV3 as $fieldName => $field) {
                 $label = '';
                 $fallbackValue = '';
@@ -402,6 +383,24 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $metadataValues[$label] = $values;
                 }
             }
+            $creditlines = [];
+            foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                $val = $publisher;
+                $extra = $this->requiredStatementV3['extra_info'][$language];
+                if (!empty($publisher)) {
+                    if (array_key_exists($publisher, $this->publishers)) {
+                        $pub = $this->publishers[$publisher];
+                        if (array_key_exists($language, $pub['translations'])) {
+                            $val = $pub['translations'][$language];
+                        }
+                        if (array_key_exists($language, $pub['creditline'])) {
+                            $extra = $pub['creditline'][$language];
+                        }
+                    }
+                }
+                $creditlines[] = array('@language' => $language, '@value' => $val . $extra);
+            }
+            $metadataValues['Credit line'] = $creditlines;
 
             // Fill in (multilingual) manifest data
             $manifestMetadata = array();
