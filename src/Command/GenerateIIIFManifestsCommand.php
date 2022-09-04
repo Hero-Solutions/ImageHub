@@ -30,8 +30,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $labelFieldV2;
     private $descriptionFieldV2;
     private $attributionFieldV2;
-    private $metadataFieldsV2;
 
+    private $publishers;
     private $labelV3;
     private $rightsSourceV3;
     private $requiredStatementV3;
@@ -85,8 +85,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->labelFieldV2 = $this->container->getParameter('iiif2_label');
         $this->descriptionFieldV2 = $this->container->getParameter('iiif2_description');
         $this->attributionFieldV2 = $this->container->getParameter('iiif2_attribution');
-        $this->metadataFieldsV2 = $this->container->getParameter('iiif2_metadata_fields');
 
+        $this->publishers = $this->container->getParameter('publishers');
         $this->labelV3 = $this->container->getParameter('iiif_label');
         $this->rightsSourceV3 = $this->container->getParameter('iiif_rights_source');
         $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
@@ -315,55 +315,102 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 ->setParameter('id', $resourceId)
                 ->getQuery()
                 ->getResult();
-            $data['metadata'] = array();
             $data['label'] = '';
             $data['attribution'] = '';
             $data['description'] = '';
             $data['recommended_for_publication'] = false;
             $data['sourceinvnr'] = '';
             $data['iiifbehavior'] = 'individuals';
+            $publisher = '';
             foreach($rsData as $d) {
-                if(empty($d->getValue())) {
+                if (empty($d->getValue())) {
                     continue;
                 }
-                if($d->getName() == $this->labelFieldV2) {
+                if ($d->getName() == $this->labelFieldV2) {
                     $data['label'] = $d->getValue();
                 }
-                if($d->getName() == $this->descriptionFieldV2) {
+                if ($d->getName() == $this->descriptionFieldV2) {
                     $data['description'] = $d->getValue();
                 }
-                if($d->getName() == $this->attributionFieldV2) {
+                if ($d->getName() == $this->attributionFieldV2) {
                     $data['attribution'] = $d->getValue();
                 }
-                if($d->getName() == 'is_recommended_for_pub') {
+                if ($d->getName() == 'is_recommended_for_pub') {
                     $data['recommended_for_publication'] = $d->getValue() === '1';
                 }
-                if($d->getName() == 'sourceinvnr') {
+                if ($d->getName() == 'sourceinvnr') {
                     $data['sourceinvnr'] = $d->getValue();
                 }
-                if($d->getName() == 'related_resources') {
+                if ($d->getName() == 'related_resources') {
                     $data['related_resources'] = explode(',', $d->getValue());
                 }
-                if($d->getName() == 'iiifbehavior') {
+                if ($d->getName() == 'iiifbehavior') {
                     $data['iiifbehavior'] = strtolower($d->getValue());
                 }
-                foreach ($this->metadataFieldsV2 as $field => $name) {
-                    if($d->getName() == $field) {
-                        $value = $d->getValue();
-                        foreach($this->requiredStatementV3['value'] as $language => $field_) {
-                            if($field == $field_) {
-                                $value .= $this->requiredStatementV3['extra_info'][$language];
+                if ($d->getName() === 'publisher') {
+                    $publisher = $d->getValue();
+                }
+            }
+
+            $metadataValues = [];
+            $creditlines = [];
+            foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                $val = $publisher;
+                $extra = $this->requiredStatementV3['extra_info'][$language];
+                if (!empty($publisher)) {
+                    if (array_key_exists($publisher, $this->publishers)) {
+                        $pub = $this->publishers[$publisher];
+                        if (array_key_exists($language, $pub['translations'])) {
+                            $val = $pub['translations'][$language];
+                        }
+                        if (array_key_exists($language, $pub['creditline'])) {
+                            $extra = $pub['creditline'][$language];
+                        }
+                    }
+                }
+                $creditlines[] = array('@language' => $language, '@value' => $val . $extra);
+            }
+            $metadataValues['Credit line'] = $creditlines;
+
+            foreach ($this->metadataFieldsV3 as $fieldName => $field) {
+                $label = '';
+                $fallbackValue = '';
+                $values = [];
+                foreach ($field['value'] as $language => $fieldData) {
+                    if(empty($label)) {
+                        $label = $this->metadataFieldsV3[$fieldName]['label'][$language];
+                    }
+                    foreach ($rsData as $d) {
+                        if(!empty($d->getValue()) && $d->getName() === $fieldData) {
+                            $val = $d->getValue();
+                            if (empty($fallbackValue)) {
+                                $fallbackValue = $val;
+                            }
+                            $values[] = array('@language' => $language, '@value' => $val);
+                        }
+                    }
+                }
+                if(!empty($fallbackValue)) {
+                    foreach ($field['value'] as $language => $fieldData) {
+                        foreach ($rsData as $d) {
+                            if (!empty($d->getValue()) && $d->getName() === $fieldData) {
+                                $fieldExists = true;
                                 break;
                             }
                         }
-                        $data['metadata'][$name] = $value;
+                        if (!$fieldExists) {
+                            $values[] = array('@language' => $language, '@value' => $fallbackValue);
+                        }
                     }
+                }
+                if(!empty($label) && !empty($values)) {
+                    $metadataValues[$label] = $values;
                 }
             }
 
             // Fill in (multilingual) manifest data
             $manifestMetadata = array();
-            foreach($data['metadata'] as $key => $metadata) {
+            foreach($metadataValues as $key => $metadata) {
 /*                $arr = array();
                 foreach($metadata as $language => $value) {
                     // Change nl into nl-BE, en into en-GB, etc.
@@ -376,24 +423,26 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     );
                 }*/
 
-                // Replace comma by ' - ' for date ranges
-                if(preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $metadata)) {
-                    $metadata = str_replace(' ', '', $metadata);
-                    $metadata = str_replace(',', ' - ', $metadata);
+                if(!is_array($metadata)) {
+                    // Replace comma by ' - ' for date ranges
+                    if (preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $metadata)) {
+                        $metadata = str_replace(' ', '', $metadata);
+                        $metadata = str_replace(',', ' - ', $metadata);
 
-                  // Remove date and month when the exact date is clearly unknown
-                  if(preg_match('/^[0-9]{3,4}\-01\-01 \- [0-9]{3,4}\-12\-31$/', $metadata)) {
-                      $metadata = str_replace('-01-01', '', $metadata);
-                      $metadata = str_replace('-12-31', '', $metadata);
-                  }
+                        // Remove date and month when the exact date is clearly unknown
+                        if (preg_match('/^[0-9]{3,4}\-01\-01 \- [0-9]{3,4}\-12\-31$/', $metadata)) {
+                            $metadata = str_replace('-01-01', '', $metadata);
+                            $metadata = str_replace('-12-31', '', $metadata);
+                        }
 
-                  // Remove latest date if it is the same as the earliest date
-                  $dashIndex = strpos($metadata, ' - ');
-                  $earliestDate = substr($metadata, 0, $dashIndex);
-                  $latestDate = substr($metadata, $dashIndex + 3);
-                  if($earliestDate === $latestDate) {
-                    $metadata = $earliestDate;
-                  }
+                        // Remove latest date if it is the same as the earliest date
+                        $dashIndex = strpos($metadata, ' - ');
+                        $earliestDate = substr($metadata, 0, $dashIndex);
+                        $latestDate = substr($metadata, $dashIndex + 3);
+                        if ($earliestDate === $latestDate) {
+                            $metadata = $earliestDate;
+                        }
+                    }
                 }
 
                 $manifestMetadata[] = array(
@@ -621,6 +670,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $rsData = [
                 'iiifbehavior' => 'individuals'
             ];
+            $publisher = '';
+
             /* @var $d ResourceData */
             foreach ($rsDataRaw as $d) {
                 $value = $d->getValue();
@@ -647,6 +698,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $value = $earliestDate;
                     }
                 }
+                if($d->getName() === 'publisher') {
+                    $publisher = $d->getValue();
+                }
                 if($d->getName() === 'related_resources') {
                     $rsData[$d->getName()] = explode(',', $value);
                 } else if($d->getName() == 'is_recommended_for_pub') {
@@ -662,7 +716,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $data['label'] = array();
             $data['required_statement'] = array();
             $label = '';
-            $rights = '';
 
             foreach ($this->labelV3 as $language => $field) {
                 if (array_key_exists($field, $rsData)) {
@@ -707,7 +760,20 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $fallbackValue = $rsData[$field];
                     }
                     $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                    $data['required_statement']['value'][$language] = array($rsData[$field] . $this->requiredStatementV3['extra_info'][$language]);
+                    $val = $rsData[$field];
+                    $extra = $this->requiredStatementV3['extra_info'][$language];
+                    if(!empty($publisher)) {
+                        if(array_key_exists($publisher, $this->publishers)) {
+                            $pub = $this->publishers[$publisher];
+                            if(array_key_exists($language, $pub['translations'])) {
+                                $val = $pub['translations'][$language];
+                            }
+                            if(array_key_exists($language, $pub['creditline'])) {
+                                $extra = $pub['creditline'][$language];
+                            }
+                        }
+                    }
+                    $data['required_statement']['value'][$language] = array($val . $extra);
                 }
             }
             foreach ($this->requiredStatementV3['value'] as $language => $field) {

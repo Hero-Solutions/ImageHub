@@ -134,13 +134,36 @@ parameters:
     iiif2_label: 'nl-titleartwork'
     iiif2_description: 'description'
     iiif2_attribution: 'publisher'
-    iiif2_metadata_fields:
-      nl-titleartwork: 'NL - Title'
-      en-titleartwork: 'EN - Title'
-      sourceinvnr: 'Object ID'
-      publisher: 'Publisher'
-      nl-creditline: 'NL - Credit Line'
-      en-creditline: 'EN - Credit Line'
+
+    publishers:
+        Koninklijk Museum voor Schone Kunsten Antwerpen:
+          translations:
+            en: Royal Museum of Fine Arts Antwerp - Flemish Community
+            nl: Koninklijk Museum voor Schone Kunsten Antwerpen - Vlaamse Gemeenschap
+          creditline:
+            en: '<p>De jpg-bestanden van kunstwerken in het publieke domein zijn downloadbaar in hoge resolutie via de website van KMSKA. Beelden aanvragen kan via het contactformulier op <a href="https://kmska.be/nl/contact">kmska.be/nl/contact</a>.</p>'
+            nl: '<p>The jpg files of public domain artworks are downloadable in high resolution through the KMSKA website. Requesting images can be done through the contact form at <a href="https://kmska.be/en/contact">kmska.be/en/contact</a>.</p>'
+        Museum voor Schone Kunsten Gent:
+          translations:
+            en: Museum of Fine Arts Ghent
+            nl: Museum voor Schone Kunsten Gent
+          creditline:
+            en: '<p>The original TIFF files of this work, in highest resolution and color-coded, can be ordered from <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). If this image is used for a printed publication or a commercial product, MSK Gent would appreciate having three copies sent to MSK Gent, Hofbouwlaan 28, B-9000 Gent. More information: <a href="mailto:museum.msk@stad.gent">museum.msk@stad.gent</a>.</p>'
+            nl: '<p>De originele TIFF-bestanden van dit werk, in hoogste resolutie en met kleurencode, kunnen worden besteld bij <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). Wanneer dit beeld gebruikt wordt voor een gedrukte publicatie of een commercieel product, dan vraagt MSK Gent dat drie exemplaren worden toegestuurd naar MSK Gent, Hofbouwlaan 28, B-9000 Gent. Meer info: <a href="mailto:museum.msk@stad.gent">museum.msk@stad.gent</a>.</p>'
+        Mu.ZEE, Kunstmuseum aan zee:
+          translations:
+            en: Mu.ZEE, Art museum at the seaside
+            nl: Mu.ZEE, Kunstmuseum aan zee
+          creditline:
+            en: '<p>The original TIFF files of this work, in highest resolution and color-coded, can be ordered from <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). If this image is used for a printed publication or a commercial product, Mu.ZEE would appreciate having three copies sent to Mu.ZEE, Romestraat 11, 8400 Oostende, Belgium. More information: <a href="mailto:info@muzee.be">info@muzee.be</a>.</p>'
+            nl: '<p>De originele TIFF-bestanden van dit werk, in hoogste resolutie en met kleurencode, kunnen worden besteld bij <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). Wanneer dit beeld gebruikt wordt voor een gedrukte publicatie of een commercieel product, dan vraagt Mu.ZEE dat drie exemplaren worden toegestuurd naar Mu.ZEE, Romestraat 11, 8400 Oostende. Meer info: <a href="mailto:info@muzee.be">info@muzee.be</a>.</p>'
+        Musea Brugge:
+          translations:
+            en: Musea Bruges
+            nl: Musea Brugge
+          creditline:
+            en: '<p>The original TIFF files of this work, in highest resolution and color-coded, can be ordered from <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). If this image is used for a printed publication or a commercial product, Musea Brugge would appreciate having three copies sent to Musea Brugge, Dijver 12, 8000 Brugge. More information: <a href="mailto:musea@brugge.be">musea@brugge.be</a>.</p>'
+            nl: '<p>De originele TIFF-bestanden van dit werk, in hoogste resolutie en met kleurencode, kunnen worden besteld bij <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). Wanneer dit beeld gebruikt wordt voor een gedrukte publicatie of een commercieel product, dan vraagt Musea Brugge dat drie exemplaren worden toegestuurd naar Musea Brugge, Dijver 12, 8000 Brugge. Meer info: <a href="mailto:musea@brugge.be">musea@brugge.be</a>.</p>'
 
     iiif_rights_source: 'copyrightnoticeofart'
     iiif_behavior: 'iiifbehavior'
