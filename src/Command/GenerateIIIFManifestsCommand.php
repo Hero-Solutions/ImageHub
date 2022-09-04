@@ -417,31 +417,34 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     );
                 }*/
 
-                if(!is_array($metadata)) {
+                $editedMetadata = [];
+                foreach($metadata as $val) {
+                    $v = $val['@value'];
                     // Replace comma by ' - ' for date ranges
-                    if (preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $metadata)) {
-                        $metadata = str_replace(' ', '', $metadata);
-                        $metadata = str_replace(',', ' - ', $metadata);
+                    if (preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $v)) {
+                        $v = str_replace(' ', '', $v);
+                        $v = str_replace(',', ' - ', $v);
 
                         // Remove date and month when the exact date is clearly unknown
-                        if (preg_match('/^[0-9]{3,4}\-01\-01 \- [0-9]{3,4}\-12\-31$/', $metadata)) {
-                            $metadata = str_replace('-01-01', '', $metadata);
-                            $metadata = str_replace('-12-31', '', $metadata);
+                        if (preg_match('/^[0-9]{3,4}\-01\-01 \- [0-9]{3,4}\-12\-31$/', $v)) {
+                            $v = str_replace('-01-01', '', $v);
+                            $v = str_replace('-12-31', '', $v);
                         }
 
                         // Remove latest date if it is the same as the earliest date
-                        $dashIndex = strpos($metadata, ' - ');
-                        $earliestDate = substr($metadata, 0, $dashIndex);
-                        $latestDate = substr($metadata, $dashIndex + 3);
+                        $dashIndex = strpos($v, ' - ');
+                        $earliestDate = substr($v, 0, $dashIndex);
+                        $latestDate = substr($v, $dashIndex + 3);
                         if ($earliestDate === $latestDate) {
-                            $metadata = $earliestDate;
+                            $v = $earliestDate;
                         }
                     }
+                    $editedMetadata[] = array('@language' => $val['@language'], '@value' => $v);
                 }
 
                 $manifestMetadata[] = array(
                     'label' => $key,
-                    'value' => $metadata
+                    'value' => $editedMetadata
                 );
             }
 
