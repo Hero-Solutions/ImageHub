@@ -738,19 +738,23 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
     }
 
     // Build the xpath based on the provided namespace
-    private function buildXpath($xpath, $language)
+    private function buildXPath($xpath, $namespace)
     {
-        $xpath = str_replace('{language}', $language, $xpath);
-        $xpath = str_replace('[@', '[@' . $this->namespace . ':', $xpath);
-        $xpath = str_replace('[@' . $this->namespace . ':xml:', '[@xml:', $xpath);
-        $xpath = preg_replace('/\[([^@0-9])/', '[' . $this->namespace . ':${1}', $xpath);
-        $xpath = preg_replace('/\(([^\/])/', '(' . $this->namespace . ':${1}', $xpath);
-        $xpath = preg_replace('/\/([^\/])/', '/' . $this->namespace . ':${1}', $xpath);
-        $xpath = str_replace('lido:not(', 'not(', $xpath);
+        $prepend = '';
+        if(strpos($xpath, '(') === 0) {
+            $prepend = '(';
+            $xpath = substr($xpath, 1);
+        }
+        $xpath = preg_replace('/\[@(?!xml|text)/', '[@' . $namespace . ':${1}', $xpath);
+        $xpath = preg_replace('/\(@(?!xml|text)/', '(@' . $namespace . ':${1}', $xpath);
+        $xpath = preg_replace('/\[(?![@0-9]|not\(|text)/', '[' . $namespace . ':${1}', $xpath);
+        $xpath = preg_replace('/\/([^\/])/', '/' . $namespace . ':${1}', $xpath);
+        $xpath = preg_replace('/ and (?!@xml)/', ' and ' . $namespace . ':${1}', $xpath);
         if(strpos($xpath, '/') !== 0) {
-            $xpath = $this->namespace . ':' . $xpath;
+            $xpath = $namespace . ':' . $xpath;
         }
         $xpath = 'descendant::' . $xpath;
+        $xpath = $prepend . $xpath;
         return $xpath;
     }
 
