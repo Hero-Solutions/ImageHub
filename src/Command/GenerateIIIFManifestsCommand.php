@@ -315,7 +315,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 ->getResult();
             $data['label'] = '';
             $data['attribution'] = '';
-            $data['description'] = '';
             $data['recommended_for_publication'] = false;
             $data['sourceinvnr'] = '';
             $data['iiifbehavior'] = 'individuals';
@@ -506,7 +505,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 '@id'              => $manifestId,
                 'label'            => $data['label'],
                 'attribution'      => $data['attribution'],
-                'description'      => empty($data['description']) ? 'n/a' : $data['description'],
                 'metadata'         => $manifestMetadata,
                 'viewingDirection' => 'left-to-right',
                 'viewingHint'      => $data['iiifbehavior'],
