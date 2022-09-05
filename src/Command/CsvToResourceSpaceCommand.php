@@ -58,9 +58,9 @@ class CsvToResourceSpaceCommand extends Command implements ContainerAwareInterfa
     {
         $csvData = array();
         if (($handle = fopen($csvFile, "r")) !== false) {
-            $columns = fgetcsv($handle, 1000, ";");
+            $columns = fgetcsv($handle, 1000, ",");
             $i = 0;
-            while (($row = fgetcsv($handle, 1000, ";")) !== false) {
+            while (($row = fgetcsv($handle, 1000, ",")) !== false) {
                 if(count($columns) != count($row)) {
                     echo 'Wrong column count: should be ' . count($columns) . ', is ' . count($row) . ' at row ' . $i;
 //                    $this->logger->error('Wrong column count: should be ' . count($columns) . ', is ' . count($row) . ' at row ' . $i);
