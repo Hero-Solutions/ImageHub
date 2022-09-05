@@ -48,6 +48,7 @@ class CsvToResourceSpaceCommand extends Command implements ContainerAwareInterfa
                 foreach ($csvLine as $key => $value) {
                     if ($key !== 'ref' && $key !== 'originalfilename' && $value != 'NULL' && !empty($value)) {
                         $this->resourceSpace->updateField($id, $key, $value);
+                        echo 'Update resource ' . $id . ', set ' . $key . ' to ' . $value . PHP_EOL;
                     }
                 }
             }
