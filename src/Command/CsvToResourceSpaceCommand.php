@@ -37,21 +37,16 @@ class CsvToResourceSpaceCommand extends Command implements ContainerAwareInterfa
 
         $csvData = $this->readRecordsFromCsv($csvFile);
 
-        $resourceSpaceFilenames = $this->resourceSpace->getAllOriginalFilenames();
-
         foreach($csvData as $csvLine) {
-
-            $filename = StringUtil::stripExtension($csvLine['originalfilename']);
-            if(!array_key_exists($filename, $resourceSpaceFilenames)) {
-                echo 'Error: could not find any resources for file ' . $filename . PHP_EOL;
-                continue;
+            $id = '';
+            foreach ($csvLine as $key => $value) {
+                if ($key === 'ref') {
+                    $id = $value;
+                }
             }
-
-            $id = $resourceSpaceFilenames[$filename];
-
-            foreach($csvLine as $key => $value) {
-                if($value != 'NULL') {
-                    if ($key != 'originalfilename') {
+            if (!empty($id)) {
+                foreach ($csvLine as $key => $value) {
+                    if ($key !== 'ref' && $key !== 'originalfilename' && $value != 'NULL' && !empty($value)) {
                         $this->resourceSpace->updateField($id, $key, $value);
                     }
                 }
