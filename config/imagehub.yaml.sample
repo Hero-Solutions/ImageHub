@@ -176,8 +176,8 @@ parameters:
       nl: 'nl-titleartwork'
     iiif_required_statement:
       label:
-        en: 'Collection'
-        nl: 'Collectie'
+        en: 'Attribution'
+        nl: 'Naamsvermelding'
       value:
         en: 'publisher'
         nl: 'publisher'
