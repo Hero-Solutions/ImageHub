@@ -472,7 +472,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
-            $creditlines = [];
+            $creditlines = array('label' => array(), 'value' => array());
             foreach ($this->requiredStatementV3['value'] as $language => $field) {
                 $val = $publisher;
                 $extra = $this->requiredStatementV3['extra_info'][$language];
@@ -487,10 +487,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                 }
-                $creditlines[] = array('@language' => $language, '@value' => $val . $extra);
+                $creditlines['label'][] = array('@language' => $language, '@value' => $this->requiredStatementV3['label'][$language])
+                $creditlines['value'][] = array('@language' => $language, '@value' => $val . $extra);
             }
-            $metadata['creditline']['label'] = 'Credit line';
-            $metadata['creditline']['value'] = $creditlines;
+            $metadata['required_statement'] = $creditlines;
 
             // Fill in (multilingual) manifest data
             $manifestMetadata = array();
