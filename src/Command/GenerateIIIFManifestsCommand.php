@@ -870,6 +870,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             $fallbackValue = '';
+            $data['required_statement'] = [];
             foreach ($this->requiredStatementV3['value'] as $language => $field) {
                 if (!array_key_exists('label', $data['required_statement'])) {
                     $data['required_statement']['label'] = array();
