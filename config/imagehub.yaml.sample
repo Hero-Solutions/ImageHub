@@ -192,7 +192,9 @@ parameters:
       label: 'Login to the Flemish Art Collection'
       profile: 'http://iiif.io/api/auth/1/login'
 
-    iiif2_label: 'nl-titleartwork'
+    iiif2_labels:
+      en: 'en-titleartwork'
+      nl: 'nl-titleartwork'
     iiif2_attribution: 'publisher'
 
     publishers:
