@@ -521,12 +521,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             } else {
                 $rights = 'https://rightsstatements.org/page/UND/1.0/';
             }
-            $rightsLabels = [];
-            foreach($this->licenseLabelsV2 as $language => $label) {
-                $rightsLabels[] = array('@language' => $language, '@value' => $label);
-            }
-            $metadata['rightsstatement']['label'] = $rightsLabels;
-            $metadata['rightsstatement']['value'] = '<a href="' . $rights . '">' . $rights . '</a>';
 
             $creditlines = array('label' => array(), 'value' => array());
             foreach ($this->requiredStatementV3['value'] as $language => $field) {
@@ -546,7 +540,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $creditlines['label'][] = array('@language' => $language, '@value' => $this->requiredStatementV3['label'][$language]);
                 $creditlines['value'][] = array('@language' => $language, '@value' => $val . $extra);
             }
-            $metadata['required_statement'] = $creditlines;
 
             // Fill in (multilingual) manifest data
             $manifestMetadata = array();
@@ -615,10 +608,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 '@id'              => $manifestId,
                 '@type'            => 'sc:Manifest',
                 'label'            => $data['label'],
-                'attribution'      => $data['attribution'],
                 'metadata'         => $manifestMetadata,
                 'viewingDirection' => 'left-to-right',
                 'viewingHint'      => $data['iiifbehavior'],
+                'license'          => $rights,
+                'attribution'      => $creditlines,
                 'sequences'        => $this->createSequenceV2($canvases, $startCanvas)
             );
 
