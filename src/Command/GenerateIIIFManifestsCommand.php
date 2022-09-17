@@ -507,26 +507,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
-            $creditlines = array('label' => array(), 'value' => array());
-            foreach ($this->requiredStatementV3['value'] as $language => $field) {
-                $val = $publisher;
-                $extra = $this->requiredStatementV3['extra_info'][$language];
-                if (!empty($publisher)) {
-                    if (array_key_exists($publisher, $this->publishers)) {
-                        $pub = $this->publishers[$publisher];
-                        if (array_key_exists($language, $pub['translations'])) {
-                            $val = $pub['translations'][$language];
-                        }
-                        if (array_key_exists($language, $pub['creditline'])) {
-                            $extra = $pub['creditline'][$language];
-                        }
-                    }
-                }
-                $creditlines['label'][] = array('@language' => $language, '@value' => $this->requiredStatementV3['label'][$language]);
-                $creditlines['value'][] = array('@language' => $language, '@value' => $val . $extra);
-            }
-            $metadata['required_statement'] = $creditlines;
-
             if(array_key_exists($this->rightsSourceV3, $rsData)) {
                 $rightsSource = $rsData[$this->rightsSourceV3];
                 if($rightsSource === 'CC0') {
@@ -547,6 +527,26 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
             $metadata['rightsstatement']['label'] = $rightsLabels;
             $metadata['rightsstatement']['value'] = '<a href="' . $rights . '">' . $rights . '</a>';
+
+            $creditlines = array('label' => array(), 'value' => array());
+            foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                $val = $publisher;
+                $extra = $this->requiredStatementV3['extra_info'][$language];
+                if (!empty($publisher)) {
+                    if (array_key_exists($publisher, $this->publishers)) {
+                        $pub = $this->publishers[$publisher];
+                        if (array_key_exists($language, $pub['translations'])) {
+                            $val = $pub['translations'][$language];
+                        }
+                        if (array_key_exists($language, $pub['creditline'])) {
+                            $extra = $pub['creditline'][$language];
+                        }
+                    }
+                }
+                $creditlines['label'][] = array('@language' => $language, '@value' => $this->requiredStatementV3['label'][$language]);
+                $creditlines['value'][] = array('@language' => $language, '@value' => $val . $extra);
+            }
+            $metadata['required_statement'] = $creditlines;
 
             // Fill in (multilingual) manifest data
             $manifestMetadata = array();
@@ -817,9 +817,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
             $data = array();
             $metadata = array();
-            $data['metadata'] = array();
             $data['label'] = array();
-            $data['required_statement'] = array();
             $label = '';
 
             foreach ($this->labelV3 as $language => $field) {
@@ -988,6 +986,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $metadata['manifest_url']['label']['none'] = array('Manifest URL');
             $metadata['manifest_url']['value']['none'] = array('<a href="' . $manifestId . '">' . $manifestId . '</a>');
 
+            $data['metadata'] = [];
             foreach ($metadata as $fieldName => $field) {
                 $data['metadata'][] = $field;
             }
@@ -1059,13 +1058,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $startCanvas = $canvasId;
                     $thumbnail = $serviceId;
                 }
-
-                /*                // Store the canvas in the database
-                                $canvasDocument = new Canvas();
-                                $canvasDocument->setCanvasId($canvasId);
-                                $canvasDocument->setData(json_encode($newCanvas));
-                                $dm->persist($canvasDocument);
-                */
             }
 
             $manifest = array(
@@ -1074,14 +1066,12 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'type'              => 'Manifest',
                 'label'             => !empty($data['label']) ? $data['label'] : new stdClass(),
                 'metadata'          => !empty($data['metadata']) ? $data['metadata'] : new stdClass(),
-                'requiredStatement' => !empty($data['required_statement']) ? $data['required_statement'] : new stdClass(),
                 'viewingDirection'  => 'left-to-right',
                 'behavior'          => [ strtolower($rsData['iiifbehavior']) ],
+                'rights'            => $rights,
+                'requiredStatement' => !empty($data['required_statement']) ? $data['required_statement'] : new stdClass(),
                 'items'             => $canvases
             );
-            if($rights !== '') {
-                $manifest['rights'] = $rights;
-            }
 
             // This image is not for public use, therefore we also don't want this manifest to be public
             if ($isStartCanvas && !$publicUse) {
