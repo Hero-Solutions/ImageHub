@@ -387,11 +387,28 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             if(empty($labels)) {
                 $data['label'] = $label;
             } else {
-                $data['label'] = array();
-                foreach($this->labelFieldsV2 as $language => $fieldName) {
-                    foreach($labels as $lang => $label) {
-                        if($lang === $language) {
-                            $data['label'][] = $label;
+                $allSame = true;
+                foreach($labels as $lang => $label) {
+                    $val = $label['@value'];
+                    foreach($labels as $l => $lab) {
+                        if($lab['@value'] !== $val) {
+                            $allSame = false;
+                            break;
+                        }
+                    }
+                    if(!$allSame) {
+                        break;
+                    }
+                }
+                if($allSame) {
+                    $data['label'] = $label;
+                } else {
+                    $data['label'] = array();
+                    foreach ($this->labelFieldsV2 as $language => $fieldName) {
+                        foreach ($labels as $lang => $label) {
+                            if ($lang === $language) {
+                                $data['label'][] = $label;
+                            }
                         }
                     }
                 }
@@ -820,6 +837,23 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if (!array_key_exists($field, $rsData)) {
                     $data['label'][$language] = array($label);
                 }
+            }
+            $allSame = true;
+            $label_ = null;
+            foreach($data['label'] as $language => $label) {
+                $label_ = $label;
+                foreach($data['label'] as $lang => $lab) {
+                    if($label !== $lab) {
+                        $allSame = false;
+                        break;
+                    }
+                }
+                if(!$allSame) {
+                    break;
+                }
+            }
+            if($allSame) {
+                $data['label'] = array('none' => $label_);
             }
 
             if(array_key_exists($this->rightsSourceV3, $rsData)) {
