@@ -389,15 +389,15 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         if(empty($fallbackValue)) {
                             $fallbackValue = $rsData[$fieldData];
                         }
-                        $metadata[$fieldName]['label'] = array('@language' => $language, '@value' => $this->metadataFieldsV3[$fieldName]['label'][$language]);
-                        $metadata[$fieldName]['value'] = array('@language' => $language, '@value' => $rsData[$fieldData]);
+                        $metadata[$fieldName]['label'][] = array('@language' => $language, '@value' => $this->metadataFieldsV3[$fieldName]['label'][$language]);
+                        $metadata[$fieldName]['value'][] = array('@language' => $language, '@value' => $rsData[$fieldData]);
                     }
                 }
                 if(!empty($fallbackValue)) {
                     foreach ($field['value'] as $language => $fieldData) {
                         if (!array_key_exists($fieldData, $rsData)) {
-                            $metadata[$fieldName]['label'] = array('@language' => $language, '@value' => $this->metadataFieldsV3[$fieldName]['label'][$language]);
-                            $metadata[$fieldName]['value'] = array('@language' => $language, '@value' => $fallbackValue);
+                            $metadata[$fieldName]['label'][] = array('@language' => $language, '@value' => $this->metadataFieldsV3[$fieldName]['label'][$language]);
+                            $metadata[$fieldName]['value'][] = array('@language' => $language, '@value' => $fallbackValue);
                         }
                     }
                 }
