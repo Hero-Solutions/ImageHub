@@ -437,6 +437,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                             }
                         }
                     }
+                } else {
+                    unset($metadata[$fieldName]);
                 }
 
                 if(array_key_exists($fieldName, $metadata)) {
@@ -903,6 +905,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                             $metadata[$fieldName]['value'][$language] = array($fallbackValue);
                         }
                     }
+                } else {
+                    unset($metadata[$fieldName]);
                 }
 
                 if(array_key_exists($fieldName, $metadata)) {
@@ -922,7 +926,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                     if($allSame) {
-                        $metadata[$fieldName]['label'] = array('none' => array($value_));
+                        $metadata[$fieldName]['label'] = array('none' => $value_);
                     }
 
                     //Group all values together under language 'none' if all values are the same
@@ -941,7 +945,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                     if($allSame) {
-                        $metadata[$fieldName]['value'] = array('none' => array($value_));
+                        $metadata[$fieldName]['value'] = array('none' => $value_);
                     }
                 }
             }
