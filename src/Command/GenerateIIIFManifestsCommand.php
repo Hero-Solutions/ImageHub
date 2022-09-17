@@ -323,19 +323,40 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $publisher = '';
             $rsData = [];
             foreach($rsDataRaw as $d) {
-                if (empty($d->getValue())) {
+                $value = $d->getValue();
+                if (empty($value)) {
                     continue;
                 }
+                // Replace comma by ' - ' for date ranges
+                if(preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $value)) {
+                    $value = str_replace(' ', '', $value);
+                    $value = str_replace(',', ' - ', $value);
+
+                    // Remove date and month when the exact date is clearly unknown
+                    if(preg_match('/^[0-9]{3,4}\-01\-01 \- [0-9]{3,4}\-12\-31$/', $value)) {
+                        $value = str_replace('-01-01', '', $value);
+                        $value = str_replace('-12-31', '', $value);
+                    }
+
+                    // Remove latest date if it is the same as the earliest date
+                    $dashIndex = strpos($value, ' - ');
+                    $earliestDate = substr($value, 0, $dashIndex);
+                    $latestDate = substr($value, $dashIndex + 3);
+                    if($earliestDate === $latestDate) {
+                        $value = $earliestDate;
+                    }
+                }
+
                 foreach($this->labelFieldsV2 as $language => $fieldName) {
                     if($d->getName() === $fieldName) {
                         if(empty($label) || $language === 'en') {
-                            $label = $d->getValue();
+                            $label = $value;
                         }
-                        $labels[] = array('@language' => $language, '@value' => $d->getValue());
+                        $labels[] = array('@language' => $language, '@value' => $value);
                     }
                 }
                 if ($d->getName() == $this->attributionFieldV2) {
-                    $publisher = $d->getValue();
+                    $publisher = $value;
                     $attribution = $publisher;
                     if (array_key_exists($publisher, $this->publishers)) {
                         $pub = $this->publishers[$publisher];
@@ -345,21 +366,21 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                 }
                 if ($d->getName() == 'is_recommended_for_pub') {
-                    $data['recommended_for_publication'] = $d->getValue() === '1';
+                    $data['recommended_for_publication'] = $value === '1';
                 }
                 if ($d->getName() == 'sourceinvnr') {
-                    $data['sourceinvnr'] = $d->getValue();
+                    $data['sourceinvnr'] = $value;
                 }
                 if ($d->getName() == 'related_resources') {
-                    $data['related_resources'] = explode(',', $d->getValue());
+                    $data['related_resources'] = explode(',', $value);
                 }
                 if ($d->getName() == 'iiifbehavior') {
-                    $data['iiifbehavior'] = strtolower($d->getValue());
+                    $data['iiifbehavior'] = strtolower($value);
                 }
                 if ($d->getName() === 'publisher') {
-                    $publisher = $d->getValue();
+                    $publisher = $value;
                 }
-                $rsData[$d->getName()] = $d->getValue();
+                $rsData[$d->getName()] = $value;
             }
             if(empty($labels)) {
                 $data['label'] = $label;
@@ -468,51 +489,15 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
                 $creditlines[] = array('@language' => $language, '@value' => $val . $extra);
             }
-            $metadataValues['Credit line'] = $creditlines;
+            $metadata['creditline']['label'] = 'Credit line';
+            $metadata['creditline']['value'] = $creditlines;
 
             // Fill in (multilingual) manifest data
             $manifestMetadata = array();
-            foreach($metadataValues as $key => $metadata) {
-/*                $arr = array();
-                foreach($metadata as $language => $value) {
-                    // Change nl into nl-BE, en into en-GB, etc.
-                    if(array_key_exists($language, $this->localisations)) {
-                        $language = $this->localisations[$language];
-                    }
-                    $arr[] = array(
-                        '@language' => $language,
-                        '@value'    => $value
-                    );
-                }*/
-
-                $editedMetadata = [];
-                foreach($metadata as $val) {
-                    $v = $val['@value'];
-                    // Replace comma by ' - ' for date ranges
-                    if (preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $v)) {
-                        $v = str_replace(' ', '', $v);
-                        $v = str_replace(',', ' - ', $v);
-
-                        // Remove date and month when the exact date is clearly unknown
-                        if (preg_match('/^[0-9]{3,4}\-01\-01 \- [0-9]{3,4}\-12\-31$/', $v)) {
-                            $v = str_replace('-01-01', '', $v);
-                            $v = str_replace('-12-31', '', $v);
-                        }
-
-                        // Remove latest date if it is the same as the earliest date
-                        $dashIndex = strpos($v, ' - ');
-                        $earliestDate = substr($v, 0, $dashIndex);
-                        $latestDate = substr($v, $dashIndex + 3);
-                        if ($earliestDate === $latestDate) {
-                            $v = $earliestDate;
-                        }
-                    }
-                    $editedMetadata[] = array('@language' => $val['@language'], '@value' => $v);
-                }
-
+            foreach($metadata as $key => $metadata_) {
                 $manifestMetadata[] = array(
-                    'label' => $key,
-                    'value' => $editedMetadata
+                    'label' => $metadata_['label'],
+                    'value' => $metadata_['value']
                 );
             }
 
