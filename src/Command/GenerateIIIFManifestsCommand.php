@@ -354,7 +354,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         if(empty($label) || $language === 'en') {
                             $label = $value;
                         }
-                        $labels[] = array('@language' => $language, '@value' => $value);
+                        $labels[$language] = array('@language' => $language, '@value' => $value);
                     }
                 }
                 if ($d->getName() == $this->attributionFieldV2) {
@@ -387,7 +387,14 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             if(empty($labels)) {
                 $data['label'] = $label;
             } else {
-                $data['label'] = $labels;
+                $data['label'] = array();
+                foreach($this->labelFieldsV2 as $language => $fieldName) {
+                    foreach($labels as $lang => $label) {
+                        if($lang === $language) {
+                            $data['label'][] = $label;
+                        }
+                    }
+                }
             }
             if(empty($attributions)) {
                 $data['attribution'] = $attribution;
@@ -414,13 +421,20 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                         $metadata[$fieldName]['label'][] = array('@language' => $language, '@value' => $this->metadataFieldsV3[$fieldName]['label'][$language]);
                         $metadata[$fieldName]['value'][] = array('@language' => $language, '@value' => $rsData[$fieldData]);
+                    } else {
+                        $metadata[$fieldName]['label'][] = array('@language' => $language, '@value' => $this->metadataFieldsV3[$fieldName]['label'][$language]);
+                        $metadata[$fieldName]['value'][] = array('@language' => $language, '@value' => '');
                     }
                 }
                 if(!empty($fallbackValue)) {
                     foreach ($field['value'] as $language => $fieldData) {
                         if (!array_key_exists($fieldData, $rsData)) {
-                            $metadata[$fieldName]['label'][] = array('@language' => $language, '@value' => $this->metadataFieldsV3[$fieldName]['label'][$language]);
-                            $metadata[$fieldName]['value'][] = array('@language' => $language, '@value' => $fallbackValue);
+                            for($i = 0; $i < count($metadata[$fieldName]['value']); $i++) {
+                                if($metadata[$fieldName]['value'][$i]['@language'] === $language) {
+                                    $metadata[$fieldName]['value'][$i]['@value'] = $fallbackValue;
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
@@ -791,10 +805,12 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
             foreach ($this->labelV3 as $language => $field) {
                 if (array_key_exists($field, $rsData)) {
-                    if ($label === '') {
+                    if (empty($label)) {
                         $label = $rsData[$field];
                     }
                     $data['label'][$language] = array($rsData[$field]);
+                } else {
+                    $data['label'][$language] = array('');
                 }
             }
             //Ensure there is always a label for each specified language
@@ -846,6 +862,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                     $data['required_statement']['value'][$language] = array($val . $extra);
+                } else {
+                    $data['required_statement']['value'][$language] = array('');
                 }
             }
             foreach ($this->requiredStatementV3['value'] as $language => $field) {
@@ -873,6 +891,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                         $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
                         $metadata[$fieldName]['value'][$language] = array($rsData[$fieldData]);
+                    } else {
+                        $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
+                        $metadata[$fieldName]['value'][$language] = array('');
                     }
                 }
                 if(!empty($fallbackValue)) {
@@ -926,20 +947,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
-            $fieldName = 'manifest_url';
-            foreach($this->manifestLanguages as $language) {
-                if (!array_key_exists($fieldName, $metadata)) {
-                    $metadata[$fieldName] = array();
-                }
-                if (!array_key_exists('label', $metadata[$fieldName])) {
-                    $metadata[$fieldName]['label'] = array();
-                }
-                if (!array_key_exists('value', $metadata[$fieldName])) {
-                    $metadata[$fieldName]['value'] = array();
-                }
-                $metadata[$fieldName]['label'][$language] = array('Manifest URL');
-                $metadata[$fieldName]['value'][$language] = array('<a href="' . $manifestId . '">' . $manifestId . '</a>');
-            }
+            $metadata['manifest_url']['label']['none'] = array('Manifest URL');
+            $metadata['manifest_url']['value']['none'] = array('<a href="' . $manifestId . '">' . $manifestId . '</a>');
 
             foreach ($metadata as $fieldName => $field) {
                 $data['metadata'][] = $field;
