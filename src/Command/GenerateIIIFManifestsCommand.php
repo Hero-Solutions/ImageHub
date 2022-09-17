@@ -388,9 +388,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $data['label'] = $label;
             } else {
                 $allSame = true;
-                foreach($labels as $lang => $label) {
-                    $val = $label['@value'];
-                    foreach($labels as $l => $lab) {
+                foreach($labels as $language => $label_) {
+                    $val = $label_['@value'];
+                    foreach($labels as $lang => $lab) {
                         if($lab['@value'] !== $val) {
                             $allSame = false;
                             break;
