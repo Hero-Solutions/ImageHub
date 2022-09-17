@@ -489,7 +489,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                 }
-                $creditlines['label'][] = array('@language' => $language, '@value' => $this->requiredStatementV3['label'][$language])
+                $creditlines['label'][] = array('@language' => $language, '@value' => $this->requiredStatementV3['label'][$language]);
                 $creditlines['value'][] = array('@language' => $language, '@value' => $val . $extra);
             }
             $metadata['required_statement'] = $creditlines;
