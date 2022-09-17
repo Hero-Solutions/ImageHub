@@ -597,7 +597,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
             $manifestId = $this->serviceUrl . '2/' . $resourceId . '/manifest.json';
             $manifestMetadata[] = array(
-                'label' => 'Manifest',
+                'label' => 'IIIF manifest',
                 'value' => '<a href="' . $manifestId . '">' . $manifestId . '</a>'
             );
 
@@ -977,7 +977,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
-            $metadata['manifest_url']['label']['none'] = array('Manifest URL');
+            $metadata['manifest_url']['label']['none'] = array('IIIF manifest');
             $metadata['manifest_url']['value']['none'] = array('<a href="' . $manifestId . '">' . $manifestId . '</a>');
 
             $data['metadata'] = [];
