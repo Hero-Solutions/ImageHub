@@ -612,8 +612,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             // Generate the whole manifest
             $manifest = array(
                 '@context'         => 'http://iiif.io/api/presentation/2/context.json',
-                '@type'            => 'sc:Manifest',
                 '@id'              => $manifestId,
+                '@type'            => 'sc:Manifest',
                 'label'            => $data['label'],
                 'attribution'      => $data['attribution'],
                 'metadata'         => $manifestMetadata,
