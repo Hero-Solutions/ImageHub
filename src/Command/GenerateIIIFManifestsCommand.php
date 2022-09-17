@@ -1042,7 +1042,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'metadata'          => !empty($data['metadata']) ? $data['metadata'] : new stdClass(),
                 'requiredStatement' => !empty($data['required_statement']) ? $data['required_statement'] : new stdClass(),
                 'viewingDirection'  => 'left-to-right',
-                'behavior'          => strtolower($rsData['iiifbehavior']),
+                'behavior'          => [ strtolower($rsData['iiifbehavior']) ],
                 'items'             => $canvases
             );
             if($rights !== '') {
