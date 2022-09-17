@@ -134,6 +134,9 @@ parameters:
     iiif2_labels:
       en: 'en-titleartwork'
       nl: 'nl-titleartwork'
+    iiif2_license_labels:
+      en: 'License'
+      nl: 'Licentie'
     iiif2_attribution: 'publisher'
 
     publishers:

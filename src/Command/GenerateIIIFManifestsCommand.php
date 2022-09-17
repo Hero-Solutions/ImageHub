@@ -28,6 +28,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $manifestLanguages;
 
     private $labelFieldsV2;
+    private $licenseLabelsV2;
     private $attributionFieldV2;
 
     private $publishers;
@@ -82,6 +83,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
         $this->manifestLanguages = $this->container->getParameter('manifest_languages');
         $this->labelFieldsV2 = $this->container->getParameter('iiif2_labels');
+        $this->licenseLabelsV2 = $this->container->getParameter('iiif2_license_labels');
         $this->attributionFieldV2 = $this->container->getParameter('iiif2_attribution');
 
         $this->publishers = $this->container->getParameter('publishers');
@@ -491,6 +493,27 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $creditlines['value'][] = array('@language' => $language, '@value' => $val . $extra);
             }
             $metadata['required_statement'] = $creditlines;
+
+            if(array_key_exists($this->rightsSourceV3, $rsData)) {
+                $rightsSource = $rsData[$this->rightsSourceV3];
+                if($rightsSource === 'CC0') {
+                    $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
+                } else if($rightsSource === 'Public domain / CC-PDM') {
+                    $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
+                } else if(strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
+                    $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
+                } else {
+                    $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                }
+            } else {
+                $rights = 'https://rightsstatements.org/page/UND/1.0/';
+            }
+            $rightsLabels = [];
+            foreach($this->licenseLabelsV2 as $language => $label) {
+                $rightsLabels[] = array('@language' => $language, '@value' => $label);
+            }
+            $metadata['rightsstatement']['label'] = $rightsLabels;
+            $metadata['rightsstatement']['value'] = '<a href="' . $rights . '">' . $rights . '</a>';
 
             // Fill in (multilingual) manifest data
             $manifestMetadata = array();
