@@ -46,7 +46,15 @@ class StringUtil
             'Foto: ',
             'Foto:',
             'foto: ',
-            'foto:'
+            'foto:',
+            'Photographer: ',
+            'Photographer:',
+            'photographer: ',
+            'photographer:',
+            'Photo: ',
+            'Photo:',
+            'photo: ',
+            'photo:'
         );
         foreach($filters as $filter) {
             $name = str_replace($filter, '', $name);
