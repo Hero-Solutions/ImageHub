@@ -522,7 +522,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $rights = 'https://rightsstatements.org/page/UND/1.0/';
             }
 
-            $creditlines = array('label' => array(), 'value' => array());
+            $creditlines = array();
             foreach ($this->requiredStatementV3['value'] as $language => $field) {
                 $val = $publisher;
                 $extra = $this->requiredStatementV3['extra_info'][$language];
@@ -537,8 +537,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                 }
-                $creditlines['label'][] = array('@language' => $language, '@value' => $this->requiredStatementV3['label'][$language]);
-                $creditlines['value'][] = array('@language' => $language, '@value' => $val . $extra);
+                $creditlines[] = array('@language' => $language, '@value' => $val . $extra);
             }
 
             // Fill in (multilingual) manifest data
