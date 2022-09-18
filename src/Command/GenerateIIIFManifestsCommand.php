@@ -1068,11 +1068,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     ));
                 }
                 $thumbnail = array(array(
-                    'id'      => $serviceId,
+                    'id'      => $serviceId . '/full/400,/0/default.jpg',
                     'type'    => 'Image',
                     'format'  => 'image/jpeg',
-                    'height'  => $this->imageData[$relatedRef]['height'],
-                    'width'   => $this->imageData[$relatedRef]['width'],
                     'service' => $service
                 ));
                 $canvases[] = array(
