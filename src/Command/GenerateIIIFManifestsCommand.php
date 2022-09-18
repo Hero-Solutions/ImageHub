@@ -1021,19 +1021,17 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $imageUrl = $this->imageData[$relatedRef]['image_url'];
                 $publicUse = $this->imageData[$relatedRef]['public_use'];
 
-                if( strpos($serviceId, '/iiif/2/') !== false) {
+                if(strpos($serviceId, '/iiif/2/') !== false) {
                     $service = array(array(
-                        '@context' => 'http://iiif.io/api/image/2/context.json',
                         '@id'      => $serviceId,
                         '@type'    => 'ImageService2',
-                        'profile'  => 'http://iiif.io/api/image/2/level2.json'
+                        'profile'  => 'http://iiif.io/api/image/2/level1.json'
                     ));
                 } else {
                     $service = array(array(
-                        '@context' => 'http://iiif.io/api/image/3/context.json',
                         '@id'      => $serviceId,
                         '@type'    => 'ImageService3',
-                        'profile'  => 'http://iiif.io/api/image/3/level2.json'
+                        'profile'  => 'http://iiif.io/api/image/3/level1.json'
                     ));
                 }
                 $body = array(
@@ -1056,13 +1054,22 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'type'  => 'AnnotationPage',
                     'items' => array($items)
                 );
+                $thumbnail = array(
+                    'id'      => $serviceId,
+                    'type'    => 'Image',
+                    'format'  => 'image/jpeg',
+                    'height'  => $this->imageData[$relatedRef]['height'],
+                    'width'   => $this->imageData[$relatedRef]['width'],
+                    'service' => $service
+                );
                 $canvases[] = array(
-                    'id'     => $canvasId,
-                    'type'   => 'Canvas',
-                    'label'  => array('none' => array(strval($index))),
-                    'height' => $this->imageData[$relatedRef]['height'],
-                    'width'  => $this->imageData[$relatedRef]['width'],
-                    'items'  => array($annotationPage)
+                    'id'        => $canvasId,
+                    'type'      => 'Canvas',
+                    'label'     => array('none' => array(strval($index))),
+                    'height'    => $this->imageData[$relatedRef]['height'],
+                    'width'     => $this->imageData[$relatedRef]['width'],
+                    'items'     => array($annotationPage),
+                    'thumbnail' => $thumbnail
                 );
 
                 if ($isStartCanvas && $startCanvas == null) {
