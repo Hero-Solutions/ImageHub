@@ -1054,6 +1054,19 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'type'  => 'AnnotationPage',
                     'items' => array($items)
                 );
+                if(strpos($serviceId, '/iiif/2/') !== false) {
+                    $service = array(array(
+                        'id'      => $serviceId,
+                        '@type'    => 'ImageService2',
+                        'profile'  => 'http://iiif.io/api/image/2/level2.json'
+                    ));
+                } else {
+                    $service = array(array(
+                        'id'      => $serviceId,
+                        '@type'    => 'ImageService3',
+                        'profile'  => 'http://iiif.io/api/image/3/level2.json'
+                    ));
+                }
                 $thumbnail = array(
                     'id'      => $serviceId . '/full/400,/0/default.jpg',
                     'type'    => 'Image',
