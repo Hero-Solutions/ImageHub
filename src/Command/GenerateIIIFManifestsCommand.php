@@ -1024,7 +1024,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $service = array(array(
                     '@id'      => $serviceId,
                     '@type'    => strpos($serviceId, '/iiif/2/') !== false ? 'ImageService2' : 'ImageService3',
-                    'profile' => 'level2'
+                    'profile' => 'http://iiif.io/api/image/2/level2.json'
                 ));
                 $body = array(
                     'id'      => $imageUrl,
