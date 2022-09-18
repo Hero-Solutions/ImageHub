@@ -1071,6 +1071,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'id'      => $serviceId,
                     'type'    => 'Image',
                     'format'  => 'image/jpeg',
+                    'height'  => $this->imageData[$relatedRef]['height'],
+                    'width'   => $this->imageData[$relatedRef]['width'],
                     'service' => $service
                 ));
                 $canvases[] = array(
