@@ -1049,7 +1049,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $canvases[] = array(
                     'id'     => $canvasId,
                     'type'   => 'Canvas',
-                    'label'  => array('none' => strval($index)),
+                    'label'  => array('none' => array(strval($index))),
                     'height' => $this->imageData[$relatedRef]['height'],
                     'width'  => $this->imageData[$relatedRef]['width'],
                     'items'  => array($annotationPage)
