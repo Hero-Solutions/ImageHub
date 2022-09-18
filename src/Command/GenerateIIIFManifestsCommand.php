@@ -1036,7 +1036,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'type'    => 'Image',
                     'format'  => 'image/jpeg',
                     'service' => $service,
-                    'thumbnail' => $thumbnail,
                     'height'  => $this->imageData[$relatedRef]['height'],
                     'width'   => $this->imageData[$relatedRef]['width']
                 );
@@ -1044,6 +1043,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'id'         => $this->imageData[$relatedRef]['canvas_base'] . '3/annotation/' . $index . '-image',
                     'type'       => 'Annotation',
                     'motivation' => 'painting',
+                    'thumbnail'  => $thumbnail,
                     'body'       => $body,
                     'target'     => $canvasId
                 );
