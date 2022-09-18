@@ -1067,14 +1067,14 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         'profile'  => 'http://iiif.io/api/image/3/level2.json'
                     ));
                 }
-                $thumbnail = array(
+                $thumbnail = array(array(
                     'id'      => $serviceId . '/full/full/0/default.jpg',
                     'type'    => 'Image',
                     'format'  => 'image/jpeg',
                     'height'  => $this->imageData[$relatedRef]['height'],
                     'width'   => $this->imageData[$relatedRef]['width'],
                     'service' => $service
-                );
+                ));
                 $canvases[] = array(
                     'id'        => $canvasId,
                     'type'      => 'Canvas',
