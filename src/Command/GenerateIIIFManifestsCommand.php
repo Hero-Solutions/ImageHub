@@ -1026,11 +1026,17 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'type'    => strpos($serviceId, '/iiif/2/') !== false ? 'ImageService2' : 'ImageService3',
                     'profile' => 'level2'
                 ));
+                $thumbnail = array(array(
+                    'id' => $serviceId . '/full/90,/0/default.jpg',
+                    'type' => 'Image',
+                    'format' => 'image/jpeg'
+                ));
                 $body = array(
                     'id'      => $imageUrl,
                     'type'    => 'Image',
                     'format'  => 'image/jpeg',
                     'service' => $service,
+                    'thumbnail' => $thumbnail,
                     'height'  => $this->imageData[$relatedRef]['height'],
                     'width'   => $this->imageData[$relatedRef]['width']
                 );
