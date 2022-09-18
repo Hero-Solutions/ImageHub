@@ -1021,12 +1021,18 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $imageUrl = $this->imageData[$relatedRef]['image_url'];
                 $publicUse = $this->imageData[$relatedRef]['public_use'];
 
+                $service = array(
+                    'id'      => $serviceId,
+                    'type'    => strpos($serviceId, '/iiif/2/') !== false ? 'ImageService2' : 'ImageService3',
+                    'profile' => 'level2'
+                );
                 $body = array(
-                    'id'     => $imageUrl,
-                    'type'   => 'Image',
-                    'format' => 'image/jpeg',
-                    'height' => $this->imageData[$relatedRef]['height'],
-                    'width'  => $this->imageData[$relatedRef]['width']
+                    'id'      => $imageUrl,
+                    'type'    => 'Image',
+                    'format'  => 'image/jpeg',
+                    'service' => $service,
+                    'height'  => $this->imageData[$relatedRef]['height'],
+                    'width'   => $this->imageData[$relatedRef]['width']
                 );
                 $items = array(
                     'id'         => $this->imageData[$relatedRef]['canvas_base'] . '3/annotation/' . $index . '-image',
