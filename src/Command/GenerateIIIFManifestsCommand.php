@@ -576,7 +576,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $isStartCanvas = $relatedRef == $resourceId;
 
                 $index++;
-                $canvasId = $this->imageData[$relatedRef]['canvas_base'] . $resourceId . '/2/canvas/' . $index . '.json';
+                $canvasId = $this->imageData[$relatedRef]['canvas_base'] . '2/' . $resourceId . '/canvas/' . $index . '.json';
 //                $serviceId = $this->serviceUrl . $relatedRef;
                 $serviceId = $this->imageData[$relatedRef]['service_id'];
                 $imageUrl = $this->imageData[$relatedRef]['image_url'];
@@ -1013,7 +1013,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $isStartCanvas = $relatedRef == $resourceId;
 
                 $index++;
-                $canvasId = $this->imageData[$relatedRef]['canvas_base'] . $resourceId . '/3/canvas/' . $index;
+                $canvasId = $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/canvas/' . $index;
                 if($index == 1) {
                     $publicUse = $this->imageData[$relatedRef]['public_use'];
                 }
@@ -1043,7 +1043,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'width'   => $this->imageData[$relatedRef]['width']
                 );
                 $items = array(
-                    'id'         => $this->imageData[$relatedRef]['canvas_base'] . $resourceId . '/3/annotation/' . $index . '-image',
+                    'id'         => $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/annotation/' . $index . '-image',
                     'type'       => 'Annotation',
                     'motivation' => 'painting',
                     'body'       => $body,
