@@ -40,6 +40,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
     private $resourceSpace;
 
     private $datahubRecordDb;
+    private $datahubRecordIds;
     private $relations = array();
 
     protected function configure()
@@ -763,7 +764,11 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             $this->datahubRecordDb = new SQLite3('/tmp/import.datahub_record_ids.sqlite');
             $this->datahubRecordDb->exec('DROP TABLE IF EXISTS data');
             $this->datahubRecordDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
+            $this->datahubRecordIds = [];
         }
-        $this->datahubRecordDb->exec('INSERT INTO data(data, id) VALUES(\'{"record_id":"' . $recordId . '"}\', \'' . $sourceinvnr . '\')');
+        if(!array_key_exists($sourceinvnr, $this->datahubRecordIds)) {
+            $this->datahubRecordIds[$sourceinvnr] = $sourceinvnr;
+            $this->datahubRecordDb->exec('INSERT INTO data(data, id) VALUES(\'{"record_id":"' . $recordId . '"}\', \'' . $sourceinvnr . '\')');
+        }
     }
 }
