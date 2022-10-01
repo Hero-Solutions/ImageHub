@@ -555,6 +555,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $startCanvas = null;
             $thumbnail = null;
             $isStartCanvas = false;
+            $publicUse = true;
 
             if(!array_key_exists('related_resources', $data)) {
                 $data['related_resources'] = array();
@@ -580,7 +581,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 //                $serviceId = $this->serviceUrl . $relatedRef;
                 $serviceId = $this->imageData[$relatedRef]['service_id'];
                 $imageUrl = $this->imageData[$relatedRef]['image_url'];
-                $publicUse = $this->imageData[$relatedRef]['public_use'];
+                if($index === 1) {
+                    $publicUse = $this->imageData[$relatedRef]['public_use'];
+                }
                 if($isStartCanvas && $startCanvas == null) {
                     $startCanvas = $canvasId;
                     $thumbnail = $serviceId;
@@ -1014,12 +1017,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
                 $index++;
                 $canvasId = $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/canvas/' . $index;
-                if($index == 1) {
+                if($index === 1) {
                     $publicUse = $this->imageData[$relatedRef]['public_use'];
                 }
                 $serviceId = $this->imageData[$relatedRef]['service_id'];
                 $imageUrl = $this->imageData[$relatedRef]['image_url'];
-                $publicUse = $this->imageData[$relatedRef]['public_use'];
 
                 if(strpos($serviceId, '/iiif/2/') !== false) {
                     $service = array(array(
