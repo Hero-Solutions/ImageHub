@@ -159,6 +159,8 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
         $rsIdsToInventoryNumbers = array();
 
+        $resourceKeys = [];
+
         $total = count($resources);
         $n = 0;
         foreach($resources as $resource) {
@@ -169,27 +171,38 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
             $inventoryNumber = $rsData['sourceinvnr'];
 
-            $resourceData = new ResourceData();
             if(!array_key_exists('sourceinvnr', $this->rsFieldsToPersist)) {
-                $resourceData->setId($resourceId);
-                $resourceData->setName('sourceinvnr');
-                $resourceData->setValue($inventoryNumber);
-                $em->persist($resourceData);
+                $key = $resourceId . '@sourceinvnr';
+                if(!array_key_exists($key, $resourceKeys)) {
+                    $resourceData = new ResourceData();
+                    $resourceData->setId($resourceId);
+                    $resourceData->setName('sourceinvnr');
+                    $resourceData->setValue($inventoryNumber);
+                    $em->persist($resourceData);
+                    $resourceKeys[$key] = $key;
+                }
             }
 
             $isPublic = $this->resourceSpace->isPublicUse($rsData, $publicUse);
-            $resourceData = new ResourceData();
-            $resourceData->setId($resourceId);
-            $resourceData->setName('is_public');
-            $resourceData->setValue($isPublic ? '1' : '0');
-            $em->persist($resourceData);
+            $key = $resourceId . '@is_public';
+            if(!array_key_exists($key, $resourceKeys)) {
+                $resourceData = new ResourceData();
+                $resourceData->setId($resourceId);
+                $resourceData->setName('is_public');
+                $resourceData->setValue($isPublic ? '1' : '0');
+                $em->persist($resourceData);
+                $resourceKeys[$key] = $key;
+            }
 
             $isRecommendedForPub = $this->resourceSpace->isRecommendedForPublication($rsData, $recommendedForPublication);
-            $resourceData = new ResourceData();
-            $resourceData->setId($resourceId);
-            $resourceData->setName('is_recommended_for_pub');
-            $resourceData->setValue($isRecommendedForPub ? '1' : '0');
-            $em->persist($resourceData);
+            $key = $resourceId . '@is_recommended_for_pub';
+            if(!array_key_exists($key, $resourceKeys)) {
+                $resourceData = new ResourceData();
+                $resourceData->setId($resourceId);
+                $resourceData->setName('is_recommended_for_pub');
+                $resourceData->setValue($isRecommendedForPub ? '1' : '0');
+                $em->persist($resourceData);
+            }
 
             $dhData = array();
             if (!empty($inventoryNumber)) {
@@ -210,11 +223,15 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                         }
                         $recordIdsToResourceIds[$recordId][] = $resourceId;
                         $recordIds[$resourceId] = $recordId;
-                        $resourceData = new ResourceData();
-                        $resourceData->setId($resourceId);
-                        $resourceData->setName('dh_record_id');
-                        $resourceData->setValue($recordId);
-                        $em->persist($resourceData);
+                        $key = $resourceId . '@dh_record_id';
+                        if(!array_key_exists($key, $resourceKeys)) {
+                            $resourceData = new ResourceData();
+                            $resourceData->setId($resourceId);
+                            $resourceData->setName('dh_record_id');
+                            $resourceData->setValue($recordId);
+                            $em->persist($resourceData);
+                            $resourceKeys[$key] = $key;
+                        }
                     } else {
                         $dhData[$data->getName()] = $data->getValue();
                     }
@@ -229,18 +246,23 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 $this->updateResourceSpaceFields($resourceId, $rsData, $dhData);
             }
             foreach ($this->rsFieldsToPersist as $key => $value) {
-                if (array_key_exists($key, $dhData)) {
-                    $resourceData = new ResourceData();
-                    $resourceData->setId($resourceId);
-                    $resourceData->setName($key);
-                    $resourceData->setValue($dhData[$key]);
-                    $em->persist($resourceData);
-                } else if (!empty($rsData[$key])) {
-                    $resourceData = new ResourceData();
-                    $resourceData->setId($resourceId);
-                    $resourceData->setName($key);
-                    $resourceData->setValue($rsData[$key]);
-                    $em->persist($resourceData);
+                $key_ = $resourceId . '@' . $key;
+                if(!array_key_exists($key_, $resourceKeys)) {
+                    if (array_key_exists($key, $dhData)) {
+                        $resourceData = new ResourceData();
+                        $resourceData->setId($resourceId);
+                        $resourceData->setName($key);
+                        $resourceData->setValue($dhData[$key]);
+                        $em->persist($resourceData);
+                        $resourceKeys[$key_] = $key_;
+                    } else if (!empty($rsData[$key])) {
+                        $resourceData = new ResourceData();
+                        $resourceData->setId($resourceId);
+                        $resourceData->setName($key);
+                        $resourceData->setValue($rsData[$key]);
+                        $em->persist($resourceData);
+                        $resourceKeys[$key_] = $key_;
+                    }
                 }
             }
             $n++;
@@ -338,12 +360,16 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                         }
                     }
                 }
-                $relatedResourcesObj = new ResourceData();
-                $relatedResourcesObj->setId($resourceId);
-                $relatedResourcesObj->setName('related_resources');
-                $relatedResourcesObj->setValue(implode(',', $relatedResources));
-                $em->persist($relatedResourcesObj);
-                $n++;
+                $key = $resourceId . '@related_resources';
+                if(!array_key_exists($key, $resourceKeys)) {
+                    $relatedResourcesObj = new ResourceData();
+                    $relatedResourcesObj->setId($resourceId);
+                    $relatedResourcesObj->setName('related_resources');
+                    $relatedResourcesObj->setValue(implode(',', $relatedResources));
+                    $em->persist($relatedResourcesObj);
+                    $resourceKeys[$key] = $key;
+                    $n++;
+                }
                 if($n % 20 == 0) {
                     $em->flush();
                     $em->clear();
