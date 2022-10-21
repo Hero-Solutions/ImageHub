@@ -74,11 +74,22 @@ class ResourceSpace
         }
 
         $photographer = null;
-        if(array_key_exists('credit', $data)) {
-            $photographer = StringUtil::filterPhotographer($data['credit']);
+        if(array_key_exists('creditline', $data)) {
+            $photographer = StringUtil::filterPhotographer($data['creditline']);
             if($photographer != null) {
                 if(empty($photographer)) {
                     $photographer = null;
+                }
+            }
+        }
+
+        if($photographer === null) {
+            if (array_key_exists('credit', $data)) {
+                $photographer = StringUtil::filterPhotographer($data['credit']);
+                if ($photographer != null) {
+                    if (empty($photographer)) {
+                        $photographer = null;
+                    }
                 }
             }
         }
