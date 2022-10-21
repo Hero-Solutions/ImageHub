@@ -169,8 +169,18 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
             $originalFilenames[$resourceId] = $rsData['originalfilename'];
 
-            $inventoryNumber = $rsData['sourceinvnr'];
+            $fileChecksum = $resource['file_checksum'];
+            $key = $resourceId . '@file_checksum';
+            if(!array_key_exists($key, $resourceKeys)) {
+                $resourceData = new ResourceData();
+                $resourceData->setId($resourceId);
+                $resourceData->setName('file_checksum');
+                $resourceData->setValue($fileChecksum);
+                $em->persist($resourceData);
+                $resourceKeys[$key] = $key;
+            }
 
+            $inventoryNumber = $rsData['sourceinvnr'];
             if(!array_key_exists('sourceinvnr', $this->rsFieldsToPersist)) {
                 $key = $resourceId . '@sourceinvnr';
                 if(!array_key_exists($key, $resourceKeys)) {

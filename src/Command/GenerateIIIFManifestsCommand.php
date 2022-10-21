@@ -322,6 +322,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $data['recommended_for_publication'] = false;
             $data['sourceinvnr'] = '';
             $data['iiifbehavior'] = 'individuals';
+            $data['file_checksum'] = '';
             $publisher = '';
             $rsData = [];
             foreach($rsDataRaw as $d) {
@@ -378,6 +379,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
                 if ($d->getName() == 'iiifbehavior') {
                     $data['iiifbehavior'] = strtolower($value);
+                }
+                if ($d->getName() == 'file_checksum') {
+                    $data['file_checksum'] = $value;
                 }
                 if ($d->getName() === 'publisher') {
                     $publisher = $value;
@@ -659,7 +663,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 );
 
                 if($resourceId == $this->placeholderId) {
-                    $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail);
+                    $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $data['file_checksum']);
                 }
 
                 //Add to ResourceSpace metadata (if enabled)
@@ -678,7 +682,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     if (!empty($data['sourceinvnr'])) {
                         $sourceinvnr = $data['sourceinvnr'];
                         if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
-                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail);
+                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum']);
                             $this->publicManifestsAdded[] = $sourceinvnr;
                         }
                     }
@@ -772,6 +776,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'iiifbehavior' => 'individuals'
             ];
             $publisher = '';
+            $fileChecksum = '';
 
             /* @var $d ResourceData */
             foreach ($rsDataRaw as $d) {
@@ -801,6 +806,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
                 if($d->getName() === 'publisher') {
                     $publisher = $d->getValue();
+                }
+                if($d->getName() === 'file_checksum') {
+                    $fileChecksum = $d->getValue();
                 }
                 if($d->getName() === 'related_resources') {
                     $rsData[$d->getName()] = explode(',', $value);
@@ -1155,7 +1163,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     if (!empty($rsData['sourceinvnr'])) {
                         $sourceinvnr = $rsData['sourceinvnr'];
                         if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
-                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail);
+                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum);
                             //if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
                             $this->publicManifestsAdded[] = $sourceinvnr;
                             //}
@@ -1230,13 +1238,13 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return $valid;
     }
 
-    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail)
+    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum)
     {
         if($this->manifestDb == null) {
             $this->manifestDb = new SQLite3('/tmp/import.iiif_manifests.sqlite');
             $this->manifestDb->exec('DROP TABLE IF EXISTS data');
             $this->manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         }
-        $this->manifestDb->exec('INSERT INTO data(data, id) VALUES(\'{"manifest":"' . $manifestId . '","thumbnail":"' . $thumbnail . '"}\', \'' . $sourceinvnr . '\')');
+        $this->manifestDb->exec('INSERT INTO data(data, id) VALUES(\'{"manifest":"' . $manifestId . '","thumbnail":"' . $thumbnail . '","checksum":"' . $fileChecksum . '"}\', \'' . $sourceinvnr . '\')');
     }
 }
