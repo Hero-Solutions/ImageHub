@@ -736,8 +736,8 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 $update = true;
             } else if(strpos($rsData[$key], ',') !== false) {
                 //ResourceSpace uses commas as field delimiter, so we need to split them up to compare
-                $explodeVal = array_unique(explode(',', $value));
-                $explodeRS = array_unique(explode(',', $rsData[$key]));
+                $explodeVal = array_values(array_unique(explode(',', $value)));
+                $explodeRS = array_values(array_unique(explode(',', $rsData[$key])));
                 $count = count($explodeVal);
                 if(count($explodeRS) != $count) {
                     $update = true;
