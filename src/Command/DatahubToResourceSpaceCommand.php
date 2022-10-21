@@ -746,7 +746,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                         $val = trim($explodeVal[$i]);
                         $update = true;
                         for($j = 0; $j < $count; $j++) {
-                            if($val == trim($explodeRS[$i])) {
+                            if($val == trim($explodeRS[$j])) {
                                 $update = false;
                                 break;
                             }
