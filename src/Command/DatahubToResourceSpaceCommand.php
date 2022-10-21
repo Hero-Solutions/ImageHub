@@ -743,10 +743,10 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                     $update = true;
                 } else {
                     for($i = 0; $i < $count; $i++) {
-                        $val = trim($explodeVal[$i]);
+                        $val = preg_replace('[^\x00-\x7F]', '', trim($explodeVal[$i]));
                         $update = true;
                         for($j = 0; $j < $count; $j++) {
-                            if($val == trim($explodeRS[$j])) {
+                            if($val == preg_replace('[^\x00-\x7F]', '', trim($explodeRS[$j]))) {
                                 $update = false;
                                 break;
                             }
