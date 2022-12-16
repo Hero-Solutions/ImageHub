@@ -64,7 +64,7 @@ A MySQL user is to be created with full access to these tables. The username, pa
 ### Imagehub installation
 Clone this repository:
 ```
-git clone https://github.com/kmska/ImageHub.git Imagehub
+git clone https://github.com/vlaamsekunstcollectie/ImageHub.git Imagehub
 ```
 
 Copy the .env.sample file to .env and the config/imagehub.yaml.sample file to config/imagehub.yaml. Edit any values according to your local setup in .env and config/imagehub.yaml. At the very least, the following values should be checked and edited where needed:

@@ -217,11 +217,11 @@ parameters:
             nl: '<p>De originele TIFF-bestanden van dit werk, in hoogste resolutie en met kleurencode, kunnen worden besteld bij <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). Wanneer dit beeld gebruikt wordt voor een gedrukte publicatie of een commercieel product, dan vraagt MSK Gent dat drie exemplaren worden toegestuurd naar MSK Gent, Hofbouwlaan 28, B-9000 Gent. Meer info: <a href="mailto:museum.msk@stad.gent">museum.msk@stad.gent</a>.</p>'
         Mu.ZEE, Kunstmuseum aan zee:
           translations:
-            en: Mu.ZEE, Art museum at the seaside
+            en: Mu.ZEE, Art Museum by the Sea
             nl: Mu.ZEE, Kunstmuseum aan zee
           creditline:
-            en: '<p>The original TIFF files of this work, in highest resolution and color-coded, can be ordered from <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). If this image is used for a printed publication or a commercial product, Mu.ZEE would appreciate having three copies sent to Mu.ZEE, Romestraat 11, 8400 Oostende, Belgium. More information: <a href="mailto:info@muzee.be">info@muzee.be</a>.</p>'
-            nl: '<p>De originele TIFF-bestanden van dit werk, in hoogste resolutie en met kleurencode, kunnen worden besteld bij <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). Wanneer dit beeld gebruikt wordt voor een gedrukte publicatie of een commercieel product, dan vraagt Mu.ZEE dat drie exemplaren worden toegestuurd naar Mu.ZEE, Romestraat 11, 8400 Oostende. Meer info: <a href="mailto:info@muzee.be">info@muzee.be</a>.</p>'
+            en: '<p>The original TIFF files of this work, in highest resolution and color-coded, can be ordered from <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). If this image is used for a printed publication or a commercial product, Mu.ZEE would appreciate having three copies sent to Mu.ZEE, Romestraat 11, 8400 Oostende, Belgium. More information: <a href="mailto:collectie@muzee.be">collectie@muzee.be</a>.</p>'
+            nl: '<p>De originele TIFF-bestanden van dit werk, in hoogste resolutie en met kleurencode, kunnen worden besteld bij <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). Wanneer dit beeld gebruikt wordt voor een gedrukte publicatie of een commercieel product, dan vraagt Mu.ZEE dat drie exemplaren worden toegestuurd naar Mu.ZEE, Romestraat 11, 8400 Oostende. Meer info: <a href="mailto:collectie@muzee.be">collectie@muzee.be</a>.</p>'
         Musea Brugge:
           translations:
             en: Musea Bruges

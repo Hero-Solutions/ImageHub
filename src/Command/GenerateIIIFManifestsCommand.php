@@ -47,7 +47,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $createTopLevelCollection;
     private $resourceSpaceManifestField;
 
-    private $manifestDb;
+    private $manifestsToStore = [];
     private $placeholderId;
 
     protected function configure()
@@ -147,6 +147,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         ksort($this->imageData);
 
         $this->generateAndStoreManifests($em);
+        $this->storeAllManifestsInSqlite();
 
         if($this->createTopLevelCollection && file_exists('/tmp/import.iiif_manifests.sqlite')) {
             rename('/tmp/import.iiif_manifests.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.iiif_manifests.sqlite');
@@ -324,6 +325,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $data['iiifbehavior'] = 'individuals';
             $data['file_checksum'] = '';
             $publisher = '';
+            $iiifSortNumber = -1;
             $rsData = [];
             foreach($rsDataRaw as $d) {
                 $value = $d->getValue();
@@ -385,6 +387,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
                 if ($d->getName() === 'publisher') {
                     $publisher = $value;
+                }
+                if ($d->getName() === 'iiif_sort_number') {
+                    $iiifSortNumber = intval($value);
                 }
                 $rsData[$d->getName()] = $value;
             }
@@ -513,7 +518,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
             if(array_key_exists($this->rightsSourceV3, $rsData)) {
                 $rightsSource = $rsData[$this->rightsSourceV3];
-                if($rightsSource === 'CC0') {
+                if(strpos($rightsSource, 'http://creativecommons.org/publicdomain/mark/1.0/') !== false) {
+                    $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
+                } else if($rightsSource === 'CC0') {
                     $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
                 } else if($rightsSource === 'Public domain / CC-PDM') {
                     $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
@@ -663,7 +670,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 );
 
                 if($resourceId == $this->placeholderId) {
-                    $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $data['file_checksum']);
+                    $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
                 }
 
                 //Add to ResourceSpace metadata (if enabled)
@@ -682,7 +689,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     if (!empty($data['sourceinvnr'])) {
                         $sourceinvnr = $data['sourceinvnr'];
                         if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
-                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum']);
+                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
                             $this->publicManifestsAdded[] = $sourceinvnr;
                         }
                     }
@@ -777,6 +784,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             ];
             $publisher = '';
             $fileChecksum = '';
+            $iiifSortNumber = -1;
 
             /* @var $d ResourceData */
             foreach ($rsDataRaw as $d) {
@@ -805,12 +813,14 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                 }
                 if($d->getName() === 'publisher') {
-                    $publisher = $d->getValue();
+                    $publisher = $value;
                 }
                 if($d->getName() === 'file_checksum') {
-                    $fileChecksum = $d->getValue();
+                    $fileChecksum = $value;
                 }
-                if($d->getName() === 'related_resources') {
+                if($d->getName() === 'iiif_sort_number') {
+                    $iiifSortNumber = intval($value);
+                } else if($d->getName() === 'related_resources') {
                     $rsData[$d->getName()] = explode(',', $value);
                 } else if($d->getName() == 'is_recommended_for_pub') {
                     $rsData['recommended_for_publication'] = $d->getValue() === '1';
@@ -1147,6 +1157,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'label' => [ 'en' => [ $label ]]
                 );
 
+                if($resourceId == $this->placeholderId) {
+                    $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
+                }
+
                 //Add to ResourceSpace metadata (if enabled)
                 if ($storeInLido && $this->resourceSpaceManifestField !== '') {
                     $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
@@ -1163,7 +1177,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     if (!empty($rsData['sourceinvnr'])) {
                         $sourceinvnr = $rsData['sourceinvnr'];
                         if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
-                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum);
+                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
                             //if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
                             $this->publicManifestsAdded[] = $sourceinvnr;
                             //}
@@ -1238,13 +1252,35 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return $valid;
     }
 
-    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum)
+    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber)
     {
-        if($this->manifestDb == null) {
-            $this->manifestDb = new SQLite3('/tmp/import.iiif_manifests.sqlite');
-            $this->manifestDb->exec('DROP TABLE IF EXISTS data');
-            $this->manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
+        $store = false;
+        if (!array_key_exists($sourceinvnr, $this->manifestsToStore)) {
+            $store = true;
+        } else {
+            $existingSortNumber = $this->manifestsToStore[$sourceinvnr]['iiif_sort_number'];
+            if ($iiifSortNumber !== -1 && ($existingSortNumber === -1 || $iiifSortNumber < $existingSortNumber)) {
+                $store = true;
+            }
         }
-        $this->manifestDb->exec('INSERT INTO data(data, id) VALUES(\'{"manifest":"' . $manifestId . '","thumbnail":"' . $thumbnail . '","checksum":"' . $fileChecksum . '"}\', \'' . $sourceinvnr . '\')');
+
+        if ($store) {
+            $this->manifestsToStore[$sourceinvnr] = [
+                'iiif_sort_number' => $iiifSortNumber,
+                'manifest' => $manifestId,
+                'thumbnail' => $thumbnail,
+                'checksum' => $fileChecksum
+            ];
+        }
+    }
+
+    private function storeAllManifestsInSqlite()
+    {
+        $manifestDb = new SQLite3('/tmp/import.iiif_manifests.sqlite');
+        $manifestDb->exec('DROP TABLE IF EXISTS data');
+        $manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
+        foreach($this->manifestsToStore as $sourceinvnr => $manifestData) {
+            $manifestDb->exec('INSERT INTO data(data, id) VALUES(\'{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '"}\', \'' . $sourceinvnr . '\')');
+        }
     }
 }

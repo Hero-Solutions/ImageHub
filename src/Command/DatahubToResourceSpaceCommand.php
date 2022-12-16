@@ -251,6 +251,11 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 $index = $this->resourceSpace->getIIIFSortNumber($rsData, $iiifSortNumber);
                 if ($index > -1) {
                     $resourceSpaceSortNumbers[$resourceId] = $index;
+                    $resourceData = new ResourceData();
+                    $resourceData->setId($resourceId);
+                    $resourceData->setName('iiif_sort_number');
+                    $resourceData->setValue($index);
+                    $em->persist($resourceData);
                 }
                 $this->resourceSpace->generateCreditLines($this->creditLineDefinition, $rsData, $dhData);
                 $this->updateResourceSpaceFields($resourceId, $rsData, $dhData);
