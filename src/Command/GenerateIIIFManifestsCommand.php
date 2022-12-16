@@ -39,7 +39,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
     private $resourceSpace;
     private $imageData;
-    private $publicManifestsAdded;
 
     private $iiifVersions;
     private $mainIiifVersion;
@@ -118,7 +117,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             return;
         }
         $this->imageData = array();
-        $this->publicManifestsAdded = array();
 
         $this->publicUse = $this->container->getParameter('public_use');
         $em = $this->container->get('doctrine')->getManager();
@@ -688,9 +686,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     // Update the LIDO data to include the manifest and thumbnail
                     if (!empty($data['sourceinvnr'])) {
                         $sourceinvnr = $data['sourceinvnr'];
-                        if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
+                        if ($publicUse) {
                             $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
-                            $this->publicManifestsAdded[] = $sourceinvnr;
                         }
                     }
                 }
@@ -1176,11 +1173,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     // Update the LIDO data to include the manifest and thumbnail
                     if (!empty($rsData['sourceinvnr'])) {
                         $sourceinvnr = $rsData['sourceinvnr'];
-                        if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
+                        if ($publicUse) {
                             $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
-                            //if ($publicUse && !in_array($sourceinvnr, $this->publicManifestsAdded)) {
-                            $this->publicManifestsAdded[] = $sourceinvnr;
-                            //}
                         }
                     }
                 }
