@@ -24,6 +24,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $cantaloupeUrl;
     private $cantaloupeCurlOpts;
     private $publicUse;
+    private $oneManifestPerObject;
 
     private $manifestLanguages;
 
@@ -74,6 +75,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->verbose = $input->getOption('verbose');
+
+        $this->oneManifestPerObject = $this->container->getParameter('one_manifest_per_object');
 
         $this->iiifVersions = $this->container->getParameter('iiif_versions');
         $this->mainIiifVersion = $this->container->getParameter('main_iiif_version');
@@ -1248,23 +1251,42 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
     private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber)
     {
-        $store = false;
-        if (!array_key_exists($sourceinvnr, $this->manifestsToStore)) {
-            $store = true;
-        } else {
-            $existingSortNumber = $this->manifestsToStore[$sourceinvnr]['iiif_sort_number'];
-            if ($iiifSortNumber !== -1 && ($existingSortNumber === -1 || $iiifSortNumber < $existingSortNumber)) {
+        if($this->oneManifestPerObject) {
+            $store = false;
+            if (!array_key_exists($sourceinvnr, $this->manifestsToStore)) {
                 $store = true;
+            } else {
+                $existingSortNumber = $this->manifestsToStore[$sourceinvnr]['iiif_sort_number'];
+                if ($iiifSortNumber !== -1 && ($existingSortNumber === -1 || $iiifSortNumber < $existingSortNumber)) {
+                    $store = true;
+                }
             }
-        }
 
-        if ($store) {
-            $this->manifestsToStore[$sourceinvnr] = [
+            if ($store) {
+                $this->manifestsToStore[$sourceinvnr] = [
+                    'iiif_sort_number' => $iiifSortNumber,
+                    'manifest' => $manifestId,
+                    'thumbnail' => $thumbnail,
+                    'checksum' => $fileChecksum
+                ];
+            }
+        } else {
+            if (!array_key_exists($sourceinvnr, $this->manifestsToStore)) {
+                $this->manifestsToStore[$sourceinvnr] = [];
+            }
+            if($iiifSortNumber === -1) {
+                $iiifSortNumber = 900000000;
+            }
+            while(array_key_exists($iiifSortNumber, $this->manifestsToStore[$sourceinvnr])) {
+                $iiifSortNumber++;
+            }
+            $this->manifestsToStore[$sourceinvnr][$iiifSortNumber] = [
                 'iiif_sort_number' => $iiifSortNumber,
                 'manifest' => $manifestId,
                 'thumbnail' => $thumbnail,
                 'checksum' => $fileChecksum
             ];
+            ksort($this->manifestsToStore[$sourceinvnr], SORT_NUMERIC);
         }
     }
 
@@ -1274,7 +1296,15 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $manifestDb->exec('DROP TABLE IF EXISTS data');
         $manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->manifestsToStore as $sourceinvnr => $manifestData) {
-            $manifestDb->exec('INSERT INTO data(data, id) VALUES(\'{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '"}\', \'' . $sourceinvnr . '\')');
+            if($this->oneManifestPerObject) {
+                $manifestDb->exec('INSERT INTO data(data, id) VALUES(\'{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '"}\', \'' . $sourceinvnr . '\')');
+            } else {
+                $query = '';
+                foreach($manifestData as $manifest) {
+                    $query .= (strlen($query) === 0 ? '' : ',') . '{"manifest":"' . $manifest['manifest'] . '","thumbnail":"' . $manifest['thumbnail'] . '","checksum":"' . $manifest['checksum'] . '"}';
+                }
+                $manifestDb->exec('INSERT INTO data(data, id) VALUES(\'' . $query . '\', \'' . $sourceinvnr . '\')');
+            }
         }
     }
 }

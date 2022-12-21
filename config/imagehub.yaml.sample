@@ -11,6 +11,7 @@ parameters:
     datahub_metadataprefix: 'oai_lido'
     datahub_related_works_xpath: 'descriptiveMetadata[@xml:lang="{language}"]/objectRelationWrap/relatedWorksWrap/relatedWorkSet'
     store_datahub_record_ids: false
+    one_manifest_per_object: true
 
     placeholder_id: -1
 
