@@ -780,7 +780,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 ->getResult();
 
             $rsData = [
-                'iiifbehavior' => 'individuals'
+                'iiifbehavior' => 'individuals',
+                'recommended_for_publication' => false
             ];
             $publisher = '';
             $fileChecksum = '';
