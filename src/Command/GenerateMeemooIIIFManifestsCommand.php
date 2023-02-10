@@ -26,7 +26,8 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
     private $meemoo;
 
     private $publishers;
-    private $labelV3;
+    private $manifestLabelV3;
+    private $canvasLabelV3;
     private $rightsSourceV3;
     private $requiredStatementV3;
     private $metadataFieldsV3;
@@ -76,7 +77,8 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
         $this->manifestLanguages = $this->container->getParameter('manifest_languages');
 
         $this->publishers = $this->container->getParameter('publishers');
-        $this->labelV3 = $this->container->getParameter('iiif_label');
+        $this->manifestLabelV3 = $this->container->getParameter('iiif_manifest_label');
+        $this->canvasLabelV3 = $this->container->getParameter('iiif_canvas_label');
         $this->rightsSourceV3 = $this->container->getParameter('iiif_rights_source');
         $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
         $this->metadataFieldsV3 = $this->container->getParameter('iiif_metadata_fields');
@@ -257,7 +259,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
             $label = '';
             $rights = '';
 
-            foreach ($this->labelV3 as $language => $field) {
+            foreach ($this->manifestLabelV3 as $language => $field) {
                 if (array_key_exists($field, $rsData)) {
                     if ($label === '') {
                         $label = $rsData[$field];
@@ -267,13 +269,13 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
             }
             if(!empty($label)) {
                 //Ensure there is always a label for each specified language
-                foreach ($this->labelV3 as $language => $field) {
+                foreach ($this->manifestLabelV3 as $language => $field) {
                     if (!array_key_exists($field, $rsData)) {
                         $data['label'][$language] = array($label);
                     }
                 }
             } else {
-                foreach($this->meemoo['iiif_label'] as $language => $field) {
+                foreach($this->meemoo['iiif_manifest_label'] as $language => $field) {
                     if (array_key_exists($field, $imageData)) {
                         if($label === '') {
                             $label = $imageData[$field];
@@ -282,7 +284,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                     }
                 }
                 //Ensure there is always a label for each specified language
-                foreach ($this->labelV3 as $language => $field) {
+                foreach ($this->manifestLabelV3 as $language => $field) {
                     if (!array_key_exists($field, $imageData)) {
                         $data['label'][$language] = array($label);
                     }

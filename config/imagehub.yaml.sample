@@ -78,11 +78,11 @@ parameters:
       url_regex_replace_with: '$1'
       iiif_rights_source: 'copyright'
       iiif_manifest_label:
-        en: 'en-titleartwork'
-        nl: 'nl-titleartwork'
+        en: 'title'
+        nl: 'title'
       iiif_canvas_label:
-        en: 'en-titleartwork'
-        nl: 'nl-titleartwork'
+        en: 'title'
+        nl: 'title'
       iiif_required_statement:
         label:
           en: 'Attribution/Collection'
@@ -236,7 +236,10 @@ parameters:
 
     iiif_rights_source: 'copyrightnoticeofart'
     iiif_behavior: 'iiifbehavior'
-    iiif_label:
+    iiif_manifest_label:
+      en: 'en-titleartwork'
+      nl: 'nl-titleartwork'
+    iiif_canvas_label:
       en: 'en-titleartwork'
       nl: 'nl-titleartwork'
     iiif_required_statement:
