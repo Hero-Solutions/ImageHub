@@ -999,6 +999,13 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                 }
 
+                //Store as indexed array, instead of key-value pairs
+                $metadata_ = [];
+                foreach ($metadata as $fieldName => $field) {
+                    $metadata_[] = $field;
+                }
+                $metadata = $metadata_;
+
                 // When the related resource ID is the ID of the resource we're currently processing,
                 // we know that this canvas is in fact the main canvas.
                 $isStartCanvas = $relatedRef == $resourceId;
