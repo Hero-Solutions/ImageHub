@@ -779,13 +779,13 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 ->getQuery()
                 ->getResult();
 
-            $rsData = [
-                'iiifbehavior' => 'individuals',
-                'recommended_for_publication' => false
-            ];
-            $publisher = '';
+            $rsData = [];
+            $iiifSortNumber = '';
             $fileChecksum = '';
-            $iiifSortNumber = -1;
+            $iiifBehavior = 'individuals';
+            $relatedResources = [];
+            $recommendedForPublication = false;
+            $inventoryNumber = '';
 
             /* @var $d ResourceData */
             foreach ($rsDataRaw as $d) {
@@ -793,219 +793,24 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if(empty($value)) {
                     continue;
                 }
-
-                // Replace comma by ' - ' for date ranges
-                if(preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $value)) {
-                    $value = str_replace(' ', '', $value);
-                    $value = str_replace(',', ' - ', $value);
-
-                    // Remove date and month when the exact date is clearly unknown
-                    if(preg_match('/^[0-9]{3,4}\-01\-01 \- [0-9]{3,4}\-12\-31$/', $value)) {
-                        $value = str_replace('-01-01', '', $value);
-                        $value = str_replace('-12-31', '', $value);
-                    }
-
-                    // Remove latest date if it is the same as the earliest date
-                    $dashIndex = strpos($value, ' - ');
-                    $earliestDate = substr($value, 0, $dashIndex);
-                    $latestDate = substr($value, $dashIndex + 3);
-                    if($earliestDate === $latestDate) {
-                        $value = $earliestDate;
-                    }
-                }
-                if($d->getName() === 'publisher') {
-                    $publisher = $value;
-                }
-                if($d->getName() === 'file_checksum') {
-                    $fileChecksum = $value;
-                }
-                if($d->getName() === 'iiif_sort_number') {
+                if($d->getName() === 'iiifsortnumber') {
                     $iiifSortNumber = intval($value);
+                } else if($d->getName() === 'file_checksum') {
+                    $fileChecksum = $value;
+                } else if($d->getName() === 'iiifbehavior') {
+                    $iiifBehavior = $value;
                 } else if($d->getName() === 'related_resources') {
-                    $rsData[$d->getName()] = explode(',', $value);
-                } else if($d->getName() == 'is_recommended_for_pub') {
-                    $rsData['recommended_for_publication'] = $d->getValue() === '1';
+                    $relatedResources = explode(',', $value);
+                } else if($d->getName() === 'is_recommended_for_pub') {
+                    $recommendedForPublication = $value === '1';
+                } else if($d->getName() === 'sourceinvnr') {
+                    $inventoryNumber = $value;
                 } else {
                     $rsData[$d->getName()] = $value;
                 }
             }
 
-            $data = array();
-            $metadata = array();
-            $data['label'] = array();
-            $label = '';
-
-            foreach ($this->labelV3 as $language => $field) {
-                if (array_key_exists($field, $rsData)) {
-                    if (empty($label)) {
-                        $label = $rsData[$field];
-                    }
-                    $data['label'][$language] = array($rsData[$field]);
-                } else {
-                    $data['label'][$language] = array('');
-                }
-            }
-            //Ensure there is always a label for each specified language
-            foreach ($this->labelV3 as $language => $field) {
-                if (!array_key_exists($field, $rsData)) {
-                    $data['label'][$language] = array($label);
-                }
-            }
-            $allSame = true;
-            $label_ = null;
-            foreach($data['label'] as $language => $label) {
-                $label_ = $label;
-                foreach($data['label'] as $lang => $lab) {
-                    if($label !== $lab) {
-                        $allSame = false;
-                        break;
-                    }
-                }
-                if(!$allSame) {
-                    break;
-                }
-            }
-            if($allSame) {
-                $data['label'] = array('none' => $label_);
-            }
-
-            if(array_key_exists($this->rightsSourceV3, $rsData)) {
-                $rightsSource = $rsData[$this->rightsSourceV3];
-                if($rightsSource === 'CC0') {
-                    $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
-                } else if($rightsSource === 'Public domain / CC-PDM') {
-                    $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                } else if(strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
-                    $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
-                } else {
-                    $rights = 'https://rightsstatements.org/page/UND/1.0/';
-                }
-            } else {
-                $rights = 'https://rightsstatements.org/page/UND/1.0/';
-            }
-
-            $fallbackValue = '';
-            $data['required_statement'] = [];
-            foreach ($this->requiredStatementV3['value'] as $language => $field) {
-                if (!array_key_exists('label', $data['required_statement'])) {
-                    $data['required_statement']['label'] = array();
-                }
-                if (!array_key_exists('value', $data['required_statement'])) {
-                    $data['required_statement']['value'] = array();
-                }
-                if (array_key_exists($field, $rsData)) {
-                    if(empty($fallbackValue)) {
-                        $fallbackValue = $rsData[$field];
-                    }
-                    $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                    $val = $rsData[$field];
-                    $extra = $this->requiredStatementV3['extra_info'][$language];
-                    if(!empty($publisher)) {
-                        if(array_key_exists($publisher, $this->publishers)) {
-                            $pub = $this->publishers[$publisher];
-                            if(array_key_exists($language, $pub['translations'])) {
-                                $val = $pub['translations'][$language];
-                            }
-                            if(array_key_exists($language, $pub['creditline'])) {
-                                $extra = $pub['creditline'][$language];
-                            }
-                        }
-                    }
-                    $data['required_statement']['value'][$language] = array($val . $extra);
-                } else {
-                    $data['required_statement']['value'][$language] = array('');
-                }
-            }
-            foreach ($this->requiredStatementV3['value'] as $language => $field) {
-                if (!array_key_exists($field, $rsData)) {
-                    $data['required_statement']['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                    $data['required_statement']['value'][$language] = array($fallbackValue . $this->requiredStatementV3['extra_info'][$language]);
-                }
-            }
-
-            foreach ($this->metadataFieldsV3 as $fieldName => $field) {
-                $fallbackValue = '';
-                foreach ($field['value'] as $language => $fieldData) {
-                    if (array_key_exists($fieldData, $rsData)) {
-                        if (!array_key_exists($fieldName, $metadata)) {
-                            $metadata[$fieldName] = array();
-                        }
-                        if (!array_key_exists('label', $metadata[$fieldName])) {
-                            $metadata[$fieldName]['label'] = array();
-                        }
-                        if (!array_key_exists('value', $metadata[$fieldName])) {
-                            $metadata[$fieldName]['value'] = array();
-                        }
-                        if(empty($fallbackValue)) {
-                            $fallbackValue = $rsData[$fieldData];
-                        }
-                        $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
-                        $metadata[$fieldName]['value'][$language] = array($rsData[$fieldData]);
-                    } else {
-                        $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
-                        $metadata[$fieldName]['value'][$language] = array('');
-                    }
-                }
-                if(!empty($fallbackValue)) {
-                    foreach ($field['value'] as $language => $fieldData) {
-                        if (!array_key_exists($fieldData, $rsData)) {
-                            $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
-                            $metadata[$fieldName]['value'][$language] = array($fallbackValue);
-                        }
-                    }
-                } else {
-                    unset($metadata[$fieldName]);
-                }
-
-                if(array_key_exists($fieldName, $metadata)) {
-                    //Group all labels together under language 'none' if all labels are the same
-                    $allSame = true;
-                    $value_ = null;
-                    foreach($metadata[$fieldName]['label'] as $language => $value) {
-                        $value_ = $value;
-                        foreach($metadata[$fieldName]['label'] as $lang => $val) {
-                            if($val !== $value) {
-                                $allSame = false;
-                                break;
-                            }
-                        }
-                        if(!$allSame) {
-                            break;
-                        }
-                    }
-                    if($allSame) {
-                        $metadata[$fieldName]['label'] = array('none' => $value_);
-                    }
-
-                    //Group all values together under language 'none' if all values are the same
-                    $allSame = true;
-                    $value_ = null;
-                    foreach($metadata[$fieldName]['value'] as $language => $value) {
-                        $value_ = $value;
-                        foreach($metadata[$fieldName]['value'] as $lang => $val) {
-                            if($val !== $value) {
-                                $allSame = false;
-                                break;
-                            }
-                        }
-                        if(!$allSame) {
-                            break;
-                        }
-                    }
-                    if($allSame) {
-                        $metadata[$fieldName]['value'] = array('none' => $value_);
-                    }
-                }
-            }
-
-            $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
-            $metadata['manifest_url']['label']['none'] = array('IIIF manifest');
-            $metadata['manifest_url']['value']['none'] = array('<a href="' . $manifestId . '">' . $manifestId . '</a>');
-
-            $data['metadata'] = [];
-            foreach ($metadata as $fieldName => $field) {
-                $data['metadata'][] = $field;
-            }
+            $manifestLabel = $this->generateLabel($rsData);
 
             // Generate the canvases
             $canvases = array();
@@ -1015,19 +820,183 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $isStartCanvas = false;
             $publicUse = true;
 
-            if (!array_key_exists('related_resources', $rsData)) {
-                $rsData['related_resources'] = array();
-            }
             // Just to make sure that the 'related resources' always contains a reference to itself
-            if (!in_array($resourceId, $rsData['related_resources'])) {
-                $rsData['related_resources'][] = $resourceId;
+            if (!in_array($resourceId, $relatedResources)) {
+                $relatedResources[] = $resourceId;
             }
 
             // Loop through all resources related to this resource (including itself)
-            foreach ($rsData['related_resources'] as $relatedRef) {
+            foreach ($relatedResources as $relatedRef) {
 
                 if (!array_key_exists($relatedRef, $this->imageData)) {
                     continue;
+                }
+
+                $rsDataRaw = $em->createQueryBuilder()
+                    ->select('i')
+                    ->from(ResourceData::class, 'i')
+                    ->where('i.id = :id')
+                    ->setParameter('id', $relatedRef)
+                    ->getQuery()
+                    ->getResult();
+                $rsData = [];
+                /* @var $d ResourceData */
+                foreach ($rsDataRaw as $d) {
+                    $value = $d->getValue();
+                    if(empty($value)) {
+                        continue;
+                    }
+                    // Replace comma by ' - ' for date ranges
+                    if(preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $value)) {
+                        $value = str_replace(' ', '', $value);
+                        $value = str_replace(',', ' - ', $value);
+
+                        // Remove date and month when the exact date is clearly unknown
+                        if(preg_match('/^[0-9]{3,4}\-01\-01 \- [0-9]{3,4}\-12\-31$/', $value)) {
+                            $value = str_replace('-01-01', '', $value);
+                            $value = str_replace('-12-31', '', $value);
+                        }
+
+                        // Remove latest date if it is the same as the earliest date
+                        $dashIndex = strpos($value, ' - ');
+                        $earliestDate = substr($value, 0, $dashIndex);
+                        $latestDate = substr($value, $dashIndex + 3);
+                        if($earliestDate === $latestDate) {
+                            $value = $earliestDate;
+                        }
+                    }
+                    $rsData[$d->getName()] = $value;
+                }
+
+                $label = $this->generateLabel($rsData);
+                if(array_key_exists($this->rightsSourceV3, $rsData)) {
+                    $rightsSource = $rsData[$this->rightsSourceV3];
+                    if($rightsSource === 'CC0') {
+                        $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
+                    } else if($rightsSource === 'Public domain / CC-PDM') {
+                        $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
+                    } else if(strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
+                        $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
+                    } else {
+                        $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                    }
+                } else {
+                    $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                }
+
+                $fallbackValue = '';
+                $requiredStatement = [];
+                foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                    if (!array_key_exists('label', $requiredStatement)) {
+                        $requiredStatement['label'] = array();
+                    }
+                    if (!array_key_exists('value', $requiredStatement)) {
+                        $requiredStatement['value'] = array();
+                    }
+                    if (array_key_exists($field, $rsData)) {
+                        if(empty($fallbackValue)) {
+                            $fallbackValue = $rsData[$field];
+                        }
+                        $requiredStatement['label'][$language] = array($this->requiredStatementV3['label'][$language]);
+                        $val = $rsData[$field];
+                        $extra = $this->requiredStatementV3['extra_info'][$language];
+                        if(!empty($publisher)) {
+                            if(array_key_exists($publisher, $this->publishers)) {
+                                $pub = $this->publishers[$publisher];
+                                if(array_key_exists($language, $pub['translations'])) {
+                                    $val = $pub['translations'][$language];
+                                }
+                                if(array_key_exists($language, $pub['creditline'])) {
+                                    $extra = $pub['creditline'][$language];
+                                }
+                            }
+                        }
+                        $requiredStatement['value'][$language] = array($val . $extra);
+                    } else {
+                        $requiredStatement['value'][$language] = array('');
+                    }
+                }
+                foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                    if (!array_key_exists($field, $rsData)) {
+                        $requiredStatement['label'][$language] = array($this->requiredStatementV3['label'][$language]);
+                        $requiredStatement['value'][$language] = array($fallbackValue . $this->requiredStatementV3['extra_info'][$language]);
+                    }
+                }
+
+                $metadata = [];
+                foreach ($this->metadataFieldsV3 as $fieldName => $field) {
+                    $fallbackValue = '';
+                    foreach ($field['value'] as $language => $fieldData) {
+                        if (array_key_exists($fieldData, $rsData)) {
+                            if (!array_key_exists($fieldName, $metadata)) {
+                                $metadata[$fieldName] = array();
+                            }
+                            if (!array_key_exists('label', $metadata[$fieldName])) {
+                                $metadata[$fieldName]['label'] = array();
+                            }
+                            if (!array_key_exists('value', $metadata[$fieldName])) {
+                                $metadata[$fieldName]['value'] = array();
+                            }
+                            if(empty($fallbackValue)) {
+                                $fallbackValue = $rsData[$fieldData];
+                            }
+                            $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
+                            $metadata[$fieldName]['value'][$language] = array($rsData[$fieldData]);
+                        } else {
+                            $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
+                            $metadata[$fieldName]['value'][$language] = array('');
+                        }
+                    }
+                    if(!empty($fallbackValue)) {
+                        foreach ($field['value'] as $language => $fieldData) {
+                            if (!array_key_exists($fieldData, $rsData)) {
+                                $metadata[$fieldName]['label'][$language] = array($this->metadataFieldsV3[$fieldName]['label'][$language]);
+                                $metadata[$fieldName]['value'][$language] = array($fallbackValue);
+                            }
+                        }
+                    } else {
+                        unset($metadata[$fieldName]);
+                    }
+
+                    if(array_key_exists($fieldName, $metadata)) {
+                        //Group all labels together under language 'none' if all labels are the same
+                        $allSame = true;
+                        $value_ = null;
+                        foreach($metadata[$fieldName]['label'] as $language => $value) {
+                            $value_ = $value;
+                            foreach($metadata[$fieldName]['label'] as $lang => $val) {
+                                if($val !== $value) {
+                                    $allSame = false;
+                                    break;
+                                }
+                            }
+                            if(!$allSame) {
+                                break;
+                            }
+                        }
+                        if($allSame) {
+                            $metadata[$fieldName]['label'] = array('none' => $value_);
+                        }
+
+                        //Group all values together under language 'none' if all values are the same
+                        $allSame = true;
+                        $value_ = null;
+                        foreach($metadata[$fieldName]['value'] as $language => $value) {
+                            $value_ = $value;
+                            foreach($metadata[$fieldName]['value'] as $lang => $val) {
+                                if($val !== $value) {
+                                    $allSame = false;
+                                    break;
+                                }
+                            }
+                            if(!$allSame) {
+                                break;
+                            }
+                        }
+                        if($allSame) {
+                            $metadata[$fieldName]['value'] = array('none' => $value_);
+                        }
+                    }
                 }
 
                 // When the related resource ID is the ID of the resource we're currently processing,
@@ -1095,13 +1064,16 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'service' => $service
                 ));
                 $canvases[] = array(
-                    'id'        => $canvasId,
-                    'type'      => 'Canvas',
-                    'label'     => array('none' => array(strval($index))),
-                    'height'    => $this->imageData[$relatedRef]['height'],
-                    'width'     => $this->imageData[$relatedRef]['width'],
-                    'items'     => array($annotationPage),
-                    'thumbnail' => $thmb
+                    'id'                => $canvasId,
+                    'type'              => 'Canvas',
+                    'label'             => !empty($label) ? $label : new stdClass(),
+                    'metadata'          => !empty($metadata) ? $metadata : new stdClass(),
+                    'height'            => $this->imageData[$relatedRef]['height'],
+                    'width'             => $this->imageData[$relatedRef]['width'],
+                    'rights'            => $rights,
+                    'requiredStatement' => !empty($requiredStatement) ? $requiredStatement : new stdClass(),
+                    'items'             => array($annotationPage),
+                    'thumbnail'         => $thmb
                 );
 
                 if ($isStartCanvas && $startCanvas == null) {
@@ -1110,16 +1082,26 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
+            $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
+            $manifestMetadata = array(
+                'manifest_url' => [
+                    'label' => [
+                        'none' => [ 'IIIF manifest' ]
+                    ],
+                    'value' => [
+                        'none' => [ '<a href="' . $manifestId . '">' . $manifestId . '</a>' ]
+                    ]
+                ]
+            );
+
             $manifest = array(
                 '@context'          => 'http://iiif.io/api/presentation/3/context.json',
                 'id'                => $manifestId,
                 'type'              => 'Manifest',
-                'label'             => !empty($data['label']) ? $data['label'] : new stdClass(),
-                'metadata'          => !empty($data['metadata']) ? $data['metadata'] : new stdClass(),
+                'label'             => !empty($manifestLabel) ? $manifestLabel : new stdClass(),
+                'metadata'          => $manifestMetadata,
                 'viewingDirection'  => 'left-to-right',
-                'behavior'          => [ strtolower($rsData['iiifbehavior']) ],
-                'rights'            => $rights,
-                'requiredStatement' => !empty($data['required_statement']) ? $data['required_statement'] : new stdClass(),
+                'behavior'          => [ strtolower($iiifBehavior) ],
                 'items'             => $canvases
             );
 
@@ -1155,7 +1137,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $manifests[] = array(
                     'id' => $manifestId,
                     'type' => 'Manifest',
-                    'label' => [ 'en' => [ $label ]]
+                    'label' => [ 'none' => [ $manifestLabel ]]
                 );
 
                 if($resourceId == $this->placeholderId) {
@@ -1166,24 +1148,64 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if ($storeInLido && $this->resourceSpaceManifestField !== '') {
                     $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
                     if ($result !== 'true') {
-                        //                    echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
+//                        echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
                         $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
                     } else if ($this->verbose) {
                         $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
                     }
                 }
 
-                if($storeInLido && $this->createTopLevelCollection && $rsData['recommended_for_publication']) {
-                    // Update the LIDO data to include the manifest and thumbnail
-                    if (!empty($rsData['sourceinvnr'])) {
-                        $sourceinvnr = $rsData['sourceinvnr'];
+                if($storeInLido && $this->createTopLevelCollection && $recommendedForPublication) {
+                    // Update the LIDO data to include the manifest, thumbnail and file checksum
+                    if (!empty($inventoryNumber)) {
                         if ($publicUse) {
-                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
+                            $this->storeManifestAndThumbnail($inventoryNumber, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
                         }
                     }
                 }
             }
         }
+    }
+
+    private function generateLabel($rsData) {
+        $label = [];
+        $fallbackLabel = '';
+        foreach ($this->labelV3 as $language => $field) {
+            if (array_key_exists($field, $rsData)) {
+                if (empty($fallbackLabel)) {
+                    $fallbackLabel = $rsData[$field];
+                }
+                $label[$language] = array($rsData[$field]);
+            } else {
+                $label[$language] = array('');
+            }
+        }
+        //Ensure there is always a label for each specified language
+        foreach ($this->labelV3 as $language => $field) {
+            if (!array_key_exists($field, $rsData)) {
+                $label[$language] = array($fallbackLabel);
+            }
+        }
+
+        //Check if all labels are the same value, and if so, group them together in 'none'
+        $allSame = true;
+        $fallbackLabel = null;
+        foreach($label as $language => $label_) {
+            $fallbackLabel = $label_;
+            foreach($label as $lang => $lab) {
+                if($label_ !== $lab) {
+                    $allSame = false;
+                    break;
+                }
+            }
+            if(!$allSame) {
+                break;
+            }
+        }
+        if($allSame) {
+            $label = array('none' => $fallbackLabel);
+        }
+        return $label;
     }
 
     private function deleteAllManifests(EntityManagerInterface $em)
