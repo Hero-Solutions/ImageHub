@@ -811,6 +811,59 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             $manifestLabel = $this->generateLabel($rsData);
+            if(array_key_exists($this->rightsSourceV3, $rsData)) {
+                $rightsSource = $rsData[$this->rightsSourceV3];
+                if($rightsSource === 'CC0') {
+                    $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
+                } else if($rightsSource === 'Public domain / CC-PDM') {
+                    $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
+                } else if(strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
+                    $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
+                } else {
+                    $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                }
+            } else {
+                $rights = 'https://rightsstatements.org/page/UND/1.0/';
+            }
+
+            $fallbackValue = '';
+            $requiredStatement = [];
+            foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                if (!array_key_exists('label', $requiredStatement)) {
+                    $requiredStatement['label'] = array();
+                }
+                if (!array_key_exists('value', $requiredStatement)) {
+                    $requiredStatement['value'] = array();
+                }
+                if (array_key_exists($field, $rsData)) {
+                    if(empty($fallbackValue)) {
+                        $fallbackValue = $rsData[$field];
+                    }
+                    $requiredStatement['label'][$language] = array($this->requiredStatementV3['label'][$language]);
+                    $val = $rsData[$field];
+                    $extra = $this->requiredStatementV3['extra_info'][$language];
+                    if(!empty($publisher)) {
+                        if(array_key_exists($publisher, $this->publishers)) {
+                            $pub = $this->publishers[$publisher];
+                            if(array_key_exists($language, $pub['translations'])) {
+                                $val = $pub['translations'][$language];
+                            }
+                            if(array_key_exists($language, $pub['creditline'])) {
+                                $extra = $pub['creditline'][$language];
+                            }
+                        }
+                    }
+                    $requiredStatement['value'][$language] = array($val . $extra);
+                } else {
+                    $requiredStatement['value'][$language] = array('');
+                }
+            }
+            foreach ($this->requiredStatementV3['value'] as $language => $field) {
+                if (!array_key_exists($field, $rsData)) {
+                    $requiredStatement['label'][$language] = array($this->requiredStatementV3['label'][$language]);
+                    $requiredStatement['value'][$language] = array($fallbackValue . $this->requiredStatementV3['extra_info'][$language]);
+                }
+            }
 
             // Generate the canvases
             $canvases = array();
@@ -869,59 +922,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
 
                 $label = $this->generateLabel($rsData);
-                if(array_key_exists($this->rightsSourceV3, $rsData)) {
-                    $rightsSource = $rsData[$this->rightsSourceV3];
-                    if($rightsSource === 'CC0') {
-                        $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
-                    } else if($rightsSource === 'Public domain / CC-PDM') {
-                        $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                    } else if(strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
-                        $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
-                    } else {
-                        $rights = 'https://rightsstatements.org/page/UND/1.0/';
-                    }
-                } else {
-                    $rights = 'https://rightsstatements.org/page/UND/1.0/';
-                }
-
-                $fallbackValue = '';
-                $requiredStatement = [];
-                foreach ($this->requiredStatementV3['value'] as $language => $field) {
-                    if (!array_key_exists('label', $requiredStatement)) {
-                        $requiredStatement['label'] = array();
-                    }
-                    if (!array_key_exists('value', $requiredStatement)) {
-                        $requiredStatement['value'] = array();
-                    }
-                    if (array_key_exists($field, $rsData)) {
-                        if(empty($fallbackValue)) {
-                            $fallbackValue = $rsData[$field];
-                        }
-                        $requiredStatement['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                        $val = $rsData[$field];
-                        $extra = $this->requiredStatementV3['extra_info'][$language];
-                        if(!empty($publisher)) {
-                            if(array_key_exists($publisher, $this->publishers)) {
-                                $pub = $this->publishers[$publisher];
-                                if(array_key_exists($language, $pub['translations'])) {
-                                    $val = $pub['translations'][$language];
-                                }
-                                if(array_key_exists($language, $pub['creditline'])) {
-                                    $extra = $pub['creditline'][$language];
-                                }
-                            }
-                        }
-                        $requiredStatement['value'][$language] = array($val . $extra);
-                    } else {
-                        $requiredStatement['value'][$language] = array('');
-                    }
-                }
-                foreach ($this->requiredStatementV3['value'] as $language => $field) {
-                    if (!array_key_exists($field, $rsData)) {
-                        $requiredStatement['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                        $requiredStatement['value'][$language] = array($fallbackValue . $this->requiredStatementV3['extra_info'][$language]);
-                    }
-                }
 
                 $metadata = [];
                 foreach ($this->metadataFieldsV3 as $fieldName => $field) {
@@ -1077,8 +1077,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'metadata'          => !empty($metadata) ? $metadata : new stdClass(),
                     'height'            => $this->imageData[$relatedRef]['height'],
                     'width'             => $this->imageData[$relatedRef]['width'],
-                    'rights'            => $rights,
-                    'requiredStatement' => !empty($requiredStatement) ? $requiredStatement : new stdClass(),
                     'items'             => array($annotationPage),
                     'thumbnail'         => $thmb
                 );
@@ -1109,7 +1107,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'metadata'          => $manifestMetadata,
                 'viewingDirection'  => 'left-to-right',
                 'behavior'          => [ strtolower($iiifBehavior) ],
-                'items'             => $canvases
+                'rights'            => $rights,
+                'requiredStatement' => !empty($requiredStatement) ? $requiredStatement : new stdClass(),
+                'items'             => $canvases,
             );
 
             // This image is not for public use, therefore we also don't want this manifest to be public
