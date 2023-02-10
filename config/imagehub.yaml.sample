@@ -77,9 +77,12 @@ parameters:
       url_regex_replace: '/^(https:\/\/images\.meemoo\.be\/iiif\/.*)\/full\/full\/0\/default\.jpg$/'
       url_regex_replace_with: '$1'
       iiif_rights_source: 'copyright'
-      iiif_label:
-        en: 'title'
-        nl: 'title'
+      iiif_manifest_label:
+        en: 'en-titleartwork'
+        nl: 'nl-titleartwork'
+      iiif_canvas_label:
+        en: 'en-titleartwork'
+        nl: 'nl-titleartwork'
       iiif_required_statement:
         label:
           en: 'Attribution/Collection'

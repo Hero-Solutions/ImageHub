@@ -33,7 +33,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $attributionFieldV2;
 
     private $publishers;
-    private $labelV3;
+    private $manifestLabelV3;
+    private $canvasLabelV3;
     private $rightsSourceV3;
     private $requiredStatementV3;
     private $metadataFieldsV3;
@@ -89,7 +90,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->attributionFieldV2 = $this->container->getParameter('iiif2_attribution');
 
         $this->publishers = $this->container->getParameter('publishers');
-        $this->labelV3 = $this->container->getParameter('iiif_label');
+        $this->manifestLabelV3 = $this->container->getParameter('iiif_manifest_label');
+        $this->canvasLabelV3 = $this->container->getParameter('iiif_canvas_label');
         $this->rightsSourceV3 = $this->container->getParameter('iiif_rights_source');
         $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
         $this->metadataFieldsV3 = $this->container->getParameter('iiif_metadata_fields');
@@ -810,7 +812,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
-            $manifestLabel = $this->generateLabel($rsData);
+            $manifestLabel = $this->generateLabel($rsData, $this->manifestLabelV3);
             if(array_key_exists($this->rightsSourceV3, $rsData)) {
                 $rightsSource = $rsData[$this->rightsSourceV3];
                 if($rightsSource === 'CC0') {
@@ -921,7 +923,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $rsData[$d->getName()] = $value;
                 }
 
-                $label = $this->generateLabel($rsData);
+                $label = $this->generateLabel($rsData, $this->canvasLabelV3);
 
                 $metadata = [];
                 foreach ($this->metadataFieldsV3 as $fieldName => $field) {
@@ -1174,10 +1176,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         }
     }
 
-    private function generateLabel($rsData) {
+    private function generateLabel($rsData, $labelData) {
         $label = [];
         $fallbackLabel = '';
-        foreach ($this->labelV3 as $language => $field) {
+        foreach ($labelData as $language => $field) {
             if (array_key_exists($field, $rsData)) {
                 if (empty($fallbackLabel)) {
                     $fallbackLabel = $rsData[$field];
@@ -1188,7 +1190,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
         }
         //Ensure there is always a label for each specified language
-        foreach ($this->labelV3 as $language => $field) {
+        foreach ($labelData as $language => $field) {
             if (!array_key_exists($field, $rsData)) {
                 $label[$language] = array($fallbackLabel);
             }
