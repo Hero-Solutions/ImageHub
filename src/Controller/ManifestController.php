@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\IIIfManifest;
 use App\Utils\Authenticator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -36,8 +37,18 @@ class ManifestController extends AbstractController
             }
         } else {
             $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/' . $manifestId . '/manifest.json']);
-            if ($manifest == null) {
-                return new Response('Sorry, the requested document does not exist.', 404);
+            if ($manifest === null) {
+                //Check if we want to return the matching IIIF 3 manifest instead
+                if($iiifVersion === '2') {
+                    $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . '3/' . $manifestId . '/manifest.json']);
+                    if($manifest === null) {
+                        return new Response('Sorry, the requested document does not exist.', 404);
+                    } else {
+                        return new RedirectResponse($this->generateUrl('manifest', [ 'iiifVersion' => '3', 'manifestId' => $manifestId ]), 301);
+                    }
+                } else {
+                    return new Response('Sorry, the requested document does not exist.', 404);
+                }
             } else {
                 $authenticated = true;
                 $whitelist = $this->getParameter('authentication_whitelist');
