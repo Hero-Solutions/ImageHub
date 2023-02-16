@@ -62,16 +62,12 @@ class ManifestController extends AbstractController
 
                 $data = json_decode($manifest->getData());
                 if (!$whitelisted) {
-                    if($iiifVersion === '2') {
-                        if (property_exists($data, 'service')) {
-                            if (property_exists($data->{'service'}, '@id')) {
-                                if (strpos($data->{'service'}->{'@id'}, 'auth') > -1) {
-                                    $authenticated = false;
-                                }
+                    if (property_exists($data, 'service')) {
+                        if (property_exists($data->{'service'}, '@id')) {
+                            if (strpos($data->{'service'}->{'@id'}, 'auth') > -1) {
+                                $authenticated = false;
                             }
                         }
-                    } else {
-                        //TODO authentication for IIIF3
                     }
                 }
                 if (!$authenticated) {
