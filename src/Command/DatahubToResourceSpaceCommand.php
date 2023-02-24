@@ -804,6 +804,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $xpath = preg_replace('/\[(?![@0-9]|not\(|text)/', '[' . $this->namespace . ':${1}', $xpath);
         $xpath = preg_replace('/\/([^\/])/', '/' . $this->namespace . ':${1}', $xpath);
         $xpath = preg_replace('/ and (?!@xml)/', ' and ' . $this->namespace . ':${1}', $xpath);
+        $xpath = preg_replace('/ or (?!@xml)/', ' or ' . $this->namespace . ':${1}', $xpath);
         if(strpos($xpath, '/') !== 0) {
             $xpath = $this->namespace . ':' . $xpath;
         }
