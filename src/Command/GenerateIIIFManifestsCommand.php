@@ -151,10 +151,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
         $this->generateAndStoreManifests($em);
         $this->storeAllManifestsInSqlite();
-
-        if($this->createTopLevelCollection && file_exists('/tmp/import.iiif_manifests.sqlite')) {
-            rename('/tmp/import.iiif_manifests.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.iiif_manifests.sqlite');
-        }
     }
 
     private function getImageData($resourceId, $isPublic)
@@ -1324,7 +1320,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
     private function storeAllManifestsInSqlite()
     {
-        $manifestDb = new SQLite3('/tmp/import.iiif_manifests.sqlite');
+        $manifestDb = new SQLite3('/public/import.iiif_manifests.sqlite');
         $manifestDb->exec('DROP TABLE IF EXISTS data');
         $manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->manifestsToStore as $sourceinvnr => $manifestData) {

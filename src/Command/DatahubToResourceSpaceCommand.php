@@ -597,9 +597,6 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 }
             }
 //            var_dump($relations);
-            if($this->storeDatahubRecordIds) {
-                rename('/tmp/import.datahub_record_ids.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.datahub_record_ids.sqlite');
-            }
         }
         catch(OaipmhException $e) {
 //            echo 'OAI-PMH error: ' . $e . PHP_EOL;
@@ -816,7 +813,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
     private function storeDatahubRecordId($sourceinvnr, $recordId)
     {
         if($this->datahubRecordDb == null) {
-            $this->datahubRecordDb = new SQLite3('/tmp/import.datahub_record_ids.sqlite');
+            $this->datahubRecordDb = new SQLite3('/public/import.datahub_record_ids.sqlite');
             $this->datahubRecordDb->exec('DROP TABLE IF EXISTS data');
             $this->datahubRecordDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
             $this->datahubRecordIds = [];
