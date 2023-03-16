@@ -525,23 +525,23 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             if(array_key_exists($this->rightsSourceV3, $rsData)) {
                 $rightsSource = $rsData[$this->rightsSourceV3];
                 $rightsSourceLC = strtolower($rightsSource);
-                if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/mark/1.0/') !== false || $rightsSource === 'public domain / cc-pdm') {
+                if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/mark/1.0/') !== false || $rightsSourceLC === 'public domain / cc-pdm') {
                     $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
                     $buttonURL = '';
                 } else if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/zero/1.0/') !== false || $rightsSourceLC === 'cc0') {
                     $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
-                } else if(strpos($rightsSource, 'sabam') !== false || strpos($rightsSource, '©') !== false) {
+                } else if(strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
                     $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
-                    $buttonURL = '<a href=\"https://rightsstatements.org/vocab/InC/1.0/\"><img src=\"https://rightsstatements.org/files/buttons/InC.dark-white-interior.png\"/></a>';
-                } else if(strpos($rightsSource, 'public domain') !== false || strpos($rightsSource, 'publiek domein') !== false) {
+                    $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://rightsstatements.org/files/buttons/InC.dark-white-interior.png"/></a>';
+                } else if(strpos($rightsSourceLC, 'public domain') !== false || strpos($rightsSourceLC, 'publiek domein') !== false) {
                     $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
                 } else {
                     $rights = 'https://rightsstatements.org/page/UND/1.0/';
-                    $buttonURL = '<a href=\"http://rightsstatements.org/vocab/UND/1.0/\"><img src=\"https://rightsstatements.org/files/buttons/UND.dark-white-interior.png\"/></a>';
+                    $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://rightsstatements.org/files/buttons/UND.dark-white-interior.png"/></a>';
                 }
             } else {
                 $rights = 'https://rightsstatements.org/page/UND/1.0/';
-                $buttonURL = '<a href=\"http://rightsstatements.org/vocab/UND/1.0/\"><img src=\"https://rightsstatements.org/files/buttons/UND.dark-white-interior.png\"/></a>';
+                $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://rightsstatements.org/files/buttons/UND.dark-white-interior.png"/></a>';
             }
 
             $rightsSourceNL = $rightsSource . $buttonURL;
