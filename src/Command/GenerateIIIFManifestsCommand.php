@@ -527,14 +527,16 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $rightsSourceLC = strtolower($rightsSource);
                 if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/mark/1.0/') !== false || $rightsSourceLC === 'public domain / cc-pdm') {
                     $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                    $buttonURL = '';
+                    $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
                 } else if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/zero/1.0/') !== false || $rightsSourceLC === 'cc0') {
                     $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
+                    $buttonURL = '<a href="https://creativecommons.org/publicdomain/zero/1.0/"><img src="https://licensebuttons.net/p/zero/1.0/88x31.png"/></a>';
                 } else if(strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
                     $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
                     $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://rightsstatements.org/files/buttons/InC.dark-white-interior.png"/></a>';
                 } else if(strpos($rightsSourceLC, 'public domain') !== false || strpos($rightsSourceLC, 'publiek domein') !== false) {
                     $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
+                    $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
                 } else {
                     $rights = 'https://rightsstatements.org/page/UND/1.0/';
                     $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://rightsstatements.org/files/buttons/UND.dark-white-interior.png"/></a>';
