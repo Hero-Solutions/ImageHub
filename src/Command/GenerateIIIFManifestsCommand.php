@@ -548,11 +548,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $rightsSourceEN = $rightsSource . $buttonURL;
             if(strpos($rightsSourceLC, 'sabam') !== false) {
                 if(preg_match('/.*sabam [0-9]{4}.*/', $rightsSourceLC)) {
-                    $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSource);
-                    $rightsSourceEN = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/en">$2</a>$3', $rightsSource);
+                    $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
+                    $rightsSourceEN = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/en">$2</a>$3', $rightsSourceEN);
                 } else {
-                    $rightsSourceNL = preg_replace('/(.*)(sabam)(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSource);
-                    $rightsSourceEN = preg_replace('/(.*)(sabam)(.*)/i', '$1<a href="https://www.unisono.be/en">$2</a>$3', $rightsSource);
+                    $rightsSourceNL = preg_replace('/(.*)(sabam)(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
+                    $rightsSourceEN = preg_replace('/(.*)(sabam)(.*)/i', '$1<a href="https://www.unisono.be/en">$2</a>$3', $rightsSourceEN);
                 }
             }
 
