@@ -824,12 +824,16 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $relatedResources = [];
             $recommendedForPublication = false;
             $inventoryNumber = '';
+            $publisher = '';
 
             /* @var $d ResourceData */
             foreach ($rsDataRaw as $d) {
                 $value = $d->getValue();
                 if(empty($value)) {
                     continue;
+                }
+                if ($d->getName() === 'publisher') {
+                    $publisher = $value;
                 }
                 if($d->getName() === 'iiifsortnumber') {
                     $iiifSortNumber = intval($value);
@@ -849,19 +853,52 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             $manifestLabel = $this->generateLabel($rsData, $this->manifestLabelV3);
+
+            $rightsSource = '';
+            $rightsSourceLC = '';
             if(array_key_exists($this->rightsSourceV3, $rsData)) {
                 $rightsSource = $rsData[$this->rightsSourceV3];
-                if($rightsSource === 'CC0') {
-                    $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
-                } else if($rightsSource === 'Public domain / CC-PDM') {
+                $rightsSourceLC = strtolower($rightsSource);
+                if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/mark/1.0/') !== false || $rightsSourceLC === 'public domain / cc-pdm') {
+                    if($rightsSourceLC === 'http://creativecommons.org/publicdomain/mark/1.0/' || $rightsSourceLC === 'public domain / cc-pdm') {
+                        $rightsSource = '';
+                    }
                     $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                } else if(strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
+                    $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
+                } else if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/zero/1.0/') !== false || $rightsSourceLC === 'cc0') {
+                    if($rightsSourceLC === 'http://creativecommons.org/publicdomain/zero/1.0/' || $rightsSourceLC === 'cc0') {
+                        $rightsSource = '';
+                    }
+                    $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
+                    $buttonURL = '<a href="https://creativecommons.org/publicdomain/zero/1.0/"><img src="https://licensebuttons.net/p/zero/1.0/88x31.png"/></a>';
+                } else if(strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
                     $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
+                    $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://rightsstatements.org/files/buttons/InC.dark-white-interior.png"/></a>';
+                } else if(strpos($rightsSourceLC, 'public domain') !== false || strpos($rightsSourceLC, 'publiek domein') !== false) {
+                    if($rightsSourceLC === 'public domain' || $rightsSourceLC === 'publiek domein') {
+                        $rightsSource = '';
+                    }
+                    $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
+                    $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
                 } else {
                     $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                    $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://rightsstatements.org/files/buttons/UND.dark-white-interior.png"/></a>';
                 }
             } else {
                 $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://rightsstatements.org/files/buttons/UND.dark-white-interior.png"/></a>';
+            }
+
+            $rightsSourceNL = $rightsSource . $buttonURL;
+            $rightsSourceEN = $rightsSource . $buttonURL;
+            if(strpos($rightsSourceLC, 'sabam') !== false) {
+                if(preg_match('/.*sabam [0-9]{4}.*/', $rightsSourceLC)) {
+                    $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
+                    $rightsSourceEN = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/en">$2</a>$3', $rightsSourceEN);
+                } else {
+                    $rightsSourceNL = preg_replace('/(.*)(sabam)(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
+                    $rightsSourceEN = preg_replace('/(.*)(sabam)(.*)/i', '$1<a href="https://www.unisono.be/en">$2</a>$3', $rightsSourceEN);
+                }
             }
 
             $fallbackValue = '';
@@ -878,20 +915,26 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $fallbackValue = $rsData[$field];
                     }
                     $requiredStatement['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                    $val = $rsData[$field];
+                    $publisherName = $rsData[$field];
                     $extra = $this->requiredStatementV3['extra_info'][$language];
                     if(!empty($publisher)) {
                         if(array_key_exists($publisher, $this->publishers)) {
                             $pub = $this->publishers[$publisher];
                             if(array_key_exists($language, $pub['translations'])) {
-                                $val = $pub['translations'][$language];
+                                $publisherName = $pub['translations'][$language];
+                            }
+                            if (array_key_exists($language, $pub['url'])) {
+                                $publisherName = '<a href="' . $pub['url'][$language] . '">' . $publisherName . '</a>';
+                            } else if(array_key_exists('en', $pub['url'])) {//Fallback to english URL
+                                $publisherName = '<a href="' . $pub['url']['en'] . '">' . $publisherName . '</a>';
                             }
                             if(array_key_exists($language, $pub['creditline'])) {
                                 $extra = $pub['creditline'][$language];
                             }
                         }
                     }
-                    $requiredStatement['value'][$language] = array($val . $extra);
+                    $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
+                    $requiredStatement['value'][$language] = array($prefix . '<p>' . $publisherName . '</p>' . $extra);
                 } else {
                     $requiredStatement['value'][$language] = array('');
                 }
