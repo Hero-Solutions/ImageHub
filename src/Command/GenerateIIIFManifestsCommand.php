@@ -401,9 +401,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             } else {
                 $allSame = true;
                 foreach($labels as $language => $label_) {
-                    $val = $label_['@value'];
+                    $publisherName = $label_['@value'];
                     foreach($labels as $lang => $lab) {
-                        if($lab['@value'] !== $val) {
+                        if($lab['@value'] !== $publisherName) {
                             $allSame = false;
                             break;
                         }
@@ -477,10 +477,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $allSame = true;
                         $value_ = '';
                         for($i = 0; $i < $count; $i++) {
-                            $val = $metadata[$fieldName]['label'][$i]['@value'];
-                            $value_ = $val;
+                            $publisherName = $metadata[$fieldName]['label'][$i]['@value'];
+                            $value_ = $publisherName;
                             for($j = $i + 1; $j < $count; $j++) {
-                                if($metadata[$fieldName]['label'][$j]['@value'] !== $val) {
+                                if($metadata[$fieldName]['label'][$j]['@value'] !== $publisherName) {
                                     $allSame = false;
                                     break;
                                 }
@@ -500,10 +500,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $allSame = true;
                         $value_ = '';
                         for($i = 0; $i < $count; $i++) {
-                            $val = $metadata[$fieldName]['value'][$i]['@value'];
-                            $value_ = $val;
+                            $publisherName = $metadata[$fieldName]['value'][$i]['@value'];
+                            $value_ = $publisherName;
                             for($j = $i + 1; $j < $count; $j++) {
-                                if($metadata[$fieldName]['value'][$j]['@value'] !== $val) {
+                                if($metadata[$fieldName]['value'][$j]['@value'] !== $publisherName) {
                                     $allSame = false;
                                     break;
                                 }
@@ -519,39 +519,65 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
+            $rightsSource = '';
+            $rightsSourceLC = '';
+            $buttonURL = '';
             if(array_key_exists($this->rightsSourceV3, $rsData)) {
                 $rightsSource = $rsData[$this->rightsSourceV3];
-                if(strpos($rightsSource, 'http://creativecommons.org/publicdomain/mark/1.0/') !== false) {
+                $rightsSourceLC = strtolower($rightsSource);
+                if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/mark/1.0/') !== false || $rightsSource === 'public domain / cc-pdm') {
                     $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                } else if($rightsSource === 'CC0') {
+                    $buttonURL = '';
+                } else if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/zero/1.0/') !== false || $rightsSourceLC === 'cc0') {
                     $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
-                } else if($rightsSource === 'Public domain / CC-PDM') {
-                    $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                } else if(strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
+                } else if(strpos($rightsSource, 'sabam') !== false || strpos($rightsSource, '©') !== false) {
                     $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
+                    $buttonURL = '<a href=\"https://rightsstatements.org/vocab/InC/1.0/\"><img src=\"https://rightsstatements.org/files/buttons/InC.dark-white-interior.png\"/></a>';
+                } else if(strpos($rightsSource, 'public domain') !== false || strpos($rightsSource, 'publiek domein') !== false) {
+                    $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
                 } else {
                     $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                    $buttonURL = '<a href=\"http://rightsstatements.org/vocab/UND/1.0/\"><img src=\"https://rightsstatements.org/files/buttons/UND.dark-white-interior.png\"/></a>';
                 }
             } else {
                 $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                $buttonURL = '<a href=\"http://rightsstatements.org/vocab/UND/1.0/\"><img src=\"https://rightsstatements.org/files/buttons/UND.dark-white-interior.png\"/></a>';
+            }
+
+            $rightsSourceNL = $rightsSource . $buttonURL;
+            $rightsSourceEN = $rightsSource . $buttonURL;
+            if(strpos($rightsSourceLC, 'sabam') !== false) {
+                if(preg_match('/.*sabam [0-9]{4}.*/', $rightsSourceLC)) {
+                    $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSource);
+                    $rightsSourceEN = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/en">$2</a>$3', $rightsSource);
+                } else {
+                    $rightsSourceNL = preg_replace('/(.*)(sabam)(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSource);
+                    $rightsSourceEN = preg_replace('/(.*)(sabam)(.*)/i', '$1<a href="https://www.unisono.be/en">$2</a>$3', $rightsSource);
+                }
             }
 
             $creditlines = array();
             foreach ($this->requiredStatementV3['value'] as $language => $field) {
-                $val = $publisher;
-                $extra = $this->requiredStatementV3['extra_info'][$language];
+                $publisherName = $publisher;
+                $extraInfo = $this->requiredStatementV3['extra_info'][$language];
                 if (!empty($publisher)) {
                     if (array_key_exists($publisher, $this->publishers)) {
                         $pub = $this->publishers[$publisher];
                         if (array_key_exists($language, $pub['translations'])) {
-                            $val = $pub['translations'][$language];
+                            $publisherName = $pub['translations'][$language];
+                        }
+                        if (array_key_exists($language, $pub['url'])) {
+                            $publisherName = '<a href="' . $pub['url'][$language] . '">' . $publisherName . '</a>';
+                        } else if(array_key_exists('en', $pub['url'])) {//Fallback to english URL
+                            $publisherName = '<a href="' . $pub['url']['en'] . '">' . $publisherName . '</a>';
                         }
                         if (array_key_exists($language, $pub['creditline'])) {
-                            $extra = $pub['creditline'][$language];
+                            $extraInfo = $pub['creditline'][$language];
                         }
                     }
                 }
-                $creditlines[] = array('@language' => $language, '@value' => $val . $extra);
+                $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
+                $creditlines[] = array('@language' => $language, '@value' => $prefix . '<p>' . $publisherName . '</p>' . $extraInfo);
             }
 
             // Fill in (multilingual) manifest data

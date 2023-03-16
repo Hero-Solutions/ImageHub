@@ -206,6 +206,9 @@ parameters:
 
     publishers:
         Koninklijk Museum voor Schone Kunsten Antwerpen:
+          url:
+            en: https://kmska.be/nl
+            nl: https://kmska.be/en
           translations:
             en: Royal Museum of Fine Arts Antwerp - Flemish Community
             nl: Koninklijk Museum voor Schone Kunsten Antwerpen - Vlaamse Gemeenschap
@@ -213,6 +216,9 @@ parameters:
             en: '<p>De jpg-bestanden van kunstwerken in het publieke domein zijn downloadbaar in hoge resolutie via de website van KMSKA. Beelden aanvragen kan via het contactformulier op <a href="https://kmska.be/nl/contact">kmska.be/nl/contact</a>.</p>'
             nl: '<p>The jpg files of public domain artworks are downloadable in high resolution through the KMSKA website. Requesting images can be done through the contact form at <a href="https://kmska.be/en/contact">kmska.be/en/contact</a>.</p>'
         Museum voor Schone Kunsten Gent:
+          url:
+            en: 'https://www.mskgent.be/en'
+            nl: 'https://www.mskgent.be'
           translations:
             en: Museum of Fine Arts Ghent
             nl: Museum voor Schone Kunsten Gent
@@ -220,6 +226,9 @@ parameters:
             en: '<p>The original TIFF files of this work, in highest resolution and color-coded, can be ordered from <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). If this image is used for a printed publication or a commercial product, MSK Gent would appreciate having three copies sent to MSK Gent, Hofbouwlaan 28, B-9000 Gent. More information: <a href="mailto:museum.msk@stad.gent">museum.msk@stad.gent</a>.</p>'
             nl: '<p>De originele TIFF-bestanden van dit werk, in hoogste resolutie en met kleurencode, kunnen worden besteld bij <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). Wanneer dit beeld gebruikt wordt voor een gedrukte publicatie of een commercieel product, dan vraagt MSK Gent dat drie exemplaren worden toegestuurd naar MSK Gent, Hofbouwlaan 28, B-9000 Gent. Meer info: <a href="mailto:museum.msk@stad.gent">museum.msk@stad.gent</a>.</p>'
         Mu.ZEE, Kunstmuseum aan zee:
+          url:
+            en: 'https://www.muzee.be/en'
+            nl: 'https://www.muzee.be/nl'
           translations:
             en: Mu.ZEE, Art Museum by the Sea
             nl: Mu.ZEE, Kunstmuseum aan zee
@@ -227,6 +236,9 @@ parameters:
             en: '<p>The original TIFF files of this work, in highest resolution and color-coded, can be ordered from <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). If this image is used for a printed publication or a commercial product, Mu.ZEE would appreciate having three copies sent to Mu.ZEE, Romestraat 11, 8400 Oostende, Belgium. More information: <a href="mailto:collectie@muzee.be">collectie@muzee.be</a>.</p>'
             nl: '<p>De originele TIFF-bestanden van dit werk, in hoogste resolutie en met kleurencode, kunnen worden besteld bij <a href="https://artinflanders.be">Art in Flanders</a> (meemoo). Wanneer dit beeld gebruikt wordt voor een gedrukte publicatie of een commercieel product, dan vraagt Mu.ZEE dat drie exemplaren worden toegestuurd naar Mu.ZEE, Romestraat 11, 8400 Oostende. Meer info: <a href="mailto:collectie@muzee.be">collectie@muzee.be</a>.</p>'
         Musea Brugge:
+          url:
+            en: 'https://www.museabrugge.be/en'
+            nl: 'https://www.museabrugge.be'
           translations:
             en: Musea Bruges
             nl: Musea Brugge
