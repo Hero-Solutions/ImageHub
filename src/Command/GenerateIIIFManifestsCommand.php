@@ -538,7 +538,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $buttonURL = '<a href="https://creativecommons.org/publicdomain/zero/1.0/"><img src="https://licensebuttons.net/p/zero/1.0/88x31.png"/></a>';
                 } else if(strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
                     $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
-                    $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://rightsstatements.org/files/buttons/InC.dark-white-interior.png"/></a>';
+                    $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/incopyright.png"/></a>';
                 } else if(strpos($rightsSourceLC, 'public domain') !== false || strpos($rightsSourceLC, 'publiek domein') !== false) {
                     if($rightsSourceLC === 'public domain' || $rightsSourceLC === 'publiek domein') {
                         $rightsSource = '';
@@ -547,11 +547,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
                 } else {
                     $rights = 'https://rightsstatements.org/page/UND/1.0/';
-                    $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://rightsstatements.org/files/buttons/UND.dark-white-interior.png"/></a>';
+                    $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
                 }
             } else {
                 $rights = 'https://rightsstatements.org/page/UND/1.0/';
-                $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://rightsstatements.org/files/buttons/UND.dark-white-interior.png"/></a>';
+                $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
             $rightsSourceNL = $rightsSource . $buttonURL;
@@ -873,7 +873,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $buttonURL = '<a href="https://creativecommons.org/publicdomain/zero/1.0/"><img src="https://licensebuttons.net/p/zero/1.0/88x31.png"/></a>';
                 } else if(strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
                     $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
-                    $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://rightsstatements.org/files/buttons/InC.dark-white-interior.png"/></a>';
+                    $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/incopyright.png"/></a>';
                 } else if(strpos($rightsSourceLC, 'public domain') !== false || strpos($rightsSourceLC, 'publiek domein') !== false) {
                     if($rightsSourceLC === 'public domain' || $rightsSourceLC === 'publiek domein') {
                         $rightsSource = '';
@@ -882,11 +882,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
                 } else {
                     $rights = 'https://rightsstatements.org/page/UND/1.0/';
-                    $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://rightsstatements.org/files/buttons/UND.dark-white-interior.png"/></a>';
+                    $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
                 }
             } else {
                 $rights = 'https://rightsstatements.org/page/UND/1.0/';
-                $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://rightsstatements.org/files/buttons/UND.dark-white-interior.png"/></a>';
+                $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
             $rightsSourceNL = $rightsSource . $buttonURL;
