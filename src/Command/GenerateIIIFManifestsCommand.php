@@ -536,7 +536,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                     $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
                     $buttonURL = '<a href="https://creativecommons.org/publicdomain/zero/1.0/"><img src="https://licensebuttons.net/p/zero/1.0/88x31.png"/></a>';
-                } else if(strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
+                } else if($rightsSourceLC === 'in copyright' || strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
                     $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
                     $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/incopyright.png"/></a>';
                 } else if(strpos($rightsSourceLC, 'public domain') !== false || strpos($rightsSourceLC, 'publiek domein') !== false) {
@@ -554,6 +554,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
+            if(!empty($rightsSource)) {
+                $rightsSource = '<p>' . $rightsSource . '</p>';
+            }
             $rightsSourceNL = $rightsSource . $buttonURL;
             $rightsSourceEN = $rightsSource . $buttonURL;
             if(strpos($rightsSourceLC, 'sabam') !== false) {
@@ -871,7 +874,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                     $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
                     $buttonURL = '<a href="https://creativecommons.org/publicdomain/zero/1.0/"><img src="https://licensebuttons.net/p/zero/1.0/88x31.png"/></a>';
-                } else if(strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
+                } else if($rightsSourceLC === 'in copyright' || strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
                     $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
                     $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/incopyright.png"/></a>';
                 } else if(strpos($rightsSourceLC, 'public domain') !== false || strpos($rightsSourceLC, 'publiek domein') !== false) {
@@ -889,6 +892,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
+            if(!empty($rightsSource)) {
+                $rightsSource = '<p>' . $rightsSource . '</p>';
+            }
             $rightsSourceNL = $rightsSource . $buttonURL;
             $rightsSourceEN = $rightsSource . $buttonURL;
             if(strpos($rightsSourceLC, 'sabam') !== false) {
