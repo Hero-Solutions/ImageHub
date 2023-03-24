@@ -554,11 +554,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
-            if(!empty($rightsSource)) {
-                $rightsSource = '<p class="uv-iiif-extension-host">' . $rightsSource . '</p>';
-            }
-            $rightsSourceNL = $rightsSource . $buttonURL;
-            $rightsSourceEN = $rightsSource . $buttonURL;
+            $rightsSourceNL = $rightsSource . '<p>' . $buttonURL . '</p>';
+            $rightsSourceEN = $rightsSource . '<p>' . $buttonURL . '</p>';
             if(strpos($rightsSourceLC, 'sabam') !== false) {
                 if(preg_match('/.*sabam [0-9]{4}.*/', $rightsSourceLC)) {
                     $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
@@ -590,7 +587,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                 }
                 $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
-                $creditlines[] = array('@language' => $language, '@value' => '<p class="uv-iiif-extension-host">' . $prefix . '</p><p class="uv-iiif-extension-host">' . $publisherName . '</p><p class="uv-iiif-extension-host">' . $extraInfo . '</p>');
+                $creditlines[] = array('@language' => $language, '@value' => $prefix . $publisherName . '<br>' . $extraInfo . '</p>');
             }
 
             // Fill in (multilingual) manifest data
@@ -892,11 +889,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
-            if(!empty($rightsSource)) {
-                $rightsSource = '<p class="uv-iiif-extension-host">' . $rightsSource . '</p>';
-            }
-            $rightsSourceNL = $rightsSource . $buttonURL;
-            $rightsSourceEN = $rightsSource . $buttonURL;
+            $rightsSourceNL = $rightsSource . '<p>' . $buttonURL . '</p>';
+            $rightsSourceEN = $rightsSource . '<p>' . $buttonURL . '</p>';
             if(strpos($rightsSourceLC, 'sabam') !== false) {
                 if(preg_match('/.*sabam [0-9]{4}.*/', $rightsSourceLC)) {
                     $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
@@ -940,7 +934,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                     $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
-                    $requiredStatement['value'][$language] = array('<p class="uv-iiif-extension-host">' . $prefix . '</p><p class="uv-iiif-extension-host">' . $publisherName . '</p><p class="uv-iiif-extension-host">' . $extra . '</p>');
+                    $requiredStatement['value'][$language] = array($prefix . $publisherName . '<br>' . $extra . '</p>');
                 } else {
                     $requiredStatement['value'][$language] = array('');
                 }
