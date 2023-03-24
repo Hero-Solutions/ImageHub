@@ -555,7 +555,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             if(!empty($rightsSource)) {
-                $rightsSource = '<div>' . $rightsSource . '</div>';
+                $rightsSource = '<p class="uv-iiif-extension-host">' . $rightsSource . '</p>';
             }
             $rightsSourceNL = $rightsSource . $buttonURL;
             $rightsSourceEN = $rightsSource . $buttonURL;
@@ -590,7 +590,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                 }
                 $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
-                $creditlines[] = array('@language' => $language, '@value' => $prefix . '<div><br/>' . $publisherName . '</div>' . $extraInfo);
+                $creditlines[] = array('@language' => $language, '@value' => '<p class="uv-iiif-extension-host">' . $prefix . '</p><p class="uv-iiif-extension-host">' . $publisherName . '</p><p class="uv-iiif-extension-host">' . $extraInfo . '</p>');
             }
 
             // Fill in (multilingual) manifest data
@@ -893,7 +893,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             if(!empty($rightsSource)) {
-                $rightsSource = '<div>' . $rightsSource . '</div>';
+                $rightsSource = '<p class="uv-iiif-extension-host">' . $rightsSource . '</p>';
             }
             $rightsSourceNL = $rightsSource . $buttonURL;
             $rightsSourceEN = $rightsSource . $buttonURL;
@@ -940,7 +940,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                     $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
-                    $requiredStatement['value'][$language] = array($prefix . '<div><br/>' . $publisherName . '</div>' . $extra);
+                    $requiredStatement['value'][$language] = array('<p class="uv-iiif-extension-host">' . $prefix . '</p><p class="uv-iiif-extension-host">' . $publisherName . '</p><p class="uv-iiif-extension-host">' . $extra . '</p>');
                 } else {
                     $requiredStatement['value'][$language] = array('');
                 }
