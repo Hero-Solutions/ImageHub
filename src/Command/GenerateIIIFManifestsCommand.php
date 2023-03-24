@@ -555,7 +555,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             if(!empty($rightsSource)) {
-                $rightsSource = '<p>' . $rightsSource . '</p>';
+                $rightsSource = '<div>' . $rightsSource . '</div>';
             }
             $rightsSourceNL = $rightsSource . $buttonURL;
             $rightsSourceEN = $rightsSource . $buttonURL;
@@ -590,7 +590,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     }
                 }
                 $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
-                $creditlines[] = array('@language' => $language, '@value' => $prefix . '<p>' . $publisherName . '</p>' . $extraInfo);
+                $creditlines[] = array('@language' => $language, '@value' => $prefix . '<div><br/>' . $publisherName . '</div>' . $extraInfo);
             }
 
             // Fill in (multilingual) manifest data
@@ -893,7 +893,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             if(!empty($rightsSource)) {
-                $rightsSource = '<p>' . $rightsSource . '</p>';
+                $rightsSource = '<div>' . $rightsSource . '</div>';
             }
             $rightsSourceNL = $rightsSource . $buttonURL;
             $rightsSourceEN = $rightsSource . $buttonURL;
@@ -940,7 +940,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                     $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
-                    $requiredStatement['value'][$language] = array($prefix . '<p>' . $publisherName . '</p>' . $extra);
+                    $requiredStatement['value'][$language] = array($prefix . '<div><br/>' . $publisherName . '</div>' . $extra);
                 } else {
                     $requiredStatement['value'][$language] = array('');
                 }
