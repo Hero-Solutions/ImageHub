@@ -41,6 +41,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
     private $datahubRecordDb;
     private $datahubRecordIds;
+    private $resourceSpaceSortOrders;
     private $relations = array();
 
     protected function configure()
@@ -261,6 +262,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                     $resourceData->setId($resourceId);
                     $resourceData->setName('iiif_sort_number');
                     $resourceData->setValue($index);
+                    $this->resourceSpaceSortOrders[$resourceId] = $index;
                     $em->persist($resourceData);
                 }
                 $this->resourceSpace->generateCreditLines($this->creditLineDefinition, $rsData, $dhData);
@@ -319,7 +321,12 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                         }
                         if (array_key_exists($k, $recordIdsToResourceIds)) {
                             foreach ($recordIdsToResourceIds[$k] as $otherResourceId) {
-                                $potentialRelations[$otherResourceId] = $v['sort_order'];
+                                $otherSortOrder = $v['sort_order'];
+                                //Sort orders defined in ResourceSpace take precedence over sort orders defined in the data record
+                                if(array_key_exists($otherResourceId, $this->resourceSpaceSortOrders)) {
+                                    $otherSortOrder = $this->resourceSpaceSortOrders[$otherResourceId];
+                                }
+                                $potentialRelations[$otherResourceId] = $otherSortOrder;
                             }
                         }
                     }
@@ -327,7 +334,11 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 // Add all resources with the same inventory number (including itself)
                 foreach($rsIdsToInventoryNumbers as $rsId => $invNr) {
                     if($invNr == $inventoryNumber) {
-                        $potentialRelations[$rsId] = $thisSortOrder;
+                        if(array_key_exists($rsId, $this->resourceSpaceSortOrders)) {
+                            $potentialRelations[$rsId] = $this->resourceSpaceSortOrders[$rsId];
+                        } else {
+                            $potentialRelations[$rsId] = $thisSortOrder;
+                        }
                     }
                 }
                 asort($potentialRelations);
