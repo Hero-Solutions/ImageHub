@@ -15,6 +15,8 @@ parameters:
 
     placeholder_id: -1
 
+    ftp_folder: '/path/to/ftp/folder/'
+
     # The value of 'field' within each definition is the shorthand name of the field in ResourceSpace where this data is sent.
     # These fields should not be manually edited in ResourceSpace, as any data within will automatically be overwritten with data from the Datahub!
     # Field 'id' must always be present in the data definition (= inventory number, used a primary key in MySQL).
