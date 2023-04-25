@@ -48,7 +48,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
             $this->logger->error('Error: FTP folder ' . $this->ftpFolder . ' does not exist.');
             return 1;
         }
-        foreach(glob($this->ftpFolder) as $file) {
+        foreach(glob($this->ftpFolder . '/*.*') as $file) {
             echo "filename: $file : filetype: " . filetype($file) . "<br />";
         }
         return 0;
