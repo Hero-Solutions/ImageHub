@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\ResourceSpace\ResourceSpace;
+use Exception;
 use Imagick;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
@@ -59,16 +60,19 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
 
     private function shouldUploadFile($file)
     {
-        echo 'Test -1' . $file . PHP_EOL;
-        // Check if this file was modified in the last 5 minutes (still being uploaded through FTP)
+        // Check if this file was modified in the last 5 minutes (meaning it is still being uploaded through FTP)
         $LastModified = filemtime($file);
         if (time() < $LastModified + 300) {
             return false;
         }
-        echo 'Test 0' . $file . PHP_EOL;
 
-        if(@getimagesize($file) === false) {
-            $this->logger->error('Error: Image ' . $file . ' appears to be corrupted.');
+        try {
+            if(getimagesize($file) === false) {
+                $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted.');
+                return false;
+            }
+        } catch(Exception $e) {
+            $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted.');
             return false;
         }
 
@@ -77,6 +81,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
 
     private function uploadFile($file)
     {
+        rename()
         $this->logger->info('Uploading image ' . $file . ' to ResourceSpace.');
     }
 }
