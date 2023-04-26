@@ -65,6 +65,8 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
             return false;
         }
 
+        Imagick::setResourceLimit(imagick::RESOURCETYPE_MEMORY, 2000000000);
+
         // Create an imagick image to check if the file is a valid image
         $imagick = new Imagick($file);
 
