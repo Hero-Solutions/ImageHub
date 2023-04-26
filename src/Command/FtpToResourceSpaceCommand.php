@@ -59,23 +59,28 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
 
     private function shouldUploadFile($file)
     {
+        echo 'Test -1' . $file . PHP_EOL;
         // Check if this file was modified in the last 5 minutes (still being uploaded through FTP)
         $LastModified = filemtime($file);
         if (time() < $LastModified + 300) {
             return false;
         }
+        echo 'Test 0' . $file . PHP_EOL;
 
         Imagick::setResourceLimit(imagick::RESOURCETYPE_MEMORY, 20000000);
         Imagick::setRegistry('temporary-path', '/mnt/volume_ams3_01/');
+        echo 'Test 1' . $file . PHP_EOL;
 
         // Create an imagick image to check if the file is a valid image
         $imagick = new Imagick($file);
+        echo 'Test 2' . $file . PHP_EOL;
 
         // Check if this image is valid
         if(!$imagick->valid()) {
             $this->logger->error('Error: Image ' . $file . ' is not a valid image.');
             return false;
         }
+        echo 'Test 3' . $file . PHP_EOL;
 
         if(getimagesize($file) === false) {
             $this->logger->error('Error: Image ' . $file . ' appears to be corrupted.');
