@@ -15,6 +15,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterface, LoggerAwareInterface
 {
+    /**
+     * @var ResourceSpace
+     */
     private $resourceSpace;
     private $ftpFolder;
 
@@ -50,12 +53,25 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
             $this->logger->error('Error: FTP folder ' . $this->ftpFolder . ' does not exist.');
             return 1;
         }
+        $files = [];
         foreach(glob($this->ftpFolder . '/*.*') as $file) {
             if(is_file($file)) {
                 if ($this->shouldUploadFile($file)) {
-                    $this->uploadFile($file);
+                    // Move all files to be processed into a 'processing' subdirectory
+                    if(!is_dir($this->ftpFolder . '/processing/')) {
+                        mkdir($this->ftpFolder . '/processing/');
+                    }
+                    $newFilename = $this->ftpFolder . '/processing/' . basename($file);
+                    rename($file, $newFilename);
+
+                    $files[] = $newFilename;
                 }
             }
+        }
+
+        //Now actually upload all files
+        foreach($files as $file) {
+            $this->uploadFile($file);
         }
         return 0;
     }
@@ -83,10 +99,8 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
 
     private function uploadFile($file)
     {
-        if(!is_dir($this->ftpFolder . '/processing/')) {
-            mkdir($this->ftpFolder . '/processing/');
-        }
-        rename($file, $this->ftpFolder . '/processing/' . basename($file));
         $this->logger->info('Uploading image ' . $file . ' to ResourceSpace.');
+        $this->resourceSpace->createResource($file);
+        $this->logger->info('Uploaded image ' . $file . ' to ResourceSpace.');
     }
 }

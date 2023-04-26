@@ -236,6 +236,11 @@ class ResourceSpace
         return $this->doApiCall('update_field&param1=' . $id . '&param2=' . $key . '&param3=' . urlencode($value));
     }
 
+    public function createResource($file)
+    {
+        return $this->doApiCall('create_resource&param1=1&param2=0&param3=' . urlencode($file) . '&param4=1&param5=&param6=&param7=');
+    }
+
     private function doApiCall($query)
     {
         $query = 'user=' . $this->apiUsername . '&function=' . $query;
