@@ -67,11 +67,11 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         }
         echo 'Test 0' . $file . PHP_EOL;
 
-        Imagick::setResourceLimit(imagick::RESOURCETYPE_MEMORY, 51200000);
-        Imagick::setResourceLimit(imagick::RESOURCETYPE_MAP, 51200000);
-        Imagick::setResourceLimit(imagick::RESOURCETYPE_AREA, 51200000);
-        Imagick::setResourceLimit(imagick::RESOURCETYPE_DISK, 50000000000);
-        Imagick::setResourceLimit(imagick::RESOURCETYPE_FILE, 50000000000);
+        Imagick::setResourceLimit(imagick::RESOURCETYPE_MEMORY, 256);
+        Imagick::setResourceLimit(imagick::RESOURCETYPE_MAP, 256);
+        Imagick::setResourceLimit(imagick::RESOURCETYPE_AREA, 1512);
+        Imagick::setResourceLimit(imagick::RESOURCETYPE_FILE, 768);
+        Imagick::setResourceLimit(imagick::RESOURCETYPE_DISK, -1);
         Imagick::setRegistry('temporary-path', '/mnt/volume_ams3_01/');
 
         echo 'Imagick res 1 ' . Imagick::getResourceLimit(imagick::RESOURCETYPE_AREA);
@@ -84,6 +84,8 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         echo 'Test 1' . $file . PHP_EOL;
 
         // Create an imagick image to check if the file is a valid image
+        $imagick = new Imagick();
+        $imagick->readImage($file);
         $imagick = new Imagick($file);
         echo 'Test 2' . $file . PHP_EOL;
 
