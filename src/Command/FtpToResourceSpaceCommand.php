@@ -51,8 +51,10 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
             return 1;
         }
         foreach(glob($this->ftpFolder . '/*.*') as $file) {
-            if($this->shouldUploadFile($file)) {
-                $this->uploadFile($file);
+            if(is_file($file)) {
+                if ($this->shouldUploadFile($file)) {
+                    $this->uploadFile($file);
+                }
             }
         }
         return 0;
@@ -81,7 +83,10 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
 
     private function uploadFile($file)
     {
-        rename()
+        if(!is_dir($this->ftpFolder . '/processing/')) {
+            mkdir($this->ftpFolder . '/processing/');
+        }
+        rename($file, $this->ftpFolder . '/processing/' . basename($file));
         $this->logger->info('Uploading image ' . $file . ' to ResourceSpace.');
     }
 }
