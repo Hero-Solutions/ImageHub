@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\ResourceSpace\ResourceSpace;
+use Imagick;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -49,8 +50,40 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
             return 1;
         }
         foreach(glob($this->ftpFolder . '/*.*') as $file) {
-            echo "filename: $file : filetype: " . filetype($file) . "<br />";
+            if($this->shouldUploadFile($file)) {
+                $this->uploadFile($file);
+            }
         }
         return 0;
+    }
+
+    private function shouldUploadFile($file)
+    {
+        // Check if this file was modified in the last 5 minutes (still being uploaded through FTP)
+        $LastModified = filemtime($file);
+        if (time() < $LastModified + 300) {
+            return false;
+        }
+
+        // Create an imagick image to check if the file is a valid image
+        $imagick = new Imagick($file);
+
+        // Check if this image is valid
+        if(!$imagick->valid()) {
+            $this->logger->error('Error: Image ' . $file . ' is not a valid image.');
+            return false;
+        }
+
+        if(getimagesize($file) === false) {
+            $this->logger->error('Error: Image ' . $file . ' appears to be corrupted.');
+            return false;
+        }
+
+        return true;
+    }
+
+    private function uploadFile($file)
+    {
+        $this->logger->info('Uploading image ' . $file . ' to ResourceSpace.');
     }
 }

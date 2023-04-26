@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ac98f1de001bbcb5d3e05823490fb7d4",
+    "content-hash": "7ae354f64738870557eee56a42b25082",
     "packages": [
         {
             "name": "caseyamcl/phpoaipmh",
@@ -6875,6 +6875,7 @@
         "ext-ctype": "*",
         "ext-curl": "*",
         "ext-iconv": "*",
+        "ext-imagick": "^3.7",
         "ext-json": "*",
         "ext-sqlite3": "*"
     },

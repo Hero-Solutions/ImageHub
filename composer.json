@@ -6,6 +6,7 @@
         "ext-ctype": "*",
         "ext-curl": "*",
         "ext-iconv": "*",
+        "ext-imagick": "^3.7",
         "ext-json": "*",
         "ext-sqlite3": "*",
         "caseyamcl/phpoaipmh": "^3.0",
