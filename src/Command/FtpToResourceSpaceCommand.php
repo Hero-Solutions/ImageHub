@@ -67,7 +67,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         }
         echo 'Test 0' . $file . PHP_EOL;
 
-        if(getimagesize($file) === false) {
+        if(@getimagesize($file) === false) {
             $this->logger->error('Error: Image ' . $file . ' appears to be corrupted.');
             return false;
         }
