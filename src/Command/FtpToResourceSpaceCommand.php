@@ -100,7 +100,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
     private function uploadFile($file)
     {
         $this->logger->info('Uploading image ' . $file . ' to ResourceSpace.');
-        $this->resourceSpace->createResource($file);
+        var_dump($this->resourceSpace->createResource($file));
         $this->logger->info('Uploaded image ' . $file . ' to ResourceSpace.');
     }
 }
