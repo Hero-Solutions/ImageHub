@@ -67,7 +67,8 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         }
         echo 'Test 0' . $file . PHP_EOL;
 
-        Imagick::setResourceLimit(imagick::RESOURCETYPE_MEMORY, 20000000);
+        Imagick::setResourceLimit(imagick::RESOURCETYPE_MEMORY, 2000000);
+        Imagick::setResourceLimit(imagick::RESOURCETYPE_MAP, 2000000);
         Imagick::setRegistry('temporary-path', '/mnt/volume_ams3_01/');
         echo 'Test 1' . $file . PHP_EOL;
 
