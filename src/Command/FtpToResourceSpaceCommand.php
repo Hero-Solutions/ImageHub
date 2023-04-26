@@ -67,34 +67,6 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         }
         echo 'Test 0' . $file . PHP_EOL;
 
-        Imagick::setResourceLimit(imagick::RESOURCETYPE_MEMORY, 256);
-        Imagick::setResourceLimit(imagick::RESOURCETYPE_MAP, 256);
-        Imagick::setResourceLimit(imagick::RESOURCETYPE_AREA, 1512);
-        Imagick::setResourceLimit(imagick::RESOURCETYPE_FILE, 768);
-        Imagick::setResourceLimit(imagick::RESOURCETYPE_DISK, -1);
-        Imagick::setRegistry('temporary-path', '/mnt/volume_ams3_01/');
-
-        echo 'Imagick res 1 ' . Imagick::getResourceLimit(imagick::RESOURCETYPE_AREA);
-        echo 'Imagick res 2 ' . Imagick::getResourceLimit(imagick::RESOURCETYPE_DISK);
-        echo 'Imagick res 3 ' . Imagick::getResourceLimit(imagick::RESOURCETYPE_FILE);
-        echo 'Imagick res 4 ' . Imagick::getResourceLimit(imagick::RESOURCETYPE_MAP);
-        echo 'Imagick res 5 ' . Imagick::getResourceLimit(imagick::RESOURCETYPE_MEMORY);
-        echo 'Imagick res 6 ' . Imagick::getResourceLimit(imagick::RESOURCETYPE_THREAD);
-
-        echo 'Test 1' . $file . PHP_EOL;
-
-        // Create an imagick image to check if the file is a valid image
-        $imagick = new Imagick();
-        $imagick->readImage($file);
-        echo 'Test 2' . $file . PHP_EOL;
-
-        // Check if this image is valid
-        if(!$imagick->valid()) {
-            $this->logger->error('Error: Image ' . $file . ' is not a valid image.');
-            return false;
-        }
-        echo 'Test 3' . $file . PHP_EOL;
-
         if(getimagesize($file) === false) {
             $this->logger->error('Error: Image ' . $file . ' appears to be corrupted.');
             return false;
