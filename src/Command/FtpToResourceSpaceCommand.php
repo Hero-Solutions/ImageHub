@@ -69,6 +69,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
 
         Imagick::setResourceLimit(imagick::RESOURCETYPE_MEMORY, 51200000);
         Imagick::setResourceLimit(imagick::RESOURCETYPE_MAP, 51200000);
+        Imagick::setResourceLimit(imagick::RESOURCETYPE_AREA, 51200000);
         Imagick::setResourceLimit(imagick::RESOURCETYPE_DISK, 50000000000);
         Imagick::setResourceLimit(imagick::RESOURCETYPE_FILE, 50000000000);
         Imagick::setRegistry('temporary-path', '/mnt/volume_ams3_01/');
