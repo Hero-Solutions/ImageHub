@@ -86,7 +86,6 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         // Create an imagick image to check if the file is a valid image
         $imagick = new Imagick();
         $imagick->readImage($file);
-        $imagick = new Imagick($file);
         echo 'Test 2' . $file . PHP_EOL;
 
         // Check if this image is valid
