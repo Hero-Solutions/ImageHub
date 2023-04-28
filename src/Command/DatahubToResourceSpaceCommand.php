@@ -797,7 +797,9 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         }
         if($this->verbose) {
 //            echo 'Updated ' . $updatedFields . ' fields for resource id ' . $resourceId . PHP_EOL;
-            $this->logger->info('Updated ' . $updatedFields . ' fields for resource id ' . $resourceId);
+            if($updatedFields > 0) {
+                $this->logger->info('Updated ' . $updatedFields . ' fields for resource id ' . $resourceId);
+            }
         }
     }
 
