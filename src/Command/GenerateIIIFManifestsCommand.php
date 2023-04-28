@@ -21,6 +21,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInterface, LoggerAwareInterface
 {
     private $verbose;
+    private $datahubUrl;
+    private $metadataPrefix;
     private $cantaloupeUrl;
     private $cantaloupeCurlOpts;
     private $publicUse;
@@ -77,6 +79,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     {
         $this->verbose = $input->getOption('verbose');
 
+        $this->datahubUrl = $this->container->getParameter('datahub_url');
+        $this->metadataPrefix = $this->container->getParameter('datahub_metadataprefix');
         $this->oneManifestPerObject = $this->container->getParameter('one_manifest_per_object');
 
         $this->iiifVersions = $this->container->getParameter('iiif_versions');
@@ -825,6 +829,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $recommendedForPublication = false;
             $inventoryNumber = '';
             $publisher = '';
+            $datahubRecordId = '';
 
             /* @var $d ResourceData */
             foreach ($rsDataRaw as $d) {
@@ -847,6 +852,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $recommendedForPublication = $value === '1';
                 } else if($d->getName() === 'sourceinvnr') {
                     $inventoryNumber = $value;
+                } else if($d->getName() == 'dh_record_id') {
+                    $datahubRecordId = $value;
                 } else {
                     $rsData[$d->getName()] = $value;
                 }
@@ -1189,9 +1196,25 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'viewingDirection'  => 'left-to-right',
                 'behavior'          => [ strtolower($iiifBehavior) ],
                 'rights'            => $rights,
-                'requiredStatement' => !empty($requiredStatement) ? $requiredStatement : new stdClass(),
-                'items'             => $canvases,
+                'requiredStatement' => !empty($requiredStatement) ? $requiredStatement : new stdClass()
             );
+
+            if(!empty($datahubRecordId)) {
+                $manifest['seeAlso'] = [
+                    [
+                        'id' => $this->datahubUrl . '/oai?verb=GetRecord&metadataPrefix=' . $this->metadataPrefix . '&identifier=' . $datahubRecordId,
+                        'type' => 'Dataset',
+                        'label' => [
+                            'en' => [ 'Object Description in XML' ],
+                            'nl' => [ 'Objectbeschrijving in XML' ]
+                        ],
+                        'format' => 'text/xml',
+                        'profile' => 'http://www.lido-schema.org'
+                    ]
+                ];
+            }
+
+            $manifest['items'] = $canvases;
 
             // This image is not for public use, therefore we also don't want this manifest to be public
             if ($isStartCanvas && !$publicUse) {
