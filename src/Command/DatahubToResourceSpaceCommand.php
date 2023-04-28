@@ -41,7 +41,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
     private $datahubRecordDb;
     private $datahubRecordIds;
-    private $resourceSpaceSortOrders;
+    private $resourceSpaceSortOrders = [];
     private $relations = array();
 
     protected function configure()
