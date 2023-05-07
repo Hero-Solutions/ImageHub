@@ -863,33 +863,46 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
             $rightsSource = '';
             $rightsSourceLC = '';
+            $buttonURL = '';
             if(array_key_exists($this->rightsSourceV3, $rsData)) {
                 $rightsSource = $rsData[$this->rightsSourceV3];
                 $rightsSourceLC = strtolower($rightsSource);
+                if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/zero/1.0/') !== false || $rightsSourceLC === 'cc0') {
+                    if($rightsSourceLC === 'http://creativecommons.org/publicdomain/zero/1.0/' || $rightsSourceLC === 'cc0') {
+                        $rightsSource = '';
+                    }
+                    $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
+                    $buttonURL .= '<a href="https://creativecommons.org/publicdomain/zero/1.0/"><img src="https://licensebuttons.net/p/zero/1.0/88x31.png"/></a>';
+                }
                 if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/mark/1.0/') !== false || $rightsSourceLC === 'public domain / cc-pdm') {
                     if($rightsSourceLC === 'http://creativecommons.org/publicdomain/mark/1.0/' || $rightsSourceLC === 'public domain / cc-pdm') {
                         $rightsSource = '';
                     }
                     $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                    $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
-                } else if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/zero/1.0/') !== false || $rightsSourceLC === 'cc0') {
-                    if($rightsSourceLC === 'http://creativecommons.org/publicdomain/zero/1.0/' || $rightsSourceLC === 'cc0') {
-                        $rightsSource = '';
+                    $buttonURL .= '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
+                }
+                if(strpos($rightsSourceLC, 'http://rightsstatements.org/vocab/InC-NC/1.0/') !== false) {
+                    $rights = 'http://rightsstatements.org/vocab/InC-NC/1.0/';
+                    $buttonURL .= '<a href="http://rightsstatements.org/vocab/InC-NC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/incopyright.png"/></a>';
+                }
+                if(strpos($rightsSourceLC, 'https://creativecommons.org/licenses/by-nc-nd/4.0/') !== false) {
+                    $rights = 'https://creativecommons.org/licenses/by-nc-nd/4.0/';
+                    $buttonURL .= '<a href="https://creativecommons.org/licenses/by-nc-nd/4.0/"><img src="https://licensebuttons.net/l/by-nc-nd/4.0/88x31.png"/></a>';
+                }
+                if(empty($buttonURL)) {
+                    if($rightsSourceLC === 'in copyright' || strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
+                        $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
+                        $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/incopyright.png"/></a>';
+                    } else if(strpos($rightsSourceLC, 'public domain') !== false || strpos($rightsSourceLC, 'publiek domein') !== false) {
+                        if($rightsSourceLC === 'public domain' || $rightsSourceLC === 'publiek domein') {
+                            $rightsSource = '';
+                        }
+                        $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
+                        $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
+                    } else {
+                        $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                        $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
                     }
-                    $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
-                    $buttonURL = '<a href="https://creativecommons.org/publicdomain/zero/1.0/"><img src="https://licensebuttons.net/p/zero/1.0/88x31.png"/></a>';
-                } else if($rightsSourceLC === 'in copyright' || strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
-                    $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
-                    $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/incopyright.png"/></a>';
-                } else if(strpos($rightsSourceLC, 'public domain') !== false || strpos($rightsSourceLC, 'publiek domein') !== false) {
-                    if($rightsSourceLC === 'public domain' || $rightsSourceLC === 'publiek domein') {
-                        $rightsSource = '';
-                    }
-                    $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                    $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
-                } else {
-                    $rights = 'https://rightsstatements.org/page/UND/1.0/';
-                    $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
                 }
             } else {
                 $rights = 'https://rightsstatements.org/page/UND/1.0/';
