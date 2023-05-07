@@ -881,7 +881,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
                     $buttonURL .= '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
                 }
-                if(strpos($rightsSourceLC, 'http://rightsstatements.org/vocab/InC-NC/1.0/') !== false) {
+                if(strpos($rightsSourceLC, 'http://rightsstatements.org/vocab/inc-nc/1.0/') !== false) {
                     $rights = 'http://rightsstatements.org/vocab/InC-NC/1.0/';
                     $buttonURL .= '<a href="http://rightsstatements.org/vocab/InC-NC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/incopyright.png"/></a>';
                 }
