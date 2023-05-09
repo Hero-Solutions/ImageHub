@@ -883,7 +883,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
                 if(strpos($rightsSourceLC, 'http://rightsstatements.org/vocab/inc-nc/1.0/') !== false) {
                     $rights = 'http://rightsstatements.org/vocab/InC-NC/1.0/';
-                    $buttonURL .= '<a href="http://rightsstatements.org/vocab/InC-NC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/incopyright.png"/></a>';
+                    $buttonURL .= '<a href="http://rightsstatements.org/vocab/InC-NC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/InC-NC.dark-white-interior.png"/></a>';
                 }
                 if(strpos($rightsSourceLC, 'https://creativecommons.org/licenses/by-nc-nd/4.0/') !== false) {
                     $rights = 'https://creativecommons.org/licenses/by-nc-nd/4.0/';
