@@ -712,27 +712,29 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'metadata' => $manifestMetadata
                 );
 
-                if($resourceId == $this->placeholderId) {
-                    $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
-                }
-
-                //Add to ResourceSpace metadata (if enabled)
-                if($storeInLido && $this->resourceSpaceManifestField !== '') {
-                    $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
-                    if($result !== 'true') {
-    //                    echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
-                        $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
-                    } else if($this->verbose) {
-                        $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                if($storeInLido) {
+                    if($resourceId == $this->placeholderId) {
+                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
                     }
-                }
 
-                if($storeInLido && $this->createTopLevelCollection && $data['recommended_for_publication']) {
-                    // Update the LIDO data to include the manifest and thumbnail
-                    if (!empty($data['sourceinvnr'])) {
-                        $sourceinvnr = $data['sourceinvnr'];
-                        if ($publicUse) {
-                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
+                    //Add to ResourceSpace metadata (if enabled)
+                    if($this->resourceSpaceManifestField !== '') {
+                        $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
+                        if($result !== 'true') {
+                            //                    echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
+                            $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
+                        } else if($this->verbose) {
+                            $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                        }
+                    }
+
+                    if($this->createTopLevelCollection && $data['recommended_for_publication']) {
+                        // Update the LIDO data to include the manifest and thumbnail
+                        if (!empty($data['sourceinvnr'])) {
+                            $sourceinvnr = $data['sourceinvnr'];
+                            if ($publicUse) {
+                                $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
+                            }
                         }
                     }
                 }
@@ -1264,26 +1266,28 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'label' => [ 'none' => [ $manifestLabel ]]
                 );
 
-                if($resourceId == $this->placeholderId) {
-                    $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
-                }
-
-                //Add to ResourceSpace metadata (if enabled)
-                if ($storeInLido && $this->resourceSpaceManifestField !== '') {
-                    $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
-                    if ($result !== 'true') {
-//                        echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
-                        $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
-                    } else if ($this->verbose) {
-                        $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                if($storeInLido) {
+                    if($resourceId == $this->placeholderId) {
+                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
                     }
-                }
 
-                if($storeInLido && $this->createTopLevelCollection && $recommendedForPublication) {
-                    // Update the LIDO data to include the manifest, thumbnail and file checksum
-                    if (!empty($inventoryNumber)) {
-                        if ($publicUse) {
-                            $this->storeManifestAndThumbnail($inventoryNumber, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
+                    //Add to ResourceSpace metadata (if enabled)
+                    if ($this->resourceSpaceManifestField !== '') {
+                        $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
+                        if ($result !== 'true') {
+//                        echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
+                            $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
+                        } else if ($this->verbose) {
+                            $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                        }
+                    }
+
+                    if($this->createTopLevelCollection && $recommendedForPublication) {
+                        // Update the LIDO data to include the manifest, thumbnail and file checksum
+                        if (!empty($inventoryNumber)) {
+                            if ($publicUse) {
+                                $this->storeManifestAndThumbnail($inventoryNumber, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
+                            }
                         }
                     }
                 }

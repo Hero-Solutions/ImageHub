@@ -207,14 +207,14 @@ parameters:
     publishers:
         Koninklijk Museum voor Schone Kunsten Antwerpen:
           url:
-            en: https://kmska.be/nl
-            nl: https://kmska.be/en
+            en: https://kmska.be/en
+            nl: https://kmska.be/nl
           translations:
             en: Royal Museum of Fine Arts Antwerp - Flemish Community
             nl: Koninklijk Museum voor Schone Kunsten Antwerpen - Vlaamse Gemeenschap
           creditline:
-            en: 'De jpg-bestanden van kunstwerken in het publieke domein zijn downloadbaar in hoge resolutie via de website van KMSKA. Beelden aanvragen kan via het contactformulier op <a href="https://kmska.be/nl/contact">kmska.be/nl/contact</a>.'
-            nl: 'The jpg files of public domain artworks are downloadable in high resolution through the KMSKA website. Requesting images can be done through the contact form at <a href="https://kmska.be/en/contact">kmska.be/en/contact</a>.'
+            en: 'The jpg files of public domain artworks are downloadable in high resolution through the KMSKA website. Requesting images can be done through the contact form at <a href="https://kmska.be/en/contact">kmska.be/en/contact</a>'
+            nl: '.De jpg-bestanden van kunstwerken in het publieke domein zijn downloadbaar in hoge resolutie via de website van KMSKA. Beelden aanvragen kan via het contactformulier op <a href="https://kmska.be/nl/contact">kmska.be/nl/contact</a>.'
         Museum voor Schone Kunsten Gent:
           url:
             en: 'https://www.mskgent.be/en'
