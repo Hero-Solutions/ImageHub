@@ -28,6 +28,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $publicUse;
     private $oneManifestPerObject;
 
+    private $usePlaceholderForImagesInCopyright;
+    private $inCopyrightKey;
+
     private $manifestLanguages;
 
     private $labelFieldsV2;
@@ -82,6 +85,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->datahubUrl = $this->container->getParameter('datahub_url');
         $this->metadataPrefix = $this->container->getParameter('datahub_metadataprefix');
         $this->oneManifestPerObject = $this->container->getParameter('one_manifest_per_object');
+        $this->usePlaceholderForImagesInCopyright = $this->container->getParameter('use_placeholder_for_images_in_copyright');
+        $this->inCopyrightKey = $this->container->getParameter('copyrighted_key');
 
         $this->iiifVersions = $this->container->getParameter('iiif_versions');
         $this->mainIiifVersion = $this->container->getParameter('main_iiif_version');
@@ -134,20 +139,33 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
         foreach($resources as $resource) {
             $resourceId = $resource['ref'];
+            /* @var $publicData ResourceData[] */
             $publicData = $em->createQueryBuilder()
                 ->select('i')
                 ->from(ResourceData::class, 'i')
                 ->where('i.id = :id')
-                ->andWhere('i.name = :name')
+                ->andWhere('i.name IN(:name)')
                 ->setParameter('id', $resourceId)
-                ->setParameter('name', 'is_public')
+                ->setParameter('name', 'is_public, is_in_copyright')
                 ->getQuery()
                 ->getResult();
             $isPublic = false;
+            $isInCopyright = false;
             foreach($publicData as $data) {
-                $isPublic = $data->getValue() === '1';
+                if($data->getName() === 'is_public') {
+                    $isPublic = $data->getValue() === '1';
+                } else if($data->getName() === 'is_in_copyright') {
+                    $isInCopyright = $data->getValue() === '1';
+                }
             }
-            $this->getImageData($resourceId, $isPublic);
+            if($isInCopyright) {
+                if(!array_key_exists($this->placeholderId, $this->imageData)) {
+                    $this->getImageData($this->placeholderId, true);
+                }
+                $this->imageData[$resourceId] = $this->imageData[$this->placeholderId];
+            } else {
+                $this->getImageData($resourceId, $isPublic);
+            }
         }
 
         // For good measure, sort the image data based on ResourceSpace id
