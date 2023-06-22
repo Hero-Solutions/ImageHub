@@ -86,7 +86,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->metadataPrefix = $this->container->getParameter('datahub_metadataprefix');
         $this->oneManifestPerObject = $this->container->getParameter('one_manifest_per_object');
         $this->usePlaceholderForImagesInCopyright = $this->container->getParameter('use_placeholder_for_images_in_copyright');
-        $this->inCopyrightKey = $this->container->getParameter('copyrighted_key');
+        $this->inCopyrightKey = $this->container->getParameter('in_copyright');
 
         $this->iiifVersions = $this->container->getParameter('iiif_versions');
         $this->mainIiifVersion = $this->container->getParameter('main_iiif_version');
