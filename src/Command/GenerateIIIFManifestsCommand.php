@@ -144,9 +144,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 ->select('i')
                 ->from(ResourceData::class, 'i')
                 ->where('i.id = :id')
-                ->andWhere('i.name IN(:name)')
+                ->andWhere('i.name IN(is_public, is_in_copyright)')
                 ->setParameter('id', $resourceId)
-                ->setParameter('name', 'is_public, is_in_copyright')
                 ->getQuery()
                 ->getResult();
             $isPublic = false;
