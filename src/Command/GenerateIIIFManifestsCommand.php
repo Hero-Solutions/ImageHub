@@ -28,6 +28,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $publicUse;
     private $oneManifestPerObject;
 
+    private $usePlaceholderForImagesInCopyright;
+    private $inCopyrightKey;
+
     private $manifestLanguages;
 
     private $labelFieldsV2;
@@ -82,6 +85,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->datahubUrl = $this->container->getParameter('datahub_url');
         $this->metadataPrefix = $this->container->getParameter('datahub_metadataprefix');
         $this->oneManifestPerObject = $this->container->getParameter('one_manifest_per_object');
+        $this->usePlaceholderForImagesInCopyright = $this->container->getParameter('use_placeholder_for_images_in_copyright');
+        $this->inCopyrightKey = $this->container->getParameter('in_copyright');
 
         $this->iiifVersions = $this->container->getParameter('iiif_versions');
         $this->mainIiifVersion = $this->container->getParameter('main_iiif_version');
@@ -134,20 +139,33 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
         foreach($resources as $resource) {
             $resourceId = $resource['ref'];
+            /* @var $publicData ResourceData[] */
             $publicData = $em->createQueryBuilder()
                 ->select('i')
                 ->from(ResourceData::class, 'i')
                 ->where('i.id = :id')
-                ->andWhere('i.name = :name')
+                ->andWhere('i.name IN(:name)')
                 ->setParameter('id', $resourceId)
-                ->setParameter('name', 'is_public')
+                ->setParameter('name', ['is_public', 'is_in_copyright'])
                 ->getQuery()
                 ->getResult();
             $isPublic = false;
+            $isInCopyright = false;
             foreach($publicData as $data) {
-                $isPublic = $data->getValue() === '1';
+                if($data->getName() === 'is_public') {
+                    $isPublic = $data->getValue() === '1';
+                } else if($data->getName() === 'is_in_copyright') {
+                    $isInCopyright = $data->getValue() === '1';
+                }
             }
-            $this->getImageData($resourceId, $isPublic);
+            if($isInCopyright) {
+                if(!array_key_exists($this->placeholderId, $this->imageData)) {
+                    $this->getImageData($this->placeholderId, true);
+                }
+                $this->imageData[$resourceId] = $this->imageData[$this->placeholderId];
+            } else {
+                $this->getImageData($resourceId, $isPublic);
+            }
         }
 
         // For good measure, sort the image data based on ResourceSpace id
@@ -712,27 +730,29 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'metadata' => $manifestMetadata
                 );
 
-                if($resourceId == $this->placeholderId) {
-                    $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
-                }
-
-                //Add to ResourceSpace metadata (if enabled)
-                if($storeInLido && $this->resourceSpaceManifestField !== '') {
-                    $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
-                    if($result !== 'true') {
-    //                    echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
-                        $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
-                    } else if($this->verbose) {
-                        $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                if($storeInLido) {
+                    if($resourceId == $this->placeholderId) {
+                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
                     }
-                }
 
-                if($storeInLido && $this->createTopLevelCollection && $data['recommended_for_publication']) {
-                    // Update the LIDO data to include the manifest and thumbnail
-                    if (!empty($data['sourceinvnr'])) {
-                        $sourceinvnr = $data['sourceinvnr'];
-                        if ($publicUse) {
-                            $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
+                    //Add to ResourceSpace metadata (if enabled)
+                    if($this->resourceSpaceManifestField !== '') {
+                        $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
+                        if($result !== 'true') {
+                            //                    echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
+                            $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
+                        } else if($this->verbose) {
+                            $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                        }
+                    }
+
+                    if($this->createTopLevelCollection && $data['recommended_for_publication']) {
+                        // Update the LIDO data to include the manifest and thumbnail
+                        if (!empty($data['sourceinvnr'])) {
+                            $sourceinvnr = $data['sourceinvnr'];
+                            if ($publicUse) {
+                                $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
+                            }
                         }
                     }
                 }
@@ -863,33 +883,46 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
             $rightsSource = '';
             $rightsSourceLC = '';
+            $buttonURL = '';
             if(array_key_exists($this->rightsSourceV3, $rsData)) {
                 $rightsSource = $rsData[$this->rightsSourceV3];
                 $rightsSourceLC = strtolower($rightsSource);
+                if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/zero/1.0/') !== false || $rightsSourceLC === 'cc0') {
+                    if($rightsSourceLC === 'http://creativecommons.org/publicdomain/zero/1.0/' || $rightsSourceLC === 'cc0') {
+                        $rightsSource = '';
+                    }
+                    $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
+                    $buttonURL .= '<a href="https://creativecommons.org/publicdomain/zero/1.0/"><img src="https://licensebuttons.net/p/zero/1.0/88x31.png"/></a>';
+                }
                 if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/mark/1.0/') !== false || $rightsSourceLC === 'public domain / cc-pdm') {
                     if($rightsSourceLC === 'http://creativecommons.org/publicdomain/mark/1.0/' || $rightsSourceLC === 'public domain / cc-pdm') {
                         $rightsSource = '';
                     }
                     $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                    $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
-                } else if(strpos($rightsSourceLC, 'http://creativecommons.org/publicdomain/zero/1.0/') !== false || $rightsSourceLC === 'cc0') {
-                    if($rightsSourceLC === 'http://creativecommons.org/publicdomain/zero/1.0/' || $rightsSourceLC === 'cc0') {
-                        $rightsSource = '';
+                    $buttonURL .= '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
+                }
+                if(strpos($rightsSourceLC, 'http://rightsstatements.org/vocab/inc-nc/1.0/') !== false) {
+                    $rights = 'http://rightsstatements.org/vocab/InC-NC/1.0/';
+                    $buttonURL .= '<a href="http://rightsstatements.org/vocab/InC-NC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/InC-NC.dark-white-interior.png"/></a>';
+                }
+                if(strpos($rightsSourceLC, 'https://creativecommons.org/licenses/by-nc-nd/4.0/') !== false) {
+                    $rights = 'https://creativecommons.org/licenses/by-nc-nd/4.0/';
+                    $buttonURL .= '<a href="https://creativecommons.org/licenses/by-nc-nd/4.0/"><img src="https://licensebuttons.net/l/by-nc-nd/4.0/88x31.png"/></a>';
+                }
+                if(empty($buttonURL)) {
+                    if($rightsSourceLC === 'in copyright' || strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
+                        $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
+                        $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/incopyright.png"/></a>';
+                    } else if(strpos($rightsSourceLC, 'public domain') !== false || strpos($rightsSourceLC, 'publiek domein') !== false) {
+                        if($rightsSourceLC === 'public domain' || $rightsSourceLC === 'publiek domein') {
+                            $rightsSource = '';
+                        }
+                        $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
+                        $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
+                    } else {
+                        $rights = 'https://rightsstatements.org/page/UND/1.0/';
+                        $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
                     }
-                    $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
-                    $buttonURL = '<a href="https://creativecommons.org/publicdomain/zero/1.0/"><img src="https://licensebuttons.net/p/zero/1.0/88x31.png"/></a>';
-                } else if($rightsSourceLC === 'in copyright' || strpos($rightsSourceLC, 'sabam') !== false || strpos($rightsSourceLC, '©') !== false) {
-                    $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
-                    $buttonURL = '<a href="https://rightsstatements.org/vocab/InC/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/incopyright.png"/></a>';
-                } else if(strpos($rightsSourceLC, 'public domain') !== false || strpos($rightsSourceLC, 'publiek domein') !== false) {
-                    if($rightsSourceLC === 'public domain' || $rightsSourceLC === 'publiek domein') {
-                        $rightsSource = '';
-                    }
-                    $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                    $buttonURL = '<a href="http://creativecommons.org/publicdomain/mark/1.0/"><img src="https://licensebuttons.net/p/mark/1.0/88x31.png"/></a>';
-                } else {
-                    $rights = 'https://rightsstatements.org/page/UND/1.0/';
-                    $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
                 }
             } else {
                 $rights = 'https://rightsstatements.org/page/UND/1.0/';
@@ -1251,26 +1284,28 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'label' => [ 'none' => [ $manifestLabel ]]
                 );
 
-                if($resourceId == $this->placeholderId) {
-                    $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
-                }
-
-                //Add to ResourceSpace metadata (if enabled)
-                if ($storeInLido && $this->resourceSpaceManifestField !== '') {
-                    $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
-                    if ($result !== 'true') {
-//                        echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
-                        $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
-                    } else if ($this->verbose) {
-                        $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                if($storeInLido) {
+                    if($resourceId == $this->placeholderId) {
+                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
                     }
-                }
 
-                if($storeInLido && $this->createTopLevelCollection && $recommendedForPublication) {
-                    // Update the LIDO data to include the manifest, thumbnail and file checksum
-                    if (!empty($inventoryNumber)) {
-                        if ($publicUse) {
-                            $this->storeManifestAndThumbnail($inventoryNumber, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
+                    //Add to ResourceSpace metadata (if enabled)
+                    if ($this->resourceSpaceManifestField !== '') {
+                        $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
+                        if ($result !== 'true') {
+//                        echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
+                            $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
+                        } else if ($this->verbose) {
+                            $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                        }
+                    }
+
+                    if($this->createTopLevelCollection && $recommendedForPublication) {
+                        // Update the LIDO data to include the manifest, thumbnail and file checksum
+                        if (!empty($inventoryNumber)) {
+                            if ($publicUse) {
+                                $this->storeManifestAndThumbnail($inventoryNumber, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
+                            }
                         }
                     }
                 }

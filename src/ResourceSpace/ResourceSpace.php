@@ -199,17 +199,17 @@ class ResourceSpace
         return $public;
     }
 
-    public function isRecommendedForPublication($data, $recommendedForPublication)
+    public function isCheckboxChecked($data, $checkboxFieldDefinition)
     {
-        $forPublication = false;
-        if(!empty($recommendedForPublication)) {
-            if (array_key_exists($recommendedForPublication['key'], $data)) {
-                if(!empty($data[$recommendedForPublication['key']])) {
-                    $forPublication = true;
+        $result = false;
+        if(!empty($checkboxFieldDefinition)) {
+            if (array_key_exists($checkboxFieldDefinition['key'], $data)) {
+                if(!empty($data[$checkboxFieldDefinition['key']])) {
+                    $result = true;
                 }
             }
         }
-        return $forPublication;
+        return $result;
     }
 
     public function getIIIFSortNumber($data, $iiifSortNumber)

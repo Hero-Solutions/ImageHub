@@ -88,6 +88,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $publicUse = $this->container->getParameter('public_use');
         $recommendedForPublication = $this->container->getParameter('recommended_for_publication');
         $iiifSortNumber = $this->container->getParameter('iiif_sort_number');
+        $inCopyright = $this->container->getParameter('in_copyright');
 
         $this->rsFieldsToPersist = [];
         $iiif2Labels = $this->container->getParameter('iiif2_labels');
@@ -211,13 +212,23 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 $resourceKeys[$key] = $key;
             }
 
-            $isRecommendedForPub = $this->resourceSpace->isRecommendedForPublication($rsData, $recommendedForPublication);
+            $isRecommendedForPub = $this->resourceSpace->isCheckboxChecked($rsData, $recommendedForPublication);
             $key = $resourceId . '@is_recommended_for_pub';
             if(!array_key_exists($key, $resourceKeys)) {
                 $resourceData = new ResourceData();
                 $resourceData->setId($resourceId);
                 $resourceData->setName('is_recommended_for_pub');
                 $resourceData->setValue($isRecommendedForPub ? '1' : '0');
+                $em->persist($resourceData);
+            }
+
+            $isInCopyright = $this->resourceSpace->isCheckboxChecked($rsData, $inCopyright);
+            $key = $resourceId . '@is_in_copyright';
+            if(!array_key_exists($key, $resourceKeys)) {
+                $resourceData = new ResourceData();
+                $resourceData->setId($resourceId);
+                $resourceData->setName('is_in_copyright');
+                $resourceData->setValue($isInCopyright ? '1' : '0');
                 $em->persist($resourceData);
             }
 
