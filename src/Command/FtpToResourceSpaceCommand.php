@@ -75,7 +75,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         }
 
         if(is_dir($this->ftpFolder . '/processing/') && count(glob($this->ftpFolder . '/processing/*')) === 0) {
-            unlink($this->ftpFolder . '/processing/');
+            rmdir($this->ftpFolder . '/processing/');
         }
 
         return 0;
