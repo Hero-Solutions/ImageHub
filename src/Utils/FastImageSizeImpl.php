@@ -12,6 +12,7 @@ class FastImageSizeImpl extends FastImageSize
         $this->loadExtension($extension);
         if (isset($this->classMap[$extension])) {
             echo 'File ' . $file . ' has extension ' . $extension . PHP_EOL;
+            var_dump($this->type);
             $this->classMap[$extension]->getSize($file);
         }
     }
