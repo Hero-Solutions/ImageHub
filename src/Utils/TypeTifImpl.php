@@ -37,8 +37,6 @@ class TypeTifImpl extends TypeTif
         // Skip 2 bytes that define the IFD size
         $offset += self::SHORT_SIZE;
 
-        var_dump($sizeIfd);
-
         // Ensure size can't exceed data length
         $sizeIfd = min($sizeIfd, floor((strlen($data) - $offset) / self::TIF_IFD_ENTRY_SIZE));
 
@@ -58,6 +56,7 @@ class TypeTifImpl extends TypeTif
             $this->setSizeInfo($type[1], $fieldType['type'], $ifdValue);
 
             $offset += self::TIF_IFD_ENTRY_SIZE;
+            var_dump($this->size);
         }
 
         $this->fastImageSize->setSize($this->size);
