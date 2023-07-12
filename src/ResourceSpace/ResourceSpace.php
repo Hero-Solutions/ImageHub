@@ -238,14 +238,19 @@ class ResourceSpace
 
     public function createResource($file)
     {
-        return $this->doApiCall('create_resource&param1=1&param2=0&param3=' . urlencode($file) . '&param4=0&param5=&param6=&param7=');
+        return $this->doApiCall('create_resource&param1=1&param2=0&param3=' . urlencode($file) . '&param4=0&param5=&param6=&param7=', 7200);
     }
 
-    private function doApiCall($query)
+    private function doApiCall($query, $timeout = null)
     {
         $query = 'user=' . $this->apiUsername . '&function=' . $query;
         $url = $this->apiUrl . '?' . $query . '&sign=' . $this->getSign($query);
-        $data = file_get_contents($url);
+        if($timeout === null) {
+            $data = file_get_contents($url);
+        } else {
+            $ctx = stream_context_create(array('http'=> [ 'timeout' => $timeout ]));
+            $data = file_get_contents($url, false, $ctx);
+        }
         return $data;
     }
 
