@@ -17,10 +17,9 @@ class TypeTifImpl extends TypeTif
 
         if (!in_array($signature, array(self::TIF_SIGNATURE_INTEL, self::TIF_SIGNATURE_MOTOROLA)))
         {
-            echo 'NO SIGNATURE!' . PHP_EOL;
-            var_dump($signature);
             return;
         }
+        var_dump($signature);
 
         // Set byte type
         $this->setByteType($signature);
