@@ -30,9 +30,9 @@ class TypeTifImpl extends TypeTif
         $ifdSizeInfo = substr($data, $offset, self::SHORT_SIZE);
         if (empty($ifdSizeInfo))
         {
-            echo 'IFD size info is empty!' . PHP_EOL;
             return;
         }
+        var_dump($ifdSizeInfo);
         list(, $sizeIfd) = unpack($this->typeShort, $ifdSizeInfo);
 
         // Skip 2 bytes that define the IFD size
