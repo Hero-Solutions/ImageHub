@@ -100,22 +100,10 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         }
 
         try {
-            $exif = exif_read_data($file);
-            var_dump($exif);
-            $imageSize = $this->fastImageSize->getImageSize($file);
-            if($imageSize === false || !is_array($imageSize)) {
+            $imageSize = getimagesize($file);
+            if($imageSize === false) {
                 $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted.');
                 return false;
-            } else {
-                if(!array_key_exists('width', $imageSize) || !array_key_exists('height', $imageSize)) {
-                    $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted (no width/height found).');
-                    return false;
-                } else {
-                    if($imageSize['width'] <= 0 || $imageSize['height'] <= 0) {
-                        $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted (width = ' . $imageSize['width'] . ', height = ' . $imageSize['height'] . ').');
-                        return false;
-                    }
-                }
             }
         } catch(Exception $e) {
             $this->logger->error($e);
