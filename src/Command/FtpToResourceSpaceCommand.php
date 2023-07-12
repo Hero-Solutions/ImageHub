@@ -118,6 +118,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
                 }
             }
         } catch(Exception $e) {
+            $this->logger->error($e);
             $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted.');
             return false;
         }
