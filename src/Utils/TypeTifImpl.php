@@ -19,7 +19,6 @@ class TypeTifImpl extends TypeTif
         {
             return;
         }
-        var_dump($signature);
 
         // Set byte type
         $this->setByteType($signature);
@@ -31,6 +30,7 @@ class TypeTifImpl extends TypeTif
         $ifdSizeInfo = substr($data, $offset, self::SHORT_SIZE);
         if (empty($ifdSizeInfo))
         {
+            echo 'IFD size info is empty!' . PHP_EOL;
             return;
         }
         list(, $sizeIfd) = unpack($this->typeShort, $ifdSizeInfo);
