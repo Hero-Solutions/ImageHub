@@ -14,6 +14,8 @@ class FastImageSizeImpl extends FastImageSize
         if (isset($this->classMap[$extension])) {
             $impl = new TypeTifImpl($this);
             $impl->getSize($file);
+        } else {
+            echo 'Oopsy daisy.' . PHP_EOL;
         }
     }
 }
