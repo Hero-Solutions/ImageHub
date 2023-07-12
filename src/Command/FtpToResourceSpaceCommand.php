@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\ResourceSpace\ResourceSpace;
+use App\Utils\FastImageSizeImpl;
 use Exception;
 use FastImageSize\FastImageSize;
 use Imagick;
@@ -60,7 +61,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
             return 1;
         }
 
-        $this->fastImageSize = new FastImageSize();
+        $this->fastImageSize = new FastImageSizeImpl();
 
         $files = [];
         foreach(glob($this->ftpFolder . '/*.*') as $file) {
