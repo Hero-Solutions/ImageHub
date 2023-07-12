@@ -100,7 +100,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         }
 
         try {
-            $exif = exif_read_data($file);
+            $exif = exif_read_data($file, null, true);
             var_dump($exif);
             $imageSize = $this->fastImageSize->getImageSize($file);
             if($imageSize === false || !is_array($imageSize)) {
