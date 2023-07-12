@@ -61,7 +61,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
             return 1;
         }
 
-        $this->fastImageSize = new FastImageSizeImpl();
+        $this->fastImageSize = new FastImageSize();
 
         $files = [];
         foreach(glob($this->ftpFolder . '/*.*') as $file) {
@@ -100,6 +100,8 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         }
 
         try {
+            $exif = exif_read_data($file);
+            var_dump($exif);
             $imageSize = $this->fastImageSize->getImageSize($file);
             if($imageSize === false || !is_array($imageSize)) {
                 $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted.');
