@@ -100,6 +100,8 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         }
 
         try {
+            $exifToolOutput = exec('exiftool ' . $file);
+            var_dump($exifToolOutput);
             $imageSize = getimagesize($file);
             if($imageSize === false) {
                 $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted.');
