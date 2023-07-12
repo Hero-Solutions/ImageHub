@@ -4,6 +4,7 @@ namespace App\Command;
 
 use App\ResourceSpace\ResourceSpace;
 use Exception;
+use FastImageSize\FastImageSize;
 use Imagick;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
@@ -20,6 +21,11 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
      */
     private $resourceSpace;
     private $ftpFolder;
+
+    /**
+     * @var FastImageSize
+     */
+    private $fastImageSize;
 
     protected function configure()
     {
@@ -53,6 +59,9 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
             $this->logger->error('Error: FTP folder ' . $this->ftpFolder . ' does not exist.');
             return 1;
         }
+
+        $this->fastImageSize = new FastImageSize();
+
         $files = [];
         foreach(glob($this->ftpFolder . '/*.*') as $file) {
             if(is_file($file)) {
@@ -90,9 +99,20 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         }
 
         try {
-            if(getimagesize($file) === false) {
+            $imageSize = $this->fastImageSize->getImageSize($file);
+            if($imageSize === false || !is_array($imageSize)) {
                 $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted.');
                 return false;
+            } else {
+                if(!array_key_exists('width', $imageSize) || !array_key_exists('height', $imageSize)) {
+                    $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted (no width/height found).');
+                    return false;
+                } else {
+                    if($imageSize['width'] <= 0 || $imageSize['height'] <= 0) {
+                        $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted (width = ' . $imageSize['width'] . ', height = ' . $imageSize['height'] . ').');
+                        return false;
+                    }
+                }
             }
         } catch(Exception $e) {
             $this->logger->error('Error: Image ' . $file . ' is not an image file or is corrupted.');
