@@ -10,6 +10,8 @@ parameters:
     datahub_namespace: 'lido'
     datahub_metadataprefix: 'oai_lido'
     datahub_related_works_xpath: 'descriptiveMetadata[@xml:lang="{language}"]/objectRelationWrap/relatedWorksWrap/relatedWorkSet'
+    exclude_relations:
+      - 'iconografische verwantschap'
     store_datahub_record_ids: false
     one_manifest_per_object: true
     use_placeholder_for_images_in_copyright: false

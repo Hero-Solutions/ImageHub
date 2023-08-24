@@ -31,6 +31,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
     private $dataDefinition;
     private $creditLineDefinition;
     private $relatedWorksXpath;
+    private $excludeRelations;
     private $storeDatahubRecordIds;
 
     private $rsFieldsToPersist;
@@ -82,6 +83,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $this->namespace = $this->container->getParameter('datahub_namespace');
         $this->metadataPrefix = $this->container->getParameter('datahub_metadataprefix');
         $this->relatedWorksXpath = $this->container->getParameter('datahub_related_works_xpath');
+        $this->excludeRelations = $this->container->getParameter('exclude_relations');
         $this->storeDatahubRecordIds = $this->container->getParameter('store_datahub_record_ids');
         $this->dataDefinition = $this->container->getParameter('datahub_data_definition');
         $this->creditLineDefinition = $this->container->getParameter('credit_line');
@@ -511,6 +513,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                     if ($domNodes) {
                         if (count($domNodes) > 0) {
                             foreach ($domNodes as $domNode) {
+                                $exclude = false;
                                 $relatedRecordId = null;
                                 $relation = null;
                                 $sortOrder = 1;
@@ -523,7 +526,11 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                                 }
                                 $childNodes = $domNode->childNodes;
                                 foreach ($childNodes as $childNode) {
-                                    if ($childNode->nodeName == $this->namespace . ':relatedWork') {
+                                    if($childNode->nodeName == $this->namespace . ':displayRelatedWork') {
+                                        if(in_array($childNode->nodeValue, $this->excludeRelations)) {
+                                            $exclude = true;
+                                        }
+                                    } else if ($childNode->nodeName == $this->namespace . ':relatedWork') {
                                         $objects = $childNode->childNodes;
                                         foreach ($objects as $object) {
                                             if ($object->childNodes) {
@@ -554,7 +561,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                                     }
                                 }
 
-                                if ($relatedRecordId != null) {
+                                if ($relatedRecordId != null && !$exclude) {
                                     if (!array_key_exists($relatedRecordId, $this->relations[$recordId])) {
                                         if ($relation == null) {
                                             $relation = 'relation';
