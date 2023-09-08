@@ -19,6 +19,7 @@
         "marc1706/fast-image-size": "^1.1",
         "simplesamlphp/simplesamlphp": "^1.17",
         "symfony/apache-pack": "^1.0",
+        "symfony/asset": "4.3.*",
         "symfony/console": "4.3.*",
         "symfony/dotenv": "4.3.*",
         "symfony/flex": "^1.19",
