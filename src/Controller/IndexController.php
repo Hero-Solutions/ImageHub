@@ -29,10 +29,13 @@ class IndexController extends AbstractController
             ->setParameter('id', $baseUrl . $mainIiifVersion . '/%/manifest.json')
             ->getQuery()
             ->getResult();
+        $count = 0;
         if(count($ids) > 0) {
-            return new Response($ids[0]['c'], 200);
-        } else {
-            return new Response(0, 404);
+            $count = $ids[0]['c'];
         }
+        return $this->render('index.html.twig', [
+            'current_page' => 'index',
+            'documentCount' => $count
+        ]);
     }
 }
