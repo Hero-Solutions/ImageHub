@@ -1,0 +1,19 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <br>
+    <div class="jumbotron">
+        <h1>IIIF</h1>
+        <p>IIIF frees up your images to be creatively reused. Because scaling, cropping and zooming become trivial
+            operations, you’re free to concentrate on the important task of providing a great user experience.
+            You also benefit from great image viewing software written and maintained by other people, so no need to reinvent
+            the wheel.</p>
+        <p>In IIIF, objects are defined as manifests. A manifest is a JSON-LD document that describes the structure of
+            each artwork. The manifests are used in the imagehub to serve images and the technical and administrative metadata needed to view
+            those images in an embedded online viewer. The imagehub features an implementation of the <a href="https://iiif.io/api/presentation/3.0/">IIIF Presentation API 3.0</a>.</p>
+        <p>Find the IIIF Presentation API endpoint at <a href="{{ app.request.getBaseURL() }}/iiif/3/">{{ app.request.getBaseURL() }}/iiif/3/</a></p>
+        <p>All manifests available in this API endpoint can be found in a top-level IIIF collection at <a href="{{ path('collection', {'iiifVersion': '3'}) }}">{{ path('collection', {'iiifVersion': '3'}) }}</a></p>
+        <p>You can find more information about the IIIF Presentation and Image APIs at <a href="http://iiif.io">iiif.io</a></p>
+        <p>Find more information about the Cantaloupe Image server <a href="https://cantaloupe-project.github.io/">https://cantaloupe-project.github.io/</a></p>
+    </div>
+{% endblock %}
