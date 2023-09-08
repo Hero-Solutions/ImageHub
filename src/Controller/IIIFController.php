@@ -15,9 +15,11 @@ class IIIFController extends AbstractController
     {
         // Make sure the service URL name ends with a trailing slash
         $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
+        $mainIiifVersion = $this->getParameter('main_iiif_version');
         return $this->render('iiif.html.twig', [
             'current_page' => 'iiif',
-            'base_url' => $baseUrl
+            'base_url' => $baseUrl,
+            'main_iiif_version' => $mainIiifVersion
         ]);
     }
 }
