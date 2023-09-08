@@ -35,7 +35,8 @@ class IndexController extends AbstractController
         }
         return $this->render('index.html.twig', [
             'current_page' => 'index',
-            'documentCount' => $count
+            'documentCount' => $count,
+            'base_url' => $baseUrl
         ]);
     }
 }

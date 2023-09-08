@@ -13,8 +13,11 @@ class IIIFController extends AbstractController
      */
     public function imagehub(Request $request)
     {
+        // Make sure the service URL name ends with a trailing slash
+        $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
         return $this->render('iiif.html.twig', [
-            'current_page' => 'iiif'
+            'current_page' => 'iiif',
+            'base_url' => $baseUrl
         ]);
     }
 }
