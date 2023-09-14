@@ -44,6 +44,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
     private $datahubRecordIds;
     private $resourceSpaceSortOrders = [];
     private $relations = array();
+    private $failedFetchingDatahubData;
 
     protected function configure()
     {
@@ -146,6 +147,9 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
         if($resourceSpaceId == null) {
             $this->cacheAllDatahubData($em);
+            if($this->failedFetchingDatahubData) {
+                return 1;
+            }
             $this->addAllRelations();
             $this->fixSortOrders();
         }
@@ -153,7 +157,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $resources = $this->resourceSpace->getAllResources();
         if ($resources === null) {
             $this->logger->error( 'Error: no resourcespace data.');
-            return;
+            return 1;
         }
 
         $recordIds = array();
@@ -427,18 +431,16 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             $em->flush();
             $em->clear();
         }
+        return 0;
     }
 
     function cacheAllDatahubData($em)
     {
-        $datahubEndpoint = Endpoint::build($this->datahubUrl . '/oai');
-        $records = $datahubEndpoint->listRecords($this->metadataPrefix);
-
-        $qb = $em->createQueryBuilder();
-        $qb->delete(DatahubData::class, 'data')->getQuery()->execute();
-        $em->flush();
-
+        $firstRun = true;
         try {
+            $datahubEndpoint = Endpoint::build($this->datahubUrl . '/oai');
+            $records = $datahubEndpoint->listRecords($this->metadataPrefix);
+
             $n = 0;
             foreach($records as $record) {
                 $id = null;
@@ -466,6 +468,13 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 $domDoc = new DOMDocument;
                 $domDoc->loadXML($data->asXML());
                 $xpath = new DOMXPath($domDoc);
+
+                if($firstRun) {
+                    $firstRun = false;
+                    $qb = $em->createQueryBuilder();
+                    $qb->delete(DatahubData::class, 'data')->getQuery()->execute();
+                    $em->flush();
+                }
 
                 foreach ($this->dataDefinition as $key => $dataDef) {
                     if(!array_key_exists('field', $dataDef)) {
@@ -634,10 +643,12 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         catch(OaipmhException $e) {
 //            echo 'OAI-PMH error: ' . $e . PHP_EOL;
             $this->logger->error('OAI-PMH error: ' . $e);
+            $this->failedFetchingDatahubData = true;
         }
         catch(HttpException $e) {
 //            echo 'OAI-PMH error: ' . $e . PHP_EOL;
             $this->logger->error('OAI-PMH error: ' . $e);
+            $this->failedFetchingDatahubData = true;
         }
     }
 
