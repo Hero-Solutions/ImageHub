@@ -431,13 +431,14 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
     function cacheAllDatahubData($em)
     {
+        $datahubEndpoint = Endpoint::build($this->datahubUrl . '/oai');
+        $records = $datahubEndpoint->listRecords($this->metadataPrefix);
+
         $qb = $em->createQueryBuilder();
         $qb->delete(DatahubData::class, 'data')->getQuery()->execute();
         $em->flush();
 
         try {
-            $datahubEndpoint = Endpoint::build($this->datahubUrl . '/oai');
-            $records = $datahubEndpoint->listRecords($this->metadataPrefix);
             $n = 0;
             foreach($records as $record) {
                 $id = null;
