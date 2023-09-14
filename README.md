@@ -4,7 +4,7 @@
 
 ![Imagehub Schema](imagehub_schema.jpg)
 
-The Imagehub provides a link between [ResourceSpace](https://www.resourcespace.com) and the [Datahub](https://github.com/thedatahub/Datahub). Data from the Datahub is added to resources in ResourceSpace and [IIIF Presentation API](https://iiif.io/api/presentation/2.1/) manifests are generated for each resource so they can be displayed in a IIIF viewer.
+The Imagehub provides a link between [ResourceSpace](https://www.resourcespace.com) and the [Datahub](https://github.com/thedatahub/Datahub). Data from the Datahub is added to resources in ResourceSpace and [IIIF Presentation API](https://iiif.io/api/presentation/3.0/) manifests are generated for each resource so they can be displayed in a IIIF viewer.
 
 ## Important considerations
 
@@ -326,3 +326,67 @@ Execute the following command(s) from the command line to check for any errors:
 bin/console app:datahub-to-resourcespace resource_id -v
 bin/console app:generate-iiif-manifests resource_id -v
 ```
+
+## Front end development
+
+Front end workflows are managed via [yarn](https://yarnpkg.com/en/) and 
+[webpack-encore](https://symfony.com/blog/introducing-webpack-encore-for-asset-management).
+
+The layout is based on [Bootstrap 3.3](https://getbootstrap.com/docs/3.3/)
+and managed via sass. The code can be found under `app/resources/public/sass`.
+
+Javascript files can be found under `assets/js`. Dependencies are 
+managed via `yarn`. Add vendor modules using `require`.
+
+Files are build and stored in `web/build` and included in `app/Resources/views/base.html.twig`
+via the `asset()` function.
+
+The workflow configuration can be found in `webpack.config.js`.
+
+Get started:
+
+```
+# Install all dependencies
+$ yarn install
+
+# Build everything in development
+$ yarn run encore dev
+
+# Watch files and build automatically
+$ yarn run encore dev --watch
+
+# Build for production
+$ yarn run encore production
+```
+
+## Contributing
+
+Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+
+
+## Authors
+
+[All Contributors][link-contributors]
+
+## Copyright and license
+
+The Imagehub is copyright (c) 2019 by Vlaamse Kunstcollectie vzw.
+
+This is free software; you can redistribute it and/or modify it under the 
+terms of the The GPLv3 License (GPL). Please see [License File](LICENSE) for 
+more information.
+
+[ico-version]: https://img.shields.io/packagist/v/:vendor/:package_name.svg?style=flat-square
+[ico-license]: https://img.shields.io/badge/license-GPLv3-brightgreen.svg?style=flat-square
+[ico-travis]: https://img.shields.io/travis/:vendor/:package_name/master.svg?style=flat-square
+[ico-scrutinizer]: https://img.shields.io/scrutinizer/coverage/g/:vendor/:package_name.svg?style=flat-square
+[ico-code-quality]: https://img.shields.io/scrutinizer/g/:vendor/:package_name.svg?style=flat-square
+[ico-downloads]: https://img.shields.io/packagist/dt/:vendor/:package_name.svg?style=flat-square
+
+[link-packagist]: https://packagist.org/packages/:vendor/:package_name
+[link-travis]: https://travis-ci.org/:vendor/:package_name
+[link-scrutinizer]: https://scrutinizer-ci.com/g/:vendor/:package_name/code-structure
+[link-code-quality]: https://scrutinizer-ci.com/g/:vendor/:package_name
+[link-downloads]: https://packagist.org/packages/:vendor/:package_name
+[link-author]: https://github.com/:author_username
+[link-contributors]: ../../contributors
