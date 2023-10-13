@@ -6,7 +6,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\TranscriptionRepository")
- * @ORM\Table(name="annotation")
+ * @ORM\Table(name="transcription")
  */
 class Transcription
 {
