@@ -134,7 +134,7 @@ class ResourceSpace
     }
 
     public function getResourcePath($ref, $extension) {
-        $data = $this->doApiCall('get_resource_path&param1=' . $ref . '&param2&param3=&param4=' . $extension);
+        $data = $this->doApiCall('get_resource_path&param1=' . $ref . '&param2=&param3=&param4=' . $extension);
         return json_decode($data);
     }
 
