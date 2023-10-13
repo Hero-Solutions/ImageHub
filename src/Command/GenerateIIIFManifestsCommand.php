@@ -340,6 +340,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private function generateAndStoreManifestsV2(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
     {
         foreach($this->imageData as $resourceId => $data) {
+            if(array_key_exists('is_alto_transcription', $data)) {
+                if($data['is_alto_transcription']) {
+                    continue;
+                }
+            }
 
             /* @var $rsDataRaw ResourceData[] */
             $rsDataRaw = $em->createQueryBuilder()
@@ -845,6 +850,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     public function generateAndStoreManifestsV3(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
     {
         foreach($this->imageData as $resourceId => $imageData) {
+            if(array_key_exists('is_alto_transcription', $imageData)) {
+                if($data['is_alto_transcription']) {
+                    continue;
+                }
+            }
 
             $rsDataRaw = $em->createQueryBuilder()
                 ->select('i')
