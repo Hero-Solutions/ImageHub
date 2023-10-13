@@ -851,7 +851,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     {
         foreach($this->imageData as $resourceId => $imageData) {
             if(array_key_exists('is_alto_transcription', $imageData)) {
-                if($data['is_alto_transcription']) {
+                if($imageData['is_alto_transcription']) {
                     continue;
                 }
             }
