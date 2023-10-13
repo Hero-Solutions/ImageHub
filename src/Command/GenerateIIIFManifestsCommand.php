@@ -1124,6 +1124,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                 }
+                //Hack to prevent having the same photographer mentioned twice (with preference for 'photographer')
+                if(array_key_exists('photographer', $metadata) && array_key_exists('creator_of_image', $metadata)) {
+                    unset($metadata['creator_of_image']);
+                }
 
                 //Store as indexed array, instead of key-value pairs
                 $metadata_ = [];
