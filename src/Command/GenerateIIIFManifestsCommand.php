@@ -146,20 +146,28 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 ->where('i.id = :id')
                 ->andWhere('i.name IN(:name)')
                 ->setParameter('id', $resourceId)
-                ->setParameter('name', ['is_public', 'is_in_copyright'])
+                ->setParameter('name', ['is_public', 'is_in_copyright, is_alto_transcription'])
                 ->getQuery()
                 ->getResult();
             $isPublic = false;
             $isInCopyright = false;
+            $isAltoTranscription = false;
             foreach($publicData as $data) {
                 if($data->getName() === 'is_public') {
                     $isPublic = $data->getValue() === '1';
                 } else if($data->getName() === 'is_in_copyright') {
                     $isInCopyright = $data->getValue() === '1';
+                } else if($data->getName() === 'is_alto_transcription') {
+                    $isAltoTranscription = $data->getValue() === '1';
                 }
             }
-            if($isInCopyright) {
-                if(!array_key_exists($this->placeholderId, $this->imageData)) {
+            if($isAltoTranscription) {
+                $this->imageData[$resourceId] = [
+                    'is_alto_transcription' => true,
+                    'url' => $this->resourceSpace->getResourcePath($resourceId, 'xml')
+                ];
+            } else if ($isInCopyright) {
+                if (!array_key_exists($this->placeholderId, $this->imageData)) {
                     $this->getImageData($this->placeholderId, true);
                 }
                 $this->imageData[$resourceId] = $this->imageData[$this->placeholderId];
