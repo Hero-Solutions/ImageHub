@@ -167,9 +167,21 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $resourceSpaceSortNumbers = array();
         $originalFilenames = array();
 
-        $qb = $em->createQueryBuilder();
-        $qb->delete(ResourceData::class, 'data')->getQuery()->execute();
-        $em->flush();
+        if($resourceSpaceId == null) {
+            $em->createQueryBuilder()
+                ->delete(ResourceData::class, 'data')
+                ->getQuery()
+                ->execute();
+            $em->flush();
+        } else {
+            $em->createQueryBuilder()
+                ->delete(ResourceData::class, 'data')
+                ->where('data.id = :id')
+                ->setParameter('id', $resourceSpaceId)
+                ->getQuery()
+                ->execute();
+            $em->flush();
+        }
 
         $rsIdsToInventoryNumbers = array();
 
