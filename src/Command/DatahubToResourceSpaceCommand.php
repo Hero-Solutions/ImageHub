@@ -193,7 +193,21 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             $resourceId = $resource['ref'];
             $rsData = $this->resourceSpace->getResourceSpaceData($resourceId);
 
-            $originalFilenames[$resourceId] = $rsData['originalfilename'];
+            $filename = $rsData['originalfilename'];
+            $originalFilenames[$resourceId] = $filename;
+
+            $extension = $resource['file_extension'];
+            if($extension === 'xml' && strpos($filename, 'alto') !== false) {
+                $key = $resourceId . '@is_alto_transcription';
+                if(!array_key_exists($key, $resourceKeys)) {
+                    $resourceData = new ResourceData();
+                    $resourceData->setId($resourceId);
+                    $resourceData->setName('is_alto_transcription');
+                    $resourceData->setValue('1');
+                    $em->persist($resourceData);
+                    $resourceKeys[$key] = $key;
+                }
+            }
 
             $fileChecksum = $resource['file_checksum'];
             $key = $resourceId . '@file_checksum';
