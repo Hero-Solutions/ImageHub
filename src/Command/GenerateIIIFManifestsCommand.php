@@ -171,7 +171,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
             if($isAltoTranscription) {
                 if($inventoryNumber !== null && $iiifSortNumber !== null) {
-                    $this->altoTranscriptionFiles[$inventoryNumber . '@' . $iiifSortNumber] = $resourceId;
+                    $this->altoTranscriptionFiles[$inventoryNumber . '@' . $iiifSortNumber] = $this->resourceSpace->getResourcePath($resourceId, 'xml');
                 }
             } else if ($isInCopyright) {
                 if (!array_key_exists($this->placeholderId, $this->imageData)) {
