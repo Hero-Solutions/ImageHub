@@ -1103,6 +1103,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                             if (!array_key_exists($key, $this->altoTranscriptions)) {
                                 $transcription = GenerateTranscriptionFromAlto::generate($this->altoTranscriptionFiles[$key], $canvasId, $manifestId, $this->serviceUrl, '3', $resourceId, $index);
                                 if($transcription !== null) {
+                                    $this->altoTranscriptions[$key] = $transcription;
                                     $this->storeTranscription($em, $transcription);
                                     $annotations = [
                                         'id' => $transcription->getTranscriptionId(),
