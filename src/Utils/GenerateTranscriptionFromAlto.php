@@ -20,36 +20,36 @@ class GenerateTranscriptionFromAlto
             $dom = new DOMDocument();
             $dom->loadHTMLFile($altoUrl);
             $items = [];
-            $textBlocks = $dom->getElementsByTagName("TextBlock");
+            $textBlocks = $dom->getElementsByTagName("textblock");
             foreach($textBlocks as $textBlock) {
                 $x = '';
                 $y = '';
                 $w = '';
                 $h = '';
-                if($textBlock->hasAttribute('HPOS')) {
-                    $x = $textBlock->getAttribute('HPOS');
+                if($textBlock->hasAttribute('hpos')) {
+                    $x = $textBlock->getAttribute('hpos');
                 }
-                if($textBlock->hasAttribute('VPOS')) {
-                    $y = $textBlock->getAttribute('VPOS');
+                if($textBlock->hasAttribute('vpos')) {
+                    $y = $textBlock->getAttribute('vpos');
                 }
-                if($textBlock->hasAttribute('WIDTH')) {
-                    $w = $textBlock->getAttribute('WIDTH');
+                if($textBlock->hasAttribute('width')) {
+                    $w = $textBlock->getAttribute('width');
                 }
-                if($textBlock->hasAttribute('HEIGHT')) {
-                    $h = $textBlock->getAttribute('HEIGHT');
+                if($textBlock->hasAttribute('height')) {
+                    $h = $textBlock->getAttribute('height');
                 }
                 if($x !== '' && $y !== '' && $w !== '' && $h !== '') {
                     $language = 'en';
-                    if($textBlock->hasAttribute('LANG')) {
-                        $language = $textBlock->getAttribute('LANG');
+                    if($textBlock->hasAttribute('lang')) {
+                        $language = $textBlock->getAttribute('lang');
                     }
                     $item = '';
-                    $textLines = $textBlock->getElementsByTagName("TextLine");
+                    $textLines = $textBlock->getElementsByTagName("textline");
                     foreach($textLines as $textLine) {
-                        $strings = $textLine->getElementsByTagName("String");
+                        $strings = $textLine->getElementsByTagName("string");
                         foreach($strings as $string) {
-                            if($string->hasAttribute("CONTENT")) {
-                                $item .= ($item === '' ? '' : ' ') . $string->getAttribute("CONTENT");
+                            if($string->hasAttribute("content")) {
+                                $item .= ($item === '' ? '' : ' ') . $string->getAttribute("content");
                             }
                         }
                     }
