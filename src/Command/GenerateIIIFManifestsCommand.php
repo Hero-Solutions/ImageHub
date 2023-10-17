@@ -46,6 +46,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
     private $resourceSpace;
     private $imageData;
+    private $altoTranscriptionFiles;
+    private $altoTranscriptions;
 
     private $iiifVersions;
     private $mainIiifVersion;
@@ -146,12 +148,14 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 ->where('i.id = :id')
                 ->andWhere('i.name IN(:name)')
                 ->setParameter('id', $resourceId)
-                ->setParameter('name', ['is_public', 'is_in_copyright', 'is_alto_transcription'])
+                ->setParameter('name', ['is_public', 'is_in_copyright', 'is_alto_transcription', 'iiifsortnumber', 'sourceinvnr'])
                 ->getQuery()
                 ->getResult();
             $isPublic = false;
             $isInCopyright = false;
             $isAltoTranscription = false;
+            $iiifSortNumber = null;
+            $inventoryNumber = null;
             foreach($publicData as $data) {
                 if($data->getName() === 'is_public') {
                     $isPublic = $data->getValue() === '1';
@@ -159,13 +163,16 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $isInCopyright = $data->getValue() === '1';
                 } else if($data->getName() === 'is_alto_transcription') {
                     $isAltoTranscription = $data->getValue() === '1';
+                } else if($data->getName() === 'iiifsortnumber') {
+                    $iiifSortNumber = $data->getValue();
+                } else if($data->getName() === 'sourceinvnr') {
+                    $inventoryNumber = $data->getValue();
                 }
             }
             if($isAltoTranscription) {
-                $this->imageData[$resourceId] = [
-                    'is_alto_transcription' => true,
-                    'url' => $this->resourceSpace->getResourcePath($resourceId, 'xml')
-                ];
+                if($inventoryNumber !== null && $iiifSortNumber !== null) {
+                    $this->altoTranscriptionFiles[$inventoryNumber . '@' . $iiifSortNumber] = $resourceId;
+                }
             } else if ($isInCopyright) {
                 if (!array_key_exists($this->placeholderId, $this->imageData)) {
                     $this->getImageData($this->placeholderId, true);
@@ -640,7 +647,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             // Generate the canvases
-            $canvases = array();
+            $canvases = [];
             $index = 0;
             $startCanvas = null;
             $thumbnail = null;
@@ -846,7 +853,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         }
         return array($manifestSequence);
     }
-
     public function generateAndStoreManifestsV3(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
     {
         foreach($this->imageData as $resourceId => $imageData) {
@@ -1065,6 +1071,36 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $rsData[$d->getName()] = $value;
                 }
 
+                $rendering = null;
+                //TODO implement further
+                if(array_key_exists('sourceinvnr', $rsData) && array_key_exists('iiif_sort_number', $rsData)) {
+                    if (!empty($rsData['sourceinvnr']) && !empty($rsData['iiif_sort_number'])) {
+                        $key = $rsData['sourceinvnr'] . '@' . $rsData['iiif_sort_number'];
+                        if (array_key_exists($key, $this->altoTranscriptionFiles)) {
+                            $rendering = [[
+                                'id' => $this->altoTranscriptionFiles[$key],
+                                'type' => 'Text',
+                                'format' => 'application/xml',//TODO application/alto-xml?
+                                'profile' => 'http://www.loc.gov/standards/alto/',//TODO is this correct?
+                                'label' => [
+                                    'en' => [
+                                        'ALTO XML'
+                                    ]
+                                ]
+                            ]];
+                            if (!array_key_exists($key, $this->altoTranscriptions)) {
+                                $this->generateAltoTranscription($this->altoTranscriptionFiles[$key]);
+                            }
+                            if (array_key_exists($key, $this->altoTranscriptions)) {
+/*                                $rendering = [
+                                    '@id' => $this->altoTranscriptions->getTranscriptionId(),
+                                    '@type' => 'sc:AnnotationList'
+                                ];*/
+                            }
+                        }
+                    }
+                }
+
                 $label = $this->generateLabel($rsData, $this->canvasLabelV3);
 
                 $metadata = [];
@@ -1218,7 +1254,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'format'  => 'image/jpeg',
                     'service' => $service
                 ));
-                $canvases[] = array(
+                $canvas = array(
                     'id'                => $canvasId,
                     'type'              => 'Canvas',
                     'label'             => !empty($label) ? $label : new stdClass(),
@@ -1228,6 +1264,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'items'             => array($annotationPage),
                     'thumbnail'         => $thmb
                 );
+                if(!empty($rendering)) {
+                    $canvas['rendering'] = $rendering;
+                }
+                $canvases[] = $canvas;
 
                 if ($isStartCanvas && $startCanvas == null) {
                     $startCanvas = $canvasId;
@@ -1338,6 +1378,12 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
         }
+    }
+
+    private function generateAltoTranscription($url)
+    {
+        //See https://iiif.io/api/cookbook/recipe/0068-newspaper/newspaper_issue_1-manifest.json
+        //And https://iiif.io/api/cookbook/recipe/0068-newspaper/newspaper_issue_1-anno_p1.json
     }
 
     private function generateLabel($rsData, $labelData) {
