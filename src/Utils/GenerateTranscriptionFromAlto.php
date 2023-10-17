@@ -43,44 +43,40 @@ class GenerateTranscriptionFromAlto
                     if($textBlock->hasAttribute('lang')) {
                         $language = $textBlock->getAttribute('lang');
                     }
-                    $item = '';
                     $textLines = $textBlock->getElementsByTagName("textline");
                     foreach($textLines as $textLine) {
+                        $item = '';
                         $strings = $textLine->getElementsByTagName("string");
                         foreach($strings as $string) {
                             if($string->hasAttribute("content")) {
                                 $item .= ($item === '' ? '' : ' ') . $string->getAttribute("content");
                             }
                         }
-                    }
-                    if($item !== '') {
-                        $items[] = [
-                            'id' => $transcriptionUrl . '-' . (count($items) + 1),
-                            'type' => 'Annotation',
-                            'motivation' => 'commenting',
-                            'body' => [
-                                'type' => 'TextualBody',
-                                'format' => 'text/plain',
-                                'language' => $language,
-                                'value' => $item
-                            ],
-                            'target' => [
-                                'type' => 'SpecificResource',
-                                'source' => [
-                                    'id' => $canvasId,
-                                    'type' => 'Canvas',
-                                    'partOf' => [
-                                        'id' => $manifestUrl,
-                                        'type' => 'Manifest'
-                                    ]
+                        if($item !== '') {
+                            $items[] = [
+                                'id' => $transcriptionUrl . '-' . (count($items) + 1),
+                                'type' => 'Annotation',
+                                'motivation' => 'commenting',
+                                'body' => [
+                                    'type' => 'TextualBody',
+                                    'format' => 'text/plain',
+                                    'language' => $language,
+                                    'value' => $item
                                 ],
-                                'selector' => [
-                                    'type' => 'FragmentSelector',
-                                    'conformsTo' => 'http://www.w3.org/TR/media-frags/',
-                                    'value' => '#xywh=' . $x . ',' . $y . ',' . $w . ',' . $h
+                                'target' => [
+                                    'type' => 'SpecificResource',
+                                    'source' => [
+                                        'id' => $canvasId,
+                                        'type' => 'Canvas'
+                                    ],
+                                    'selector' => [
+                                        'type' => 'FragmentSelector',
+                                        'conformsTo' => 'http://www.w3.org/TR/media-frags/',
+                                        'value' => '#xywh=' . $x . ',' . $y . ',' . $w . ',' . $h
+                                    ]
                                 ]
-                            ]
-                        ];
+                            ];
+                        }
                     }
                 }
             }
