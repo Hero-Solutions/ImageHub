@@ -148,7 +148,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 ->where('i.id = :id')
                 ->andWhere('i.name IN(:name)')
                 ->setParameter('id', $resourceId)
-                ->setParameter('name', ['is_public', 'is_in_copyright', 'is_alto_transcription', 'iiifsortnumber', 'sourceinvnr'])
+                ->setParameter('name', ['is_public', 'is_in_copyright', 'is_alto_transcription', 'iiif_sort_number', 'sourceinvnr'])
                 ->getQuery()
                 ->getResult();
             $isPublic = false;
@@ -163,7 +163,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $isInCopyright = $data->getValue() === '1';
                 } else if($data->getName() === 'is_alto_transcription') {
                     $isAltoTranscription = $data->getValue() === '1';
-                } else if($data->getName() === 'iiifsortnumber') {
+                } else if($data->getName() === 'iiif_sort_number') {
                     $iiifSortNumber = $data->getValue();
                 } else if($data->getName() === 'sourceinvnr') {
                     $inventoryNumber = $data->getValue();
@@ -889,7 +889,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if ($d->getName() === 'publisher') {
                     $publisher = $value;
                 }
-                if($d->getName() === 'iiifsortnumber') {
+                if($d->getName() === 'iiif_sort_number') {
                     $iiifSortNumber = intval($value);
                 } else if($d->getName() === 'file_checksum') {
                     $fileChecksum = $value;
