@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS `transcription` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `transcription_id` VARCHAR(255) NOT NULL,
+  `alto_url` VARCHAR(255) NOT NULL,
   `data` LONGTEXT NOT NULL,
   PRIMARY KEY (`id`)
 );

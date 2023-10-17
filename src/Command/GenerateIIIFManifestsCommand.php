@@ -4,7 +4,9 @@ namespace App\Command;
 
 use App\Entity\IIIfManifest;
 use App\Entity\ResourceData;
+use App\Entity\Transcription;
 use App\ResourceSpace\ResourceSpace;
+use App\Utils\GenerateTranscriptionFromAlto;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Psr\Log\LoggerAwareInterface;
@@ -853,6 +855,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         }
         return array($manifestSequence);
     }
+
     public function generateAndStoreManifestsV3(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
     {
         foreach($this->imageData as $resourceId => $imageData) {
@@ -1071,8 +1074,17 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $rsData[$d->getName()] = $value;
                 }
 
+                $index++;
+                $canvasId = $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/canvas/' . $index;
+                if($index === 1) {
+                    $publicUse = $this->imageData[$relatedRef]['public_use'];
+                }
+                $serviceId = $this->imageData[$relatedRef]['service_id'];
+                $imageUrl = $this->imageData[$relatedRef]['image_url'];
+                $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
+
                 $rendering = null;
-                //TODO implement further
+                $annotations = null;
                 if(array_key_exists('sourceinvnr', $rsData) && array_key_exists('iiif_sort_number', $rsData)) {
                     if (!empty($rsData['sourceinvnr']) && !empty($rsData['iiif_sort_number'])) {
                         $key = $rsData['sourceinvnr'] . '@' . $rsData['iiif_sort_number'];
@@ -1089,13 +1101,14 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                                 ]
                             ]];
                             if (!array_key_exists($key, $this->altoTranscriptions)) {
-                                $this->generateAltoTranscription($this->altoTranscriptionFiles[$key]);
-                            }
-                            if (array_key_exists($key, $this->altoTranscriptions)) {
-/*                                $rendering = [
-                                    '@id' => $this->altoTranscriptions->getTranscriptionId(),
-                                    '@type' => 'sc:AnnotationList'
-                                ];*/
+                                $transcription = GenerateTranscriptionFromAlto::generate($this->altoTranscriptionFiles[$key], $canvasId, $manifestId, $this->serviceUrl, '3', $resourceId, $index);
+                                if($transcription !== null) {
+                                    $this->storeTranscription($em, $transcription);
+                                    $annotations = [
+                                        'id' => $transcription->getTranscriptionId(),
+                                        'type' => 'AnnotationPage'
+                                    ];
+                                }
                             }
                         }
                     }
@@ -1194,14 +1207,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 // we know that this canvas is in fact the main canvas.
                 $isStartCanvas = $relatedRef == $resourceId;
 
-                $index++;
-                $canvasId = $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/canvas/' . $index;
-                if($index === 1) {
-                    $publicUse = $this->imageData[$relatedRef]['public_use'];
-                }
-                $serviceId = $this->imageData[$relatedRef]['service_id'];
-                $imageUrl = $this->imageData[$relatedRef]['image_url'];
-
                 if(strpos($serviceId, '/iiif/2/') !== false) {
                     $service = array(array(
                         '@id'      => $serviceId,
@@ -1267,6 +1272,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if(!empty($rendering)) {
                     $canvas['rendering'] = $rendering;
                 }
+                if(!empty($annotations)) {
+                    $canvas['annotations'] = $annotations;
+                }
                 $canvases[] = $canvas;
 
                 if ($isStartCanvas && $startCanvas == null) {
@@ -1275,7 +1283,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
-            $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
             $manifestMetadata = array(
                 'manifest_url' => [
                     'label' => [
@@ -1380,12 +1387,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         }
     }
 
-    private function generateAltoTranscription($url)
-    {
-        //See https://iiif.io/api/cookbook/recipe/0068-newspaper/newspaper_issue_1-manifest.json
-        //And https://iiif.io/api/cookbook/recipe/0068-newspaper/newspaper_issue_1-anno_p1.json
-    }
-
     private function generateLabel($rsData, $labelData) {
         $label = [];
         $fallbackLabel = '';
@@ -1443,6 +1444,17 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     ->where('manifest.manifestId = :manif_id')
                     ->setParameter('manif_id', $manifestId)
                     ->getQuery();
+        $query->execute();
+        $em->flush();
+    }
+
+    private function storeTranscription(EntityManagerInterface $em, $transcription)
+    {
+        $qb = $em->createQueryBuilder();
+        $query = $qb->delete(Transcription::class, 'transcription')
+            ->where('transcription.transcripionId = :id')
+            ->setParameter('id', $transcription->getTranscriptionId())
+            ->getQuery();
         $query->execute();
         $em->flush();
     }

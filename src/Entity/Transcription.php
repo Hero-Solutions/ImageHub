@@ -23,6 +23,11 @@ class Transcription
     private $transcriptionId;
 
     /**
+     * @ORM\Column(type="string", length=255)
+     */
+    private $altoUrl;
+
+    /**
      * @ORM\Column(type="text")
      */
     private $data;
@@ -42,6 +47,16 @@ class Transcription
         $this->transcriptionId = $transcriptionId;
 
         return $this;
+    }
+
+    public function getAltoUrl()
+    {
+        return $this->altoUrl;
+    }
+
+    public function setAltoUrl($altoUrl)
+    {
+        $this->altoUrl = $altoUrl;
     }
 
     public function getData(): ?string
