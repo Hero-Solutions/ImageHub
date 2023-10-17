@@ -22,29 +22,29 @@ class GenerateTranscriptionFromAlto
             $items = [];
             $textBlocks = $dom->getElementsByTagName("textblock");
             foreach($textBlocks as $textBlock) {
-                $x = '';
-                $y = '';
-                $w = '';
-                $h = '';
-                if($textBlock->hasAttribute('hpos')) {
-                    $x = $textBlock->getAttribute('hpos');
+                $language = 'en';
+                if($textBlock->hasAttribute('lang')) {
+                    $language = $textBlock->getAttribute('lang');
                 }
-                if($textBlock->hasAttribute('vpos')) {
-                    $y = $textBlock->getAttribute('vpos');
-                }
-                if($textBlock->hasAttribute('width')) {
-                    $w = $textBlock->getAttribute('width');
-                }
-                if($textBlock->hasAttribute('height')) {
-                    $h = $textBlock->getAttribute('height');
-                }
-                if($x !== '' && $y !== '' && $w !== '' && $h !== '') {
-                    $language = 'en';
-                    if($textBlock->hasAttribute('lang')) {
-                        $language = $textBlock->getAttribute('lang');
+                $textLines = $textBlock->getElementsByTagName("textline");
+                foreach($textLines as $textLine) {
+                    $x = '';
+                    $y = '';
+                    $w = '';
+                    $h = '';
+                    if($textLine->hasAttribute('hpos')) {
+                        $x = $textLine->getAttribute('hpos');
                     }
-                    $textLines = $textBlock->getElementsByTagName("textline");
-                    foreach($textLines as $textLine) {
+                    if($textLine->hasAttribute('vpos')) {
+                        $y = $textLine->getAttribute('vpos');
+                    }
+                    if($textLine->hasAttribute('width')) {
+                        $w = $textLine->getAttribute('width');
+                    }
+                    if($textLine->hasAttribute('height')) {
+                        $h = $textLine->getAttribute('height');
+                    }
+                    if($x !== '' && $y !== '' && $w !== '' && $h !== '') {
                         $item = '';
                         $strings = $textLine->getElementsByTagName("string");
                         foreach($strings as $string) {
