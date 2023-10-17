@@ -1453,7 +1453,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     {
         $qb = $em->createQueryBuilder();
         $query = $qb->delete(Transcription::class, 'transcription')
-            ->where('transcription.transcripionId = :id')
+            ->where('transcription.transcriptionId = :id')
             ->setParameter('id', $transcription->getTranscriptionId())
             ->getQuery();
         $query->execute();
