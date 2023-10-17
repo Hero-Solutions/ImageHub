@@ -10,6 +10,7 @@
         "ext-iconv": "*",
         "ext-imagick": "^3.7",
         "ext-json": "*",
+        "ext-libxml": "*",
         "ext-sqlite3": "*",
         "caseyamcl/phpoaipmh": "^3.0",
         "composer/package-versions-deprecated": "1.11.99.4",

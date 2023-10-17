@@ -16,6 +16,7 @@ class GenerateTranscriptionFromAlto
             $baseUrl = rtrim($serviceUrl, '/') . '/';
             $transcriptionUrl = $baseUrl . $iiifVersion . '/transcriptions/' . $manifestId . '/' . $transcriptionId . '.json';
 
+            libxml_use_internal_errors(true);
             $dom = new DOMDocument();
             $dom->loadHTMLFile($altoUrl);
             $items = [];
