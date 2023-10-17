@@ -77,7 +77,7 @@ class GenerateTranscriptionFromAlto
                                 'selector' => [
                                     'type' => 'FragmentSelector',
                                     'conformsTo' => 'http://www.w3.org/TR/media-frags/',
-                                    'value' => '#xywh=' . $x . $y . $w . $h
+                                    'value' => '#xywh=' . $x . ',' . $y . ',' . $w . ',' . $h
                                 ]
                             ]
                         ];
