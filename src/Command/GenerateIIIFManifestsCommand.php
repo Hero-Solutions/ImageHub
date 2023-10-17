@@ -1458,6 +1458,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             ->getQuery();
         $query->execute();
         $em->flush();
+
+        $em->persist($transcription);
+        $em->flush();
     }
 
     private function storeManifest(EntityManagerInterface $em, $manifest, $manifestId)
