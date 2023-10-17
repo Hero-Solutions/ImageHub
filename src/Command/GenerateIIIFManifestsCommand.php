@@ -46,8 +46,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
     private $resourceSpace;
     private $imageData;
-    private $altoTranscriptionFiles;
-    private $altoTranscriptions;
+    private $altoTranscriptionFiles = [];
+    private $altoTranscriptions = [];
 
     private $iiifVersions;
     private $mainIiifVersion;
