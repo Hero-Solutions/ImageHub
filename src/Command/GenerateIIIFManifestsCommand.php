@@ -1322,6 +1322,13 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 ];
             }
 
+            if($startCanvas !== null) {
+                $manifest['start'] = [
+                    'id' => $startCanvas,
+                    'type' => 'Canvas'
+                ];
+            }
+
             $manifest['items'] = $canvases;
 
             // This image is not for public use, therefore we also don't want this manifest to be public
