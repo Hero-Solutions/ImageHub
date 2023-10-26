@@ -1280,6 +1280,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
                 if ($isStartCanvas && $startCanvas == null) {
                     $startCanvas = $canvasId;
+                }
+                //Thumbnail should always be the first image
+                if($thumbnail === null) {
                     $thumbnail = $serviceId;
                 }
             }
