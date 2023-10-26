@@ -1213,6 +1213,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
                 if ($isStartCanvas && $startCanvas == null) {
                     $startCanvas = $canvasId;
+                }
+                if($thumbnail === null) {
                     $thumbnail = $serviceId;
                 }
             }
