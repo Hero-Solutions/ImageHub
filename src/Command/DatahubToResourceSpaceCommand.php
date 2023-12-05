@@ -868,7 +868,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             $this->datahubRecordIds[$sourceinvnr] = $sourceinvnr;
             $stmt = $this->datahubRecordDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
             $stmt->bindValue(':data', '{"record_id":"' . $recordId . '"}');
-            $stmt->bindValue(':id', $recordId);
+            $stmt->bindValue(':id', $sourceinvnr);
             $stmt->execute();
             $stmt->close();
         }
