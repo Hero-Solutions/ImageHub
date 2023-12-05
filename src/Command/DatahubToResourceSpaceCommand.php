@@ -866,7 +866,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         }
         if(!array_key_exists($sourceinvnr, $this->datahubRecordIds)) {
             $this->datahubRecordIds[$sourceinvnr] = $sourceinvnr;
-            $this->datahubRecordDb->exec('INSERT INTO data(data, id) VALUES(\'{"record_id":"' . $recordId . '"}\', \'' . $sourceinvnr . '\')');
+            $this->datahubRecordDb->exec('INSERT INTO data(data, id) VALUES(\'{"record_id":"' . $recordId . '"}\', \'' . addslashes($sourceinvnr) . '\')');
         }
     }
 }
