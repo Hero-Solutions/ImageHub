@@ -1473,7 +1473,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $query .= (strlen($query) === 0 ? '{"manifests":[' : ',') . '{"manifest":"' . $manifest['manifest'] . '","thumbnail":"' . $manifest['thumbnail'] . '","checksum":"' . $manifest['checksum'] . '"}';
                 }
                 $query .= ']}';
-                $manifestDb->exec('INSERT INTO data(data, id) VALUES(\'' . $query . '\', \'' . $sourceinvnr . '\')');
+                $manifestDb->exec('INSERT INTO data(data, id) VALUES(\'' . $query . '\', \'' . addslashes($sourceinvnr) . '\')');
             }
         }
     }
