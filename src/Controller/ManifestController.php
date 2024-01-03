@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\IIIfManifest;
 use App\Utils\Authenticator;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,6 +14,14 @@ use Symfony\Component\Routing\Annotation\Route;
 class ManifestController extends AbstractController
 {
     /**
+     * @var EntityManagerInterface
+     */
+    private $doctrine;
+
+    public function __construct(EntityManagerInterface $doctrine) {
+        $this->doctrine = $doctrine;
+    }
+    /**
      * @Route("/iiif/{iiifVersion}/{manifestId}/manifest.json", name="manifest", requirements={"iiifVersion"="2|3"})
      */
     public function manifestAction(Request $request, $iiifVersion, $manifestId = '')
@@ -21,8 +30,7 @@ class ManifestController extends AbstractController
         $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
 
         if($request->getMethod() == 'HEAD') {
-            $ids = $this->container->get('doctrine')
-                ->getManager()
+            $ids = $this->doctrine
                 ->createQueryBuilder()
                 ->select('m.id')
                 ->from(IIIfManifest::class, 'm')
@@ -36,11 +44,11 @@ class ManifestController extends AbstractController
                 return new Response('', 404);
             }
         } else {
-            $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/' . $manifestId . '/manifest.json']);
+            $manifest = $this->doctrine->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/' . $manifestId . '/manifest.json']);
             if ($manifest === null) {
                 //Check if we want to return the matching IIIF 3 manifest instead
                 if($iiifVersion === '2') {
-                    $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . '3/' . $manifestId . '/manifest.json']);
+                    $manifest = $this->doctrine->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . '3/' . $manifestId . '/manifest.json']);
                     if($manifest === null) {
                         return new Response('Sorry, the requested document does not exist.', 404);
                     } else {
