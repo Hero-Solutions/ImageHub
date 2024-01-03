@@ -4,7 +4,7 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.0.2",
         "ext-ctype": "*",
         "ext-curl": "*",
         "ext-dom": "*",
@@ -13,28 +13,31 @@
         "ext-json": "*",
         "ext-libxml": "*",
         "ext-sqlite3": "*",
-        "caseyamcl/phpoaipmh": "*",
+        "caseyamcl/phpoaipmh": "^3.3",
+        "doctrine/annotations": "^2.0",
         "doctrine/doctrine-bundle": "^2.11",
         "doctrine/orm": "^2.17",
         "simplesamlphp/simplesamlphp": "^2.1",
-        "symfony/asset": "6.4.*",
-        "symfony/console": "6.4.*",
-        "symfony/dotenv": "6.4.*",
+        "symfony/asset": "6.0.*",
+        "symfony/console": "6.0.*",
+        "symfony/dotenv": "6.0.*",
         "symfony/flex": "^2",
-        "symfony/framework-bundle": "6.4.*",
-        "symfony/monolog-bundle": "*",
-        "symfony/runtime": "6.4.*",
-        "symfony/twig-bundle": "6.4.*",
-        "symfony/yaml": "6.4.*",
-        "twig/extra-bundle": "^2.12|^3.0",
-        "twig/twig": "^2.12|^3.0"
+        "symfony/framework-bundle": "6.0.*",
+        "symfony/monolog-bundle": "^3.10",
+        "symfony/runtime": "6.0.*",
+        "symfony/yaml": "6.0.*",
+        "twig/twig": "^3.8"
     },
     "config": {
         "allow-plugins": {
-            "php-http/discovery": true,
+            "composer/package-versions-deprecated": true,
             "symfony/flex": true,
             "symfony/runtime": true,
             "simplesamlphp/composer-module-installer": true
+        },
+        "optimize-autoloader": true,
+        "preferred-install": {
+            "*": "dist"
         },
         "sort-packages": true
     },
@@ -54,8 +57,7 @@
         "symfony/polyfill-php72": "*",
         "symfony/polyfill-php73": "*",
         "symfony/polyfill-php74": "*",
-        "symfony/polyfill-php80": "*",
-        "symfony/polyfill-php81": "*"
+        "symfony/polyfill-php80": "*"
     },
     "scripts": {
         "auto-scripts": {
@@ -75,7 +77,7 @@
     "extra": {
         "symfony": {
             "allow-contrib": false,
-            "require": "6.4.*"
+            "require": "6.0.*"
         }
     }
 }
