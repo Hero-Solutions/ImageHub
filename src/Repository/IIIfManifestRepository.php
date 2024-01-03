@@ -4,7 +4,7 @@ namespace App\Repository;
 
 use App\Entity\IIIfManifest;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Symfony\Bridge\Doctrine\ManagerRegistry;
+use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @method IIIfManifest|null find($id, $lockMode = null, $lockVersion = null)
