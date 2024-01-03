@@ -61,7 +61,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $this->container = $container;
     }
 
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
     }

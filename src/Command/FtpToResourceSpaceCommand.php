@@ -3,10 +3,7 @@
 namespace App\Command;
 
 use App\ResourceSpace\ResourceSpace;
-use App\Utils\FastImageSizeImpl;
 use Exception;
-use FastImageSize\FastImageSize;
-use Imagick;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -22,11 +19,6 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
      */
     private $resourceSpace;
     private $ftpFolder;
-
-    /**
-     * @var FastImageSize
-     */
-    private $fastImageSize;
 
     protected function configure()
     {
@@ -44,7 +36,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         $this->container = $container;
     }
 
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
     }
@@ -60,8 +52,6 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
             $this->logger->error('Error: FTP folder ' . $this->ftpFolder . ' does not exist.');
             return 1;
         }
-
-        $this->fastImageSize = new FastImageSize();
 
         $files = [];
         foreach(glob($this->ftpFolder . '/*.*') as $file) {

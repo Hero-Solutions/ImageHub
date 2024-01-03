@@ -77,7 +77,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->container = $container;
     }
 
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
     }
