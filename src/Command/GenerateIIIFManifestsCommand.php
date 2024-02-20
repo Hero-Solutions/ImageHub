@@ -1219,7 +1219,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
             $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
             $manifestMetadata = array(
-                'manifest_url' => [
+                [
                     'label' => [
                         'none' => [ 'IIIF manifest' ]
                     ],
@@ -1389,6 +1389,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $manifestDocument = new IIIFManifest();
         $manifestDocument->setManifestId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
+        $fp = fopen('/home/vkc/test.json', 'w');
+        fwrite($fp, json_encode($manifest));
+        fclose($fp);
         $em->persist($manifestDocument);
         $em->flush();
         $em->clear();
