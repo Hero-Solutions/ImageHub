@@ -21,6 +21,7 @@ class ManifestController extends AbstractController
     public function __construct(EntityManagerInterface $doctrine) {
         $this->doctrine = $doctrine;
     }
+
     /**
      * @Route("/iiif/{iiifVersion}/{manifestId}/manifest.json", name="manifest", requirements={"iiifVersion"="2|3"})
      */

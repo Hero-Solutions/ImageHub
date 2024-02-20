@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\IIIfManifest;
 use App\Utils\Authenticator;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -11,6 +12,15 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class CollectionController extends AbstractController
 {
+    /**
+     * @var EntityManagerInterface
+     */
+    private $doctrine;
+
+    public function __construct(EntityManagerInterface $doctrine) {
+        $this->doctrine = $doctrine;
+    }
+
     /**
      * @Route("/iiif/{iiifVersion}/collection/top", name="collection", requirements={"iiifVersion"="2|3"})
      */
@@ -23,7 +33,7 @@ class CollectionController extends AbstractController
             // Make sure the service URL name ends with a trailing slash
             $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
 
-            $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/collection/top']);
+            $manifest = $this->doctrine->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/collection/top']);
             if ($manifest != null) {
                 $headers = array(
                     'Content-Type' => 'application/json',
