@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Transcription;
 use App\Utils\Authenticator;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,6 +14,15 @@ use Symfony\Component\Routing\Annotation\Route;
 class TranscriptionController extends AbstractController
 {
     /**
+     * @var EntityManagerInterface
+     */
+    private $doctrine;
+
+    public function __construct(EntityManagerInterface $doctrine) {
+        $this->doctrine = $doctrine;
+    }
+
+    /**
      * @Route("/iiif/{iiifVersion}/transcriptions/{manifestId}/{transcriptionId}.json", name="transcription", requirements={"iiifVersion"="2|3"})
      */
     public function transcriptionAction(Request $request, $iiifVersion, $manifestId = '', $transcriptionId = '')
@@ -20,11 +30,11 @@ class TranscriptionController extends AbstractController
         // Make sure the service URL name ends with a trailing slash
         $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
 
-        $transcription = $this->get('doctrine')->getRepository(Transcription::class)->findOneBy(['transcriptionId' => $baseUrl . $iiifVersion . '/transcriptions/' . $manifestId . '/' . $transcriptionId . '.json']);
+        $transcription = $this->doctrine->getRepository(Transcription::class)->findOneBy(['transcriptionId' => $baseUrl . $iiifVersion . '/transcriptions/' . $manifestId . '/' . $transcriptionId . '.json']);
         if ($transcription === null) {
             //Check if we want to return the matching IIIF 3 transcription instead
             if($iiifVersion === '2') {
-                $transcription = $this->get('doctrine')->getRepository(Transcription::class)->findOneBy(['manifestId' => $baseUrl . '3/transcriptions/' . $manifestId . '/' . $transcriptionId . '.json']);
+                $transcription = $this->doctrine->getRepository(Transcription::class)->findOneBy(['manifestId' => $baseUrl . '3/transcriptions/' . $manifestId . '/' . $transcriptionId . '.json']);
                 if($transcription === null) {
                     return new Response('Sorry, the requested document does not exist.', 404);
                 } else {

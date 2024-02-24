@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\IIIfManifest;
 use App\Utils\Authenticator;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -11,6 +12,15 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class MeemooManifestController extends AbstractController
 {
+    /**
+     * @var EntityManagerInterface
+     */
+    private $doctrine;
+
+    public function __construct(EntityManagerInterface $doctrine) {
+        $this->doctrine = $doctrine;
+    }
+
     /**
      * @Route("/meemoo/iiif/{iiifVersion}/{manifestId}/manifest.json", name="meemoo_manifest", requirements={"iiifVersion"="2|3"})
      */
@@ -20,8 +30,7 @@ class MeemooManifestController extends AbstractController
         $baseUrl = rtrim($this->getParameter('meemoo')['service_url'], '/') . '/';
 
         if($request->getMethod() == 'HEAD') {
-            $ids = $this->container->get('doctrine')
-                ->getManager()
+            $ids = $this->doctrine
                 ->createQueryBuilder()
                 ->select('m.id')
                 ->from(IIIfManifest::class, 'm')
@@ -35,7 +44,7 @@ class MeemooManifestController extends AbstractController
                 return new Response('', 404);
             }
         } else {
-            $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/' . $manifestId . '/manifest.json']);
+            $manifest = $this->doctrine->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/' . $manifestId . '/manifest.json']);
             if ($manifest == null) {
                 return new Response('Sorry, the requested document does not exist.', 404);
             } else {

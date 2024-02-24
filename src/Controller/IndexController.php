@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\IIIfManifest;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,6 +13,15 @@ use Symfony\Component\Routing\Annotation\Route;
 class IndexController extends AbstractController
 {
     /**
+     * @var EntityManagerInterface
+     */
+    private $doctrine;
+
+    public function __construct(EntityManagerInterface $doctrine) {
+        $this->doctrine = $doctrine;
+    }
+
+    /**
      * @Route("/", name="index")
      */
     public function index(Request $request, KernelInterface $kernel)
@@ -20,8 +30,7 @@ class IndexController extends AbstractController
         $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
         $mainIiifVersion = $this->getParameter('main_iiif_version');
 
-        $ids = $this->container->get('doctrine')
-            ->getManager()
+        $ids = $this->doctrine
             ->createQueryBuilder()
             ->select('COUNT(m.id) AS c')
             ->from(IIIfManifest::class, 'm')
