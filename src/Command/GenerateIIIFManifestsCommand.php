@@ -1287,8 +1287,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
-            $manifestMetadata = array(
-                'manifest_url' => [
+            $manifestMetadata = array([
                     'label' => [
                         'none' => [ 'IIIF manifest' ]
                     ],
