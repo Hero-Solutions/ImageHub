@@ -1287,7 +1287,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
-            $manifestMetadata = array([
+            $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
+            $manifestMetadata = array(
+                [
                     'label' => [
                         'none' => [ 'IIIF manifest' ]
                     ],
