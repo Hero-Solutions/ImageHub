@@ -1567,14 +1567,23 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->manifestsToStore as $sourceinvnr => $manifestData) {
             if($this->oneManifestPerObject) {
-                $manifestDb->exec('INSERT INTO data(data, id) VALUES(\'{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '"}\', \'' . $sourceinvnr . '\')');
+                $query = '{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '"}';
+                $stmt = $manifestDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
+                $stmt->bindValue(':data', $query);
+                $stmt->bindValue(':id', $sourceinvnr);
+                $stmt->execute();
+                $stmt->close();
             } else {
                 $query = '';
                 foreach($manifestData as $manifest) {
                     $query .= (strlen($query) === 0 ? '{"manifests":[' : ',') . '{"manifest":"' . $manifest['manifest'] . '","thumbnail":"' . $manifest['thumbnail'] . '","checksum":"' . $manifest['checksum'] . '"}';
                 }
                 $query .= ']}';
-                $manifestDb->exec('INSERT INTO data(data, id) VALUES(\'' . $query . '\', \'' . $sourceinvnr . '\')');
+                $stmt = $manifestDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
+                $stmt->bindValue(':data', $query);
+                $stmt->bindValue(':id', $sourceinvnr);
+                $stmt->execute();
+                $stmt->close();
             }
         }
     }
