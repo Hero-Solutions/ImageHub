@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\IIIfManifest;
+use App\Entity\IIIfManifestV2;
 use App\Utils\Authenticator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -33,7 +34,7 @@ class CollectionController extends AbstractController
             // Make sure the service URL name ends with a trailing slash
             $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
 
-            $manifest = $this->doctrine->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/collection/top']);
+            $manifest = $this->doctrine->getRepository($iiifVersion === '2' ? IIIfManifestV2::class : IIIfManifest::class)->findOneBy(['id' => 0]);
             if ($manifest != null) {
                 $headers = array(
                     'Content-Type' => 'application/json',

@@ -165,9 +165,9 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 'items' => $manifestsv3
             );
 
-            $this->deleteManifest($em, $collectionId);
+            $this->deleteManifest($em, 2000000000);
 
-            $manifestDocument = $this->storeManifest($em, $collection, $collectionId);
+            $manifestDocument = $this->storeManifest($em, $collection, 2000000000);
 
             $valid = true;
             if ($validate) {
@@ -548,7 +548,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 $manifest['service'] = $this->getAuthenticationService();
             }
 
-            $manifestDocument = $this->storeManifest($em, $manifest, $manifestId);
+            $manifestDocument = $this->storeManifest($em, $manifest, $resourceId);
 
             // Validate the manifest
             // We can only pass a URL to the validator, so the manifest needs to be stored and served already before validation
@@ -572,11 +572,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 }
 
                 // Add to manifests array to add to the top-level collection
-                $manifests[] = array(
-                    'id' => $manifestId,
-                    'type' => 'Manifest',
-                    'label' => [ 'en' => [ $label ]]
-                );
+                $manifests[] = $manifestId;
 
                 if($storeInLido && $this->createTopLevelCollection && $rsData['recommended_for_publication']) {
                     // Update the LIDO data to include the manifest and thumbnail
@@ -598,7 +594,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
     {
         $qb = $em->createQueryBuilder();
         $query = $qb->delete(IIIfManifest::class, 'manifest')
-            ->where('manifest.manifestId = :manif_id')
+            ->where('manifest.id = :manif_id')
             ->setParameter('manif_id', $manifestId)
             ->getQuery();
         $query->execute();
@@ -609,7 +605,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
     {
         // Store the manifest in mongodb
         $manifestDocument = new IIIFManifest();
-        $manifestDocument->setManifestId($manifestId);
+        $manifestDocument->setId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
         $em->persist($manifestDocument);
         $em->flush();

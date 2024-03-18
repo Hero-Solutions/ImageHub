@@ -33,7 +33,7 @@ class MeemooCollectionController extends AbstractController
             // Make sure the service URL name ends with a trailing slash
             $baseUrl = rtrim($this->getParameter('meemoo')['service_url'], '/') . '/';
 
-            $manifest = $this->doctrine->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/collection/top']);
+            $manifest = $this->doctrine->getRepository(IIIfManifest::class)->findOneBy(['id' => 2000000000]);
             if ($manifest != null) {
                 $headers = array(
                     'Content-Type' => 'application/json',
