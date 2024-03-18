@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\Entity\IIIfManifest;
+use App\Entity\IIIfManifestV2;
 use App\Entity\ResourceData;
 use App\Entity\Transcription;
 use App\ResourceSpace\ResourceSpace;
@@ -254,6 +255,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $manifestsv3 = array();
 
         if($this->createTopLevelCollection) {
+            $this->deleteAllManifestsV2($em);
             $this->deleteAllManifests($em);
         }
 
@@ -280,9 +282,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'manifests' => $manifestsv2
             );
 
-            $this->deleteManifest($em, $collectionId);
+            $this->deleteManifestV2($em, 0);
 
-            $manifestDocument = $this->storeManifest($em, $collection, $collectionId);
+            $manifestDocument = $this->storeManifestV2($em, $collection, 0);
 
             $valid = true;
             if ($validate) {
@@ -319,9 +321,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'items' => $manifestsv3
             );
 
-            $this->deleteManifest($em, $collectionId);
+            $this->deleteManifest($em, 0);
 
-            $manifestDocument = $this->storeManifest($em, $collection, $collectionId);
+            $manifestDocument = $this->storeManifest($em, $collection, 0);
 
             $valid = true;
             if ($validate) {
@@ -723,10 +725,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             if(!$this->createTopLevelCollection) {
-                $this->deleteManifest($em, $manifestId);
+                $this->deleteManifestV2($em, $resourceId);
             }
 
-            $manifestDocument = $this->storeManifest($em, $manifest, $manifestId);
+            $manifestDocument = $this->storeManifestV2($em, $manifest, $resourceId);
 
             // Validate the manifest
             // We can only pass a URL to the validator, so the manifest needs to be stored and served already before validation
@@ -750,12 +752,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
 
                 // Add to manifests array to add to the top-level collection
-                $manifests[] = array(
-                    '@id' => $manifestId,
-                    '@type' => 'sc:Manifest',
-                    'label' => $data['label'],
-                    'metadata' => $manifestMetadata
-                );
+                $manifests[] = $manifestId;
 
                 if($storeInLido) {
                     if($resourceId == $this->placeholderId) {
@@ -1340,7 +1337,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $manifest['service'] = $this->getAuthenticationService();
             }
 
-            $manifestDocument = $this->storeManifest($em, $manifest, $manifestId);
+            if(!$this->createTopLevelCollection) {
+                $this->deleteManifest($em, $resourceId);
+            }
+
+            $manifestDocument = $this->storeManifest($em, $manifest, $resourceId);
 
             // Validate the manifest
             // We can only pass a URL to the validator, so the manifest needs to be stored and served already before validation
@@ -1364,11 +1365,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
 
                 // Add to manifests array to add to the top-level collection
-                $manifests[] = array(
-                    'id' => $manifestId,
-                    'type' => 'Manifest',
-                    'label' => [ 'none' => [ $manifestLabel ]]
-                );
+                $manifests[] = $manifestId;
 
                 if($storeInLido) {
                     if($resourceId == $this->placeholderId) {
@@ -1440,11 +1437,29 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return $label;
     }
 
+    private function deleteAllManifestsV2(EntityManagerInterface $em)
+    {
+        $qb = $em->createQueryBuilder();
+        $query = $qb->delete(IIIfManifestV2::class, 'manifest')->getQuery();
+        $query->execute();
+        $em->flush();
+    }
+
     private function deleteAllManifests(EntityManagerInterface $em)
     {
         $qb = $em->createQueryBuilder();
-        $query = $qb->delete(IIIfManifest::class, 'manifest')
-            ->getQuery();
+        $query = $qb->delete(IIIfManifest::class, 'manifest')->getQuery();
+        $query->execute();
+        $em->flush();
+    }
+
+    private function deleteManifestV2(EntityManagerInterface $em, $manifestId)
+    {
+        $qb = $em->createQueryBuilder();
+        $query = $qb->delete(IIIfManifestV2::class, 'manifest')
+                    ->where('manifest.id = :manif_id')
+                    ->setParameter('manif_id', $manifestId)
+                    ->getQuery();
         $query->execute();
         $em->flush();
     }
@@ -1453,9 +1468,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     {
         $qb = $em->createQueryBuilder();
         $query = $qb->delete(IIIfManifest::class, 'manifest')
-                    ->where('manifest.manifestId = :manif_id')
-                    ->setParameter('manif_id', $manifestId)
-                    ->getQuery();
+            ->where('manifest.id = :manif_id')
+            ->setParameter('manif_id', $manifestId)
+            ->getQuery();
         $query->execute();
         $em->flush();
     }
@@ -1474,11 +1489,23 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $em->flush();
     }
 
+    private function storeManifestV2(EntityManagerInterface $em, $manifest, $manifestId)
+    {
+        // Store the manifest in mysql
+        $manifestDocument = new IIIFManifestV2();
+        $manifestDocument->setId($manifestId);
+        $manifestDocument->setData(json_encode($manifest));
+        $em->persist($manifestDocument);
+        $em->flush();
+        $em->clear();
+        return $manifestDocument;
+    }
+
     private function storeManifest(EntityManagerInterface $em, $manifest, $manifestId)
     {
-        // Store the manifest in mongodb
+        // Store the manifest in mysql
         $manifestDocument = new IIIFManifest();
-        $manifestDocument->setManifestId($manifestId);
+        $manifestDocument->setId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
         $em->persist($manifestDocument);
         $em->flush();

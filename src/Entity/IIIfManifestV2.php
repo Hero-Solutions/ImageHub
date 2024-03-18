@@ -6,9 +6,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\IIIfManifestRepository")
- * @ORM\Table(name="iiif_manifest")
+ * @ORM\Table(name="iiif_manifest_v2")
  */
-class IIIfManifest
+class IIIfManifestV2
 {
     /**
      * @ORM\Id()
