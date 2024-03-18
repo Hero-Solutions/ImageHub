@@ -21,7 +21,7 @@ class ManifestController extends AbstractController
         // Make sure the service URL name ends with a trailing slash
         $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
 
-        $class = $iiifVersion === '2' ? IIIfManifestV2::class : IIIfManifest::class;
+        $class = intval($iiifVersion) === 2 ? IIIfManifestV2::class : IIIfManifest::class;
 
         if($request->getMethod() == 'HEAD') {
             $ids = $this->container->get('doctrine')
