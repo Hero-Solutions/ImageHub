@@ -1376,7 +1376,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $manifests[] = array(
                     'id' => $manifestId,
                     'type' => 'Manifest',
-                    'label' => [ 'none' => [ $manifestLabel ]]
+                    'label' => [ $manifestLabel ]
                 );
 
                 if($storeInLido) {
