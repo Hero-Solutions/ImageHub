@@ -5,7 +5,7 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ORM\Entity(repositoryClass="App\Repository\IIIfManifestRepository")
+ * @ORM\Entity(repositoryClass="App\Repository\IIIfManifestV2Repository")
  * @ORM\Table(name="iiif_manifest_v2")
  */
 class IIIfManifestV2
