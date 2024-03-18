@@ -572,7 +572,11 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 }
 
                 // Add to manifests array to add to the top-level collection
-                $manifests[] = $manifestId;
+                $manifests[] = array(
+                    'id' => $manifestId,
+                    'type' => 'Manifest',
+                    'label' => [ 'en' => [ $label ]]
+                );
 
                 if($storeInLido && $this->createTopLevelCollection && $rsData['recommended_for_publication']) {
                     // Update the LIDO data to include the manifest and thumbnail

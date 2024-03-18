@@ -756,7 +756,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
 
                 // Add to manifests array to add to the top-level collection
-                $manifests[] = $manifestId;
+                $manifests[] = array(
+                    '@id' => $manifestId,
+                    '@type' => 'sc:Manifest',
+                    'label' => $data['label']
+                );
 
                 if($storeInLido) {
                     if($resourceId == $this->placeholderId) {
@@ -1369,7 +1373,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
 
                 // Add to manifests array to add to the top-level collection
-                $manifests[] = $manifestId;
+                $manifests[] = array(
+                    'id' => $manifestId,
+                    'type' => 'Manifest',
+                    'label' => [ 'none' => [ $manifestLabel ]]
+                );
 
                 if($storeInLido) {
                     if($resourceId == $this->placeholderId) {
