@@ -25,8 +25,8 @@ class MeemooManifestController extends AbstractController
                 ->createQueryBuilder()
                 ->select('m.id')
                 ->from(IIIfManifest::class, 'm')
-                ->where('m.manifestId = :id')
-                ->setParameter('id', $baseUrl . $iiifVersion . '/' . $manifestId . '/manifest.json')
+                ->where('m.id = :id')
+                ->setParameter('id', $manifestId)
                 ->getQuery()
                 ->getResult();
             if(count($ids) > 0) {
@@ -35,7 +35,7 @@ class MeemooManifestController extends AbstractController
                 return new Response('', 404);
             }
         } else {
-            $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/' . $manifestId . '/manifest.json']);
+            $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['id' => $manifestId]);
             if ($manifest == null) {
                 return new Response('Sorry, the requested document does not exist.', 404);
             } else {
