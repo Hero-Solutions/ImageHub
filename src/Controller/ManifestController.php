@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\IIIfManifest;
+use App\Entity\IIIfManifestV2;
 use App\Utils\Authenticator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -20,14 +21,16 @@ class ManifestController extends AbstractController
         // Make sure the service URL name ends with a trailing slash
         $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
 
+        $class = $iiifVersion === '2' ? IIIfManifestV2::class : IIIfManifest::class;
+
         if($request->getMethod() == 'HEAD') {
             $ids = $this->container->get('doctrine')
                 ->getManager()
                 ->createQueryBuilder()
                 ->select('m.id')
-                ->from(IIIfManifest::class, 'm')
-                ->where('m.manifestId = :id')
-                ->setParameter('id', $baseUrl . $iiifVersion . '/' . $manifestId . '/manifest.json')
+                ->from($class, 'm')
+                ->where('m.id = :id')
+                ->setParameter('id', $manifestId)
                 ->getQuery()
                 ->getResult();
             if(count($ids) > 0) {
@@ -36,11 +39,11 @@ class ManifestController extends AbstractController
                 return new Response('', 404);
             }
         } else {
-            $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . $iiifVersion . '/' . $manifestId . '/manifest.json']);
+            $manifest = $this->get('doctrine')->getRepository($class)->findOneBy(['id' => $manifestId]);
             if ($manifest === null) {
                 //Check if we want to return the matching IIIF 3 manifest instead
                 if($iiifVersion === '2') {
-                    $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['manifestId' => $baseUrl . '3/' . $manifestId . '/manifest.json']);
+                    $manifest = $this->get('doctrine')->getRepository($class)->findOneBy(['id' => $manifestId]);
                     if($manifest === null) {
                         return new Response('Sorry, the requested document does not exist.', 404);
                     } else {

@@ -1,6 +1,11 @@
+CREATE TABLE IF NOT EXISTS `iiif_manifest_v2` (
+    `id` INT UNSIGNED NOT NULL,
+    `data` LONGTEXT NOT NULL,
+    PRIMARY KEY (`id`)
+);
+
 CREATE TABLE IF NOT EXISTS `iiif_manifest` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `manifest_id` VARCHAR(255) NOT NULL,
+  `id` INT UNSIGNED NOT NULL,
   `data` LONGTEXT NOT NULL,
   PRIMARY KEY (`id`)
 );
