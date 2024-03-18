@@ -24,7 +24,7 @@ class CollectionController extends AbstractController
             // Make sure the service URL name ends with a trailing slash
             $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
 
-            $manifest = $this->get('doctrine')->getRepository(intval($iiifVersion) === 2 ? IIIfManifestV2::class : IIIfManifest::class)->findOneBy(['id' => 0]);
+            $manifest = $this->get('doctrine')->getRepository($iiifVersion === '2' ? IIIfManifestV2::class : IIIfManifest::class)->findOneBy(['id' => 0]);
             if ($manifest != null) {
                 $headers = array(
                     'Content-Type' => 'application/json',
