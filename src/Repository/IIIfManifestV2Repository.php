@@ -2,25 +2,25 @@
 
 namespace App\Repository;
 
-use App\Entity\IIIfManifest;
+use App\Entity\IIIfManifestV2;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @method IIIfManifest|null find($id, $lockMode = null, $lockVersion = null)
- * @method IIIfManifest|null findOneBy(array $criteria, array $orderBy = null)
- * @method IIIfManifest[]    findAll()
- * @method IIIfManifest[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method IIIfManifestV2|null find($id, $lockMode = null, $lockVersion = null)
+ * @method IIIfManifestV2|null findOneBy(array $criteria, array $orderBy = null)
+ * @method IIIfManifestV2[]    findAll()
+ * @method IIIfManifestV2[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class IIIfManifestRepository extends ServiceEntityRepository
+class IIIfManifestV2Repository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, IIIfManifest::class);
+        parent::__construct($registry, IIIfManifestV2::class);
     }
 
     // /**
-    //  * @return IIIfManifest[] Returns an array of IIIfManifest objects
+    //  * @return IIIfManifestV2[] Returns an array of IIIfManifest objects
     //  */
     /*
     public function findByExampleField($value)
@@ -37,7 +37,7 @@ class IIIfManifestRepository extends ServiceEntityRepository
     */
 
     /*
-    public function findOneBySomeField($value): ?IIIfManifest
+    public function findOneBySomeField($value): ?IIIfManifestV2
     {
         return $this->createQueryBuilder('i')
             ->andWhere('i.exampleField = :val')
