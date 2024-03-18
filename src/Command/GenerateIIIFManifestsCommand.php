@@ -163,7 +163,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if(!array_key_exists($this->placeholderId, $this->imageData)) {
                     $this->getImageData($this->placeholderId, true);
                 }
-                $this->imageData[$resourceId] = $this->imageData[$this->placeholderId];
+                if(array_key_exists($this->placeholderId, $this->imageData)) {
+                    $this->imageData[$resourceId] = $this->imageData[$this->placeholderId];
+                }
             } else {
                 $this->getImageData($resourceId, $isPublic);
             }
