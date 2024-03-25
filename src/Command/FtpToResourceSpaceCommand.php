@@ -44,7 +44,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         $this->container = $container;
     }
 
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
     }
