@@ -44,7 +44,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         $this->container = $container;
     }
 
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
     }
@@ -101,7 +101,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
 
         try {
             $exifToolOutput = [];
-            exec('exiftool -api largefilesupport=1 ' . $file, $exifToolOutput);
+            exec('exiftool -api largefilesupport=1 \'' . $file . '\'', $exifToolOutput);
             $hasWidth = false;
             $hasHeight = false;
             foreach($exifToolOutput as $line) {
