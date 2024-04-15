@@ -83,7 +83,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->logger = $logger;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->verbose = $input->getOption('verbose');
 
