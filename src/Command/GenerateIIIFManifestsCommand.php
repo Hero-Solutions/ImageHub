@@ -118,7 +118,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->resourceSpace = new ResourceSpace($this->container);
 
         $resourceSpaceId = $input->getArgument('rs_id');
-        if(!preg_match('/^[0-9]+$/', $resourceSpaceId)) {
+        if(!empty($resourceSpaceId) && !preg_match('/^[0-9]+$/', $resourceSpaceId)) {
             $resourceSpaceId = null;
         }
         // Always create a top-level collection
