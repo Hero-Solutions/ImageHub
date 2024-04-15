@@ -74,7 +74,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->container = $container;
     }
 
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
     }
@@ -129,7 +129,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $resources = $this->resourceSpace->getAllResources();
         if ($resources === null) {
             $this->logger->error( 'Error: no resourcespace data.');
-            return;
+            return 0;
         }
         $this->imageData = array();
 
