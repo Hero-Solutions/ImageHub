@@ -133,7 +133,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $resources = $this->resourceSpace->getAllResources();
         if ($resources === null) {
             $this->logger->error( 'Error: no resourcespace data.');
-            return;
+            return 0;
         }
         $this->imageData = array();
 
