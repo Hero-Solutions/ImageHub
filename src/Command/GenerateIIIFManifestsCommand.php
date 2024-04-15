@@ -180,6 +180,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         if($this->createTopLevelCollection && file_exists($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite')) {
             rename($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.iiif_manifests.sqlite');
         }
+
+        return 0;
     }
 
     private function getImageData($resourceId, $isPublic)
