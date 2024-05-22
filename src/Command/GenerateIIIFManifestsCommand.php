@@ -78,12 +78,12 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->container = $container;
     }
 
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->verbose = $input->getOption('verbose');
 
@@ -122,7 +122,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->resourceSpace = new ResourceSpace($this->container);
 
         $resourceSpaceId = $input->getArgument('rs_id');
-        if(!preg_match('/^[0-9]+$/', $resourceSpaceId)) {
+        if(!empty($resourceSpaceId) && !preg_match('/^[0-9]+$/', $resourceSpaceId)) {
             $resourceSpaceId = null;
         }
         // Always create a top-level collection
@@ -133,7 +133,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $resources = $this->resourceSpace->getAllResources();
         if ($resources === null) {
             $this->logger->error( 'Error: no resourcespace data.');
-            return;
+            return 0;
         }
         $this->imageData = array();
 
@@ -197,6 +197,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         if($this->createTopLevelCollection && file_exists($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite')) {
             rename($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.iiif_manifests.sqlite');
         }
+
+        return 0;
     }
 
     private function getImageData($resourceId, $isPublic)
