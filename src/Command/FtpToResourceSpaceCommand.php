@@ -49,7 +49,7 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         $this->logger = $logger;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->verbose = $input->getOption('verbose');
         $this->resourceSpace = new ResourceSpace($this->container);

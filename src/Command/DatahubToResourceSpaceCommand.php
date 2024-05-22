@@ -66,7 +66,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $this->logger = $logger;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->verbose = $input->getOption('verbose');
 

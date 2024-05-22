@@ -29,7 +29,7 @@ class CsvToResourceSpaceCommand extends Command implements ContainerAwareInterfa
         $this->container = $container;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $csvFile = $input->getArgument('csv');
 
@@ -53,6 +53,8 @@ class CsvToResourceSpaceCommand extends Command implements ContainerAwareInterfa
                 }
             }
         }
+
+        return 0;
     }
 
     private function readRecordsFromCsv($csvFile)
