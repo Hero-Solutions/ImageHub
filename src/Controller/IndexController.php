@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\IIIfManifest;
+use App\Entity\IIIfManifestV2;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,9 +25,7 @@ class IndexController extends AbstractController
             ->getManager()
             ->createQueryBuilder()
             ->select('COUNT(m.id) AS c')
-            ->from(IIIfManifest::class, 'm')
-            ->where('m.manifestId LIKE :id')
-            ->setParameter('id', $baseUrl . $mainIiifVersion . '/%/manifest.json')
+            ->from($mainIiifVersion === '2' ? IIIfManifestV2::class : IIIfManifest::class, 'm')
             ->getQuery()
             ->getResult();
         $count = 0;
