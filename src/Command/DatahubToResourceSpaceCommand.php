@@ -33,6 +33,8 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
     private $relatedWorksXpath;
     private $excludeRelations;
     private $storeDatahubRecordIds;
+    private $storeTranscriptions;
+    private $transcriptionFields;
 
     private $rsFieldsToPersist;
 
@@ -42,6 +44,8 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
     private $datahubRecordDb;
     private $datahubRecordIds;
+    private $transcriptionsDb;
+    private $transcriptions;
     private $resourceSpaceSortOrders = [];
     private $relations = array();
     private $failedFetchingDatahubData;
@@ -86,6 +90,8 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $this->relatedWorksXpath = $this->container->getParameter('datahub_related_works_xpath');
         $this->excludeRelations = $this->container->getParameter('exclude_relations');
         $this->storeDatahubRecordIds = $this->container->getParameter('store_datahub_record_ids');
+        $this->storeTranscriptions = $this->container->getParameter('store_transcriptions');
+        $this->transcriptionFields = $this->container->getParameter('transcription_fields');
         $this->dataDefinition = $this->container->getParameter('datahub_data_definition');
         $this->creditLineDefinition = $this->container->getParameter('credit_line');
         $publicUse = $this->container->getParameter('public_use');
@@ -231,6 +237,10 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                     $em->persist($resourceData);
                     $resourceKeys[$key] = $key;
                 }
+            }
+
+            if($this->storeTranscriptions) {
+                $this->storeTranscriptions($inventoryNumber, $rsData);
             }
 
             $isPublic = $this->resourceSpace->isPublicUse($rsData, $publicUse);
@@ -894,6 +904,32 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             $this->datahubRecordIds[$sourceinvnr] = $sourceinvnr;
             $stmt = $this->datahubRecordDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
             $stmt->bindValue(':data', '{"record_id":"' . $recordId . '"}');
+            $stmt->bindValue(':id', $sourceinvnr);
+            $stmt->execute();
+            $stmt->close();
+        }
+    }
+
+    private function storeTranscriptions($sourceinvnr, $resourceData)
+    {
+        if($this->transcriptionsDb == null) {
+            $this->transcriptionsDb = new SQLite3($this->container->get('kernel')->getProjectDir() . '/public/new_import.transcriptions.sqlite');
+            $this->transcriptionsDb->exec('DROP TABLE IF EXISTS data');
+            $this->transcriptionsDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
+            $this->transcriptions = [];
+        }
+        if(!array_key_exists($sourceinvnr, $this->transcriptions)) {
+            $this->transcriptions[$sourceinvnr] = $sourceinvnr;
+            $transcriptionData = [];
+            foreach($this->transcriptionFields as $language => $field) {
+                if(array_key_exists($resourceData, $field)) {
+                    if(!empty($resourceData[$field])) {
+                        $transcriptionData[$language] = $resourceData[$field];
+                    }
+                }
+            }
+            $stmt = $this->transcriptionDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
+            $stmt->bindValue(':data', json_encode($transcriptionData));
             $stmt->bindValue(':id', $sourceinvnr);
             $stmt->execute();
             $stmt->close();

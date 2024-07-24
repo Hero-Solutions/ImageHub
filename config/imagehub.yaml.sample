@@ -15,6 +15,12 @@ parameters:
     store_datahub_record_ids: false
     one_manifest_per_object: true
     use_placeholder_for_images_in_copyright: false
+    store_transcriptions: false
+    transcription_fields:
+        original: transcription_original
+        en: translation_en
+        nl: translation_nl
+        fr: translation_fr
 
     placeholder_id: -1
 
