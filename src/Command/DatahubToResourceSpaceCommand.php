@@ -928,11 +928,13 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                     }
                 }
             }
-            $stmt = $this->transcriptionsDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
-            $stmt->bindValue(':data', json_encode($transcriptionData));
-            $stmt->bindValue(':id', $sourceinvnr);
-            $stmt->execute();
-            $stmt->close();
+            if(!empty($transcriptionData)) {
+                $stmt = $this->transcriptionsDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
+                $stmt->bindValue(':data', json_encode($transcriptionData));
+                $stmt->bindValue(':id', $sourceinvnr);
+                $stmt->execute();
+                $stmt->close();
+            }
         }
     }
 }
