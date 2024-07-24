@@ -922,7 +922,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             $this->transcriptions[$sourceinvnr] = $sourceinvnr;
             $transcriptionData = [];
             foreach($this->transcriptionFields as $language => $field) {
-                if(array_key_exists($resourceData, $field)) {
+                if(array_key_exists($field, $resourceData)) {
                     if(!empty($resourceData[$field])) {
                         $transcriptionData[$language] = $resourceData[$field];
                     }
