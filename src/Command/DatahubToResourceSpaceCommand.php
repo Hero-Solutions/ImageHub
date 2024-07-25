@@ -912,14 +912,19 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
     private function storeTranscriptions($sourceinvnr, $resourceData)
     {
+        $pos = strpos($sourceinvnr, 'tg:kmska');
+        if($pos === false) {
+            return;
+        }
+        $inventoryNumber = substr($sourceinvnr, $pos);
         if($this->transcriptionsDb == null) {
             $this->transcriptionsDb = new SQLite3($this->container->get('kernel')->getProjectDir() . '/public/new_import.transcriptions.sqlite');
             $this->transcriptionsDb->exec('DROP TABLE IF EXISTS data');
             $this->transcriptionsDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
             $this->transcriptions = [];
         }
-        if(!array_key_exists($sourceinvnr, $this->transcriptions)) {
-            $this->transcriptions[$sourceinvnr] = $sourceinvnr;
+        if(!array_key_exists($inventoryNumber, $this->transcriptions)) {
+            $this->transcriptions[$inventoryNumber] = $inventoryNumber;
             $transcriptionData = [];
             foreach($this->transcriptionFields as $language => $field) {
                 if(array_key_exists($field, $resourceData)) {
@@ -931,7 +936,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             if(!empty($transcriptionData)) {
                 $stmt = $this->transcriptionsDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
                 $stmt->bindValue(':data', json_encode($transcriptionData));
-                $stmt->bindValue(':id', $sourceinvnr);
+                $stmt->bindValue(':id', $inventoryNumber);
                 $stmt->execute();
                 $stmt->close();
             }
