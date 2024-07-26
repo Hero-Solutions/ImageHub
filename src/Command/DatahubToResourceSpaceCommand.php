@@ -929,7 +929,9 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             foreach($this->transcriptionFields as $language => $field) {
                 if(array_key_exists($field, $resourceData)) {
                     if(!empty($resourceData[$field])) {
-                        $transcriptionData[$language] = $resourceData[$field];
+                        //Decode special HTML characters that the ResourceSpace API returns,
+                        // such as &rsquo;, &eacute;, &agrave; ..., to their respective UTF-8 characters ', é, à, ...
+                        $transcriptionData[$language] = html_entity_decode($resourceData[$field]);
                     }
                 }
             }
