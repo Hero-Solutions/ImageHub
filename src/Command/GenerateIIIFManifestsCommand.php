@@ -33,6 +33,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
     private $usePlaceholderForImagesInCopyright;
     private $inCopyrightKey;
+    private $storeDatahubMetadata;
+    private $datahubMetadataFields;
 
     private $manifestLanguages;
 
@@ -92,6 +94,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->oneManifestPerObject = $this->container->getParameter('one_manifest_per_object');
         $this->usePlaceholderForImagesInCopyright = $this->container->getParameter('use_placeholder_for_images_in_copyright');
         $this->inCopyrightKey = $this->container->getParameter('in_copyright');
+        $this->storeDatahubMetadata = $this->container->getParameter('store_datahub_metadata');
+        $this->datahubMetadataFields = $this->container->getParameter('datahub_metadata_fields');
 
         $this->iiifVersions = $this->container->getParameter('iiif_versions');
         $this->mainIiifVersion = $this->container->getParameter('main_iiif_version');
@@ -764,7 +768,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
                 if($storeInLido) {
                     if($resourceId == $this->placeholderId) {
-                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
+                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber, $rsData);
                     }
 
                     //Add to ResourceSpace metadata (if enabled)
@@ -783,7 +787,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         if (!empty($data['sourceinvnr'])) {
                             $sourceinvnr = $data['sourceinvnr'];
                             if ($publicUse) {
-                                $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
+                                $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber, $rsData);
                             }
                         }
                     }
@@ -1381,7 +1385,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
                 if($storeInLido) {
                     if($resourceId == $this->placeholderId) {
-                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
+                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber, $rsData);
                     }
 
                     //Add to ResourceSpace metadata (if enabled)
@@ -1399,7 +1403,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         // Update the LIDO data to include the manifest, thumbnail and file checksum
                         if (!empty($inventoryNumber)) {
                             if ($publicUse) {
-                                $this->storeManifestAndThumbnail($inventoryNumber, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
+                                $this->storeManifestAndThumbnail($inventoryNumber, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber, $rsData);
                             }
                         }
                     }
@@ -1557,8 +1561,19 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return $valid;
     }
 
-    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber)
+    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber, $rsData)
     {
+        $metadata = [];
+        if($this->storeDatahubMetadata) {
+            foreach($this->datahubMetadataFields as $field => $label) {
+                if(array_key_exists($field, $rsData)) {
+                    $metadata[$field] = [
+                        'label' => $label,
+                        'value' => $rsField[$field]
+                    ];
+                }
+            }
+        }
         if($this->oneManifestPerObject) {
             $store = false;
             if (!array_key_exists($sourceinvnr, $this->manifestsToStore)) {
@@ -1575,7 +1590,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'iiif_sort_number' => $iiifSortNumber,
                     'manifest' => $manifestId,
                     'thumbnail' => $thumbnail,
-                    'checksum' => $fileChecksum
+                    'checksum' => $fileChecksum,
+                    'metadata' => $metadata
                 ];
             }
         } else {
@@ -1592,7 +1608,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'iiif_sort_number' => $iiifSortNumber,
                 'manifest' => $manifestId,
                 'thumbnail' => $thumbnail,
-                'checksum' => $fileChecksum
+                'checksum' => $fileChecksum,
+                'metadata' => $metadata
             ];
             ksort($this->manifestsToStore[$sourceinvnr], SORT_NUMERIC);
         }
@@ -1605,7 +1622,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->manifestsToStore as $sourceinvnr => $manifestData) {
             if($this->oneManifestPerObject) {
-                $query = '{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '"}';
+                $query = '{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '","metadata":' . json_encode($manifestData['metadata']) . '}';
                 $stmt = $manifestDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
                 $stmt->bindValue(':data', $query);
                 $stmt->bindValue(':id', $sourceinvnr);
@@ -1614,7 +1631,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             } else {
                 $query = '';
                 foreach($manifestData as $manifest) {
-                    $query .= (strlen($query) === 0 ? '{"manifests":[' : ',') . '{"manifest":"' . $manifest['manifest'] . '","thumbnail":"' . $manifest['thumbnail'] . '","checksum":"' . $manifest['checksum'] . '"}';
+                    $query .= (strlen($query) === 0 ? '{"manifests":[' : ',') . '{"manifest":"' . $manifest['manifest'] . '","thumbnail":"' . $manifest['thumbnail'] . '","checksum":"' . $manifest['checksum'] . '","metadata":' . json_encode($manifest['metadata']) . '}';
                 }
                 $query .= ']}';
                 $stmt = $manifestDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
