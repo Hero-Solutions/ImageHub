@@ -19,7 +19,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class AuthenticationController extends AbstractController
 {
     /**
-     * @Route("/authenticate", name="authenticate")
+     * @Route("/imagehub/authenticate", name="authenticate")
      */
     public function authenticateAction(Request $request)
     {
