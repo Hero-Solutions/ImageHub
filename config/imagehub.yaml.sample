@@ -23,10 +23,9 @@ parameters:
         fr: translation_fr
     store_datahub_metadata: false
     datahub_metadata_fields:
-      interpretation_research_restoration_image: Interpretation research/restoration image
-      image_spectrum: Image spectrum
-      image_view_type: Image view type
-      annotations: Annotations
+      interpret-research: Interpretation research/restoration image
+      imagespectrum: Image spectrum
+      imageviewtype: Image view type
 
     placeholder_id: -1
 
