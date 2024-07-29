@@ -20,7 +20,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 class AuthCheckController extends AbstractController
 {
     /**
-     * @Route("/authcheck", name="authcheck")
+     * @Route("/imagehub/authcheck", name="authcheck")
      */
     public function authenticateAction(Request $request)
     {
