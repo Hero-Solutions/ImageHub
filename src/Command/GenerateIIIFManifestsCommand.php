@@ -1567,7 +1567,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         if($this->storeDatahubMetadata) {
             foreach($this->datahubMetadataFields as $field => $label) {
                 if(array_key_exists($field, $rsData)) {
-                    $metadata[$field] = [
+                    $metadata[] = [
                         'label' => $label,
                         'value' => $rsData[$field]
                     ];
