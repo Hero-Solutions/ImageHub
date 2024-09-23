@@ -931,7 +931,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                         $this->transcriptions[$inventoryNumber] = [];
                     }
                     if(!array_key_exists($resourceId, $this->transcriptions[$inventoryNumber])) {
-                        $this->transcriptions[$inventoryNumber][$resourceId] = [];
+                        $this->transcriptions[$inventoryNumber][$resourceId] = [ "id" => $resourceId ];
                     }
                     //Decode special HTML characters that the ResourceSpace API returns,
                     // such as &rsquo;, &eacute;, &agrave; ..., to their respective UTF-8 characters ', é, à, ...
@@ -947,8 +947,12 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $transcriptionsDb->exec('DROP TABLE IF EXISTS data');
         $transcriptionsDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->transcriptions as $inventoryNumber => $transcriptions) {
+            $transcriptionsArray = [];
+            foreach($transcriptions as $resourceId => $transcription) {
+                $transcriptionsArray[] = $transcription;
+            }
             $stmt = $transcriptionsDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
-            $stmt->bindValue(':data', json_encode($transcriptions));
+            $stmt->bindValue(':data', json_encode($transcriptionsArray));
             $stmt->bindValue(':id', $inventoryNumber);
             $stmt->execute();
             $stmt->close();
