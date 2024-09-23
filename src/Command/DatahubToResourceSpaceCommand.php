@@ -44,8 +44,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
     private $datahubRecordDb;
     private $datahubRecordIds;
-    private $transcriptionsDb;
-    private $transcriptions;
+    private $transcriptions = [];
     private $resourceSpaceSortOrders = [];
     private $relations = array();
     private $failedFetchingDatahubData;
@@ -246,7 +245,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             }
 
             if($this->storeTranscriptions) {
-                $this->storeTranscriptions($inventoryNumber, $rsData);
+                $this->storeTranscriptions($inventoryNumber, $resourceId, $rsData);
             }
 
             $isPublic = $this->resourceSpace->isPublicUse($rsData, $publicUse);
@@ -472,6 +471,8 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             }
             $em->flush();
             $em->clear();
+
+            $this->storeAllTranscriptionsInDb();
         }
         return 0;
     }
@@ -916,38 +917,41 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         }
     }
 
-    private function storeTranscriptions($sourceinvnr, $resourceData)
+    private function storeTranscriptions($sourceinvnr, $resourceId, $resourceData)
     {
         $pos = strpos($sourceinvnr, 'tg:kmska');
         if($pos === false) {
             return;
         }
         $inventoryNumber = substr($sourceinvnr, $pos);
-        if($this->transcriptionsDb == null) {
-            $this->transcriptionsDb = new SQLite3($this->container->get('kernel')->getProjectDir() . '/public/new_import.transcriptions.sqlite');
-            $this->transcriptionsDb->exec('DROP TABLE IF EXISTS data');
-            $this->transcriptionsDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
-            $this->transcriptions = [];
-        }
-        if(!array_key_exists($inventoryNumber, $this->transcriptions)) {
-            $this->transcriptions[$inventoryNumber] = $inventoryNumber;
-            $transcriptionData = [];
-            foreach($this->transcriptionFields as $language => $field) {
-                if(array_key_exists($field, $resourceData)) {
-                    if(!empty($resourceData[$field])) {
-                        //Decode special HTML characters that the ResourceSpace API returns,
-                        // such as &rsquo;, &eacute;, &agrave; ..., to their respective UTF-8 characters ', é, à, ...
-                        $transcriptionData[$language] = html_entity_decode($resourceData[$field]);
+        foreach($this->transcriptionFields as $language => $field) {
+            if(array_key_exists($field, $resourceData)) {
+                if(!empty($resourceData[$field])) {
+                    if(!array_key_exists($inventoryNumber, $this->transcriptions)) {
+                        $this->transcriptions[$inventoryNumber] = [];
                     }
+                    if(!array_key_exists($resourceId, $this->transcriptions[$inventoryNumber])) {
+                        $this->transcriptions[$inventoryNumber][$resourceId] = [];
+                    }
+                    //Decode special HTML characters that the ResourceSpace API returns,
+                    // such as &rsquo;, &eacute;, &agrave; ..., to their respective UTF-8 characters ', é, à, ...
+                    $this->transcriptions[$inventoryNumber][$resourceId][$language] = html_entity_decode($resourceData[$field]);
                 }
             }
-            if(!empty($transcriptionData)) {
-                $stmt = $this->transcriptionsDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
-                $stmt->bindValue(':data', json_encode($transcriptionData));
-                $stmt->bindValue(':id', $inventoryNumber);
-                $stmt->execute();
-                $stmt->close();
-            }
+        }
+    }
+
+    private function storeAllTranscriptionsInDb()
+    {
+        $transcriptionsDb = new SQLite3($this->container->get('kernel')->getProjectDir() . '/public/new_import.transcriptions.sqlite');
+        $transcriptionsDb->exec('DROP TABLE IF EXISTS data');
+        $transcriptionsDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
+        foreach($this->transcriptions as $inventoryNumber => $transcriptions) {
+            $stmt = $transcriptionsDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
+            $stmt->bindValue(':data', json_encode($transcriptions));
+            $stmt->bindValue(':id', $inventoryNumber);
+            $stmt->execute();
+            $stmt->close();
         }
     }
 }
