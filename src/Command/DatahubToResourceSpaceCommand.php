@@ -947,9 +947,9 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $transcriptionsDb->exec('DROP TABLE IF EXISTS data');
         $transcriptionsDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->transcriptions as $inventoryNumber => $transcriptions) {
-            $transcriptionsArray = [];
+            $transcriptionsArray = [ 'transcriptions' => [] ];
             foreach($transcriptions as $resourceId => $transcription) {
-                $transcriptionsArray[] = $transcription;
+                $transcriptionsArray['transcriptions'][] = $transcription;
             }
             $stmt = $transcriptionsDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
             $stmt->bindValue(':data', json_encode($transcriptionsArray));
