@@ -948,6 +948,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $transcriptionsDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->transcriptions as $inventoryNumber => $transcriptions) {
             $transcriptionsArray = [ 'transcriptions' => [] ];
+            ksort($transcriptions, SORT_NUMERIC);
             foreach($transcriptions as $resourceId => $transcription) {
                 $transcriptionsArray['transcriptions'][] = $transcription;
             }
