@@ -1658,8 +1658,13 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
     private function getQueryToStoreInDatahub($manifestData) {
         $images = [];
+        $metadata = [];
         foreach($manifestData['related_resources'] as $relatedResource) {
-            if($relatedResource !== $manifestData['resource_id']) {
+            if($relatedResource === $manifestData['resource_id']) {
+                if(array_key_exists($relatedResource, $this->imageIds)) {
+                    $metadata = $this->datahubMetadataToStore[$relatedResource];
+                }
+            } else {
                 if(array_key_exists($relatedResource, $this->imageIds)) {
                     $image = [];
                     if (array_key_exists($relatedResource, $this->fileChecksums)) {
@@ -1675,7 +1680,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
         }
 
-        $query = '{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '","metadata":' . json_encode($manifestData['metadata']);
+        $query = '{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '","metadata":' . json_encode($metadata);
         if(!empty($images)) {
             $query .= ',"images":' . json_encode($images);
         }
