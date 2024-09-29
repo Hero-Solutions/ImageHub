@@ -1674,7 +1674,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         $image['metadata'] = $this->datahubMetadataToStore[$relatedResource];
                     }
                     if (!empty($image)) {
-                        $images[$this->imageIds[$relatedResource]] = $image;
+                        $image['id'] = $this->imageIds[$relatedResource];
+                        $images[] = $image;
                     }
                 }
             }
