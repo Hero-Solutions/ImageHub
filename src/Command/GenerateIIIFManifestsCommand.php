@@ -60,6 +60,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $createTopLevelCollection;
     private $resourceSpaceManifestField;
 
+    private $imageIds;
+    private $fileChecksums = [];
+    private $datahubMetadataToStore = [];
     private $manifestsToStore = [];
     private $placeholderId;
 
@@ -768,7 +771,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
                 if($storeInLido) {
                     if($resourceId == $this->placeholderId) {
-                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber, $rsData);
+                        $this->storeManifestAndThumbnail('placeholder_manifest', $resourceId, $data['related_resources'], $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
                     }
 
                     //Add to ResourceSpace metadata (if enabled)
@@ -787,7 +790,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         if (!empty($data['sourceinvnr'])) {
                             $sourceinvnr = $data['sourceinvnr'];
                             if ($publicUse) {
-                                $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber, $rsData);
+                                $this->storeManifestAndThumbnail($sourceinvnr, $resourceId, $data['related_resources'], $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
                             }
                         }
                     }
@@ -1294,6 +1297,25 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if($thumbnail === null) {
                     $thumbnail = $serviceId;
                 }
+
+                if($this->storeDatahubMetadata) {
+                    $metadata = [];
+                    foreach($this->datahubMetadataFields as $field => $label) {
+                        if(array_key_exists($field, $rsData)) {
+                            $metadata[] = [
+                                'label' => $label,
+                                'value' => $rsData[$field]
+                            ];
+                        }
+                    }
+                    if(!empty($metadata)) {
+                        $this->datahubMetadataToStore[$relatedRef] = $metadata;
+                    }
+                    if(array_key_exists('file_checksum', $rsData)) {
+                        $this->fileChecksums[$relatedRef] = $rsData['file_checksum'];
+                    }
+                    $this->imageIds[$relatedRef] = $serviceId;
+                }
             }
 
             $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
@@ -1385,7 +1407,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
                 if($storeInLido) {
                     if($resourceId == $this->placeholderId) {
-                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber, $rsData);
+                        $this->storeManifestAndThumbnail('placeholder_manifest', $resourceId, $relatedResources, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
                     }
 
                     //Add to ResourceSpace metadata (if enabled)
@@ -1403,7 +1425,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         // Update the LIDO data to include the manifest, thumbnail and file checksum
                         if (!empty($inventoryNumber)) {
                             if ($publicUse) {
-                                $this->storeManifestAndThumbnail($inventoryNumber, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber, $rsData);
+                                $this->storeManifestAndThumbnail($inventoryNumber, $resourceId, $relatedResources, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
                             }
                         }
                     }
@@ -1561,19 +1583,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return $valid;
     }
 
-    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber, $rsData)
+    private function storeManifestAndThumbnail($sourceinvnr, $resourceId, $relatedResources, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber)
     {
-        $metadata = [];
-        if($this->storeDatahubMetadata) {
-            foreach($this->datahubMetadataFields as $field => $label) {
-                if(array_key_exists($field, $rsData)) {
-                    $metadata[] = [
-                        'label' => $label,
-                        'value' => $rsData[$field]
-                    ];
-                }
-            }
-        }
         if($this->oneManifestPerObject) {
             $store = false;
             if (!array_key_exists($sourceinvnr, $this->manifestsToStore)) {
@@ -1591,7 +1602,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'manifest' => $manifestId,
                     'thumbnail' => $thumbnail,
                     'checksum' => $fileChecksum,
-                    'metadata' => $metadata
+                    'resource_id' => $resourceId,
+                    'related_resources' => $relatedResources
                 ];
             }
         } else {
@@ -1609,7 +1621,8 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'manifest' => $manifestId,
                 'thumbnail' => $thumbnail,
                 'checksum' => $fileChecksum,
-                'metadata' => $metadata
+                'resource_id' => $resourceId,
+                'related_resources' => $relatedResources
             ];
             ksort($this->manifestsToStore[$sourceinvnr], SORT_NUMERIC);
         }
@@ -1622,7 +1635,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->manifestsToStore as $sourceinvnr => $manifestData) {
             if($this->oneManifestPerObject) {
-                $query = '{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '","metadata":' . json_encode($manifestData['metadata']) . '}';
+                $query = $this->getQueryToStoreInDatahub($manifestData);
                 $stmt = $manifestDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
                 $stmt->bindValue(':data', $query);
                 $stmt->bindValue(':id', $sourceinvnr);
@@ -1631,7 +1644,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             } else {
                 $query = '';
                 foreach($manifestData as $manifest) {
-                    $query .= (strlen($query) === 0 ? '{"manifests":[' : ',') . '{"manifest":"' . $manifest['manifest'] . '","thumbnail":"' . $manifest['thumbnail'] . '","checksum":"' . $manifest['checksum'] . '","metadata":' . json_encode($manifest['metadata']) . '}';
+                    $query .= (strlen($query) === 0 ? '{"manifests":[' : ',') . $this->getQueryToStoreInDatahub($manifest);
                 }
                 $query .= ']}';
                 $stmt = $manifestDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
@@ -1641,5 +1654,33 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $stmt->close();
             }
         }
+    }
+
+    private function getQueryToStoreInDatahub($manifestData) {
+        $images = [];
+        foreach($manifestData['related_resources'] as $relatedResource) {
+            if($relatedResource !== $manifestData['resource_id']) {
+                if(array_key_exists($relatedResource, $this->imageIds)) {
+                    $image = [];
+                    if (array_key_exists($relatedResource, $this->fileChecksums)) {
+                        $image['checksum'] = $this->fileChecksums[$relatedResource];
+                    }
+                    if (array_key_exists($relatedResource, $this->datahubMetadataToStore)) {
+                        $image['metadata'] = $this->datahubMetadataToStore[$relatedResource];
+                    }
+                    if (!empty($image)) {
+                        $images[$this->imageIds[$relatedResource]] = $image;
+                    }
+                }
+            }
+        }
+
+        $query = '{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '","metadata":' . json_encode($manifestData['metadata']);
+        if(!empty($images)) {
+            $query .= ',"images":' . json_encode($images);
+        }
+        $query .= '}';
+
+        return $query;
     }
 }
