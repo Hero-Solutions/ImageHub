@@ -1660,7 +1660,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $images = [];
         $metadata = [];
         foreach($manifestData['related_resources'] as $relatedResource) {
-            if($relatedResource === $manifestData['resource_id']) {
+            if(intval($relatedResource) === intval($manifestData['resource_id'])) {
                 if(array_key_exists($relatedResource, $this->imageIds) && array_key_exists($relatedResource, $this->datahubMetadataToStore)) {
                     $metadata = $this->datahubMetadataToStore[$relatedResource];
                 }
