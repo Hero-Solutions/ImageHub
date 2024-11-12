@@ -2,26 +2,32 @@
 
 namespace App\Controller;
 
+use Exception;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class DatahubToResourceSpaceController extends AbstractController implements LoggerAwareInterface
 {
-    /**
-     * @Route("/datahub-to-resourcespace", name="datahub-to-resourcespace")
-     */
+    private $parameterBag;
+
+    public function __construct(ParameterBagInterface $parameterBag) {
+        $this->parameterBag = $parameterBag;
+    }
+
+    #[Route("/datahub-to-resourcespace", name:"datahub-to-resourcespace")]
     public function datahubToResourceSpaceAction(Request $request, KernelInterface $kernel)
     {
         $resourceSpaceApiKey = $request->query->get('api_key');
-        $actualResourceSpaceApiKey = $this->getParameter('resourcespace_api_key');
+        $actualResourceSpaceApiKey = $this->parameterBag->get('resourcespace_api_key');
         if($resourceSpaceApiKey == $actualResourceSpaceApiKey) {
 
             $debug = $request->query->get('debug');
@@ -37,7 +43,7 @@ class DatahubToResourceSpaceController extends AbstractController implements Log
             $application->setAutoExit(false);
             try {
                 $application->run($input, $output);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error($e);
             }
             $content = '';

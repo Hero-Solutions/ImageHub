@@ -10,20 +10,25 @@ namespace App\Controller;
 
 
 use App\Utils\Authenticator;
-use SimpleSAML\Auth\Simple;
+use SimpleSAML_Auth_Simple;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class AuthenticationController extends AbstractController
 {
-    /**
-     * @Route("/authenticate", name="authenticate")
-     */
+    private $parameterBag;
+
+    public function __construct(ParameterBagInterface $parameterBag) {
+        $this->parameterBag = $parameterBag;
+    }
+
+    #[Route("/authenticate", name:"authenticate")]
     public function authenticateAction(Request $request)
     {
-        $adfsRequirement = $this->getParameter('adfs_requirements');
+        $adfsRequirement = $this->parameterBag->get('adfs_requirements');
 
         // Forbidden by default
         $returnCode = 403;
@@ -31,7 +36,7 @@ class AuthenticationController extends AbstractController
         if($adfsRequirement['public']) {
             $returnCode = 302;
         } else {
-            $auth = new Simple('default-sp');
+            $auth = new SimpleSAML_Auth_Simple('default-sp');
             if ($auth->isAuthenticated()) {
                 if(Authenticator::isAllowed($auth->getAttributes(), $adfsRequirement)) {
                     // The user is authenticated and needs to be redirected to the original URL

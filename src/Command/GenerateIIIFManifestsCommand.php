@@ -20,9 +20,13 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInterface, LoggerAwareInterface
+class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterface
 {
+    private $parameterBag;
+    private $entityManager;
+
     private $verbose;
     private $datahubUrl;
     private $metadataPrefix;
@@ -75,6 +79,13 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             ->setHelp('');
     }
 
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager)
+    {
+        $this->parameterBag = $parameterBag;
+        $this->entityManager = $entityManager;
+        parent::__construct();
+    }
+
     /**
      * Sets the container.
      */
@@ -92,41 +103,41 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     {
         $this->verbose = $input->getOption('verbose');
 
-        $this->datahubUrl = $this->container->getParameter('datahub_url');
-        $this->metadataPrefix = $this->container->getParameter('datahub_metadataprefix');
-        $this->oneManifestPerObject = $this->container->getParameter('one_manifest_per_object');
-        $this->usePlaceholderForImagesInCopyright = $this->container->getParameter('use_placeholder_for_images_in_copyright');
-        $this->inCopyrightKey = $this->container->getParameter('in_copyright');
-        $this->storeDatahubMetadata = $this->container->getParameter('store_datahub_metadata');
-        $this->datahubMetadataFields = $this->container->getParameter('datahub_metadata_fields');
+        $this->datahubUrl = $this->parameterBag->get('datahub_url');
+        $this->metadataPrefix = $this->parameterBag->get('datahub_metadataprefix');
+        $this->oneManifestPerObject = $this->parameterBag->get('one_manifest_per_object');
+        $this->usePlaceholderForImagesInCopyright = $this->parameterBag->get('use_placeholder_for_images_in_copyright');
+        $this->inCopyrightKey = $this->parameterBag->get('in_copyright');
+        $this->storeDatahubMetadata = $this->parameterBag->get('store_datahub_metadata');
+        $this->datahubMetadataFields = $this->parameterBag->get('datahub_metadata_fields');
 
-        $this->iiifVersions = $this->container->getParameter('iiif_versions');
-        $this->mainIiifVersion = $this->container->getParameter('main_iiif_version');
+        $this->iiifVersions = $this->parameterBag->get('iiif_versions');
+        $this->mainIiifVersion = $this->parameterBag->get('main_iiif_version');
         // Make sure the service URL name ends with a trailing slash
-        $this->serviceUrl = rtrim($this->container->getParameter('service_url'), '/') . '/';
+        $this->serviceUrl = rtrim($this->parameterBag->get('service_url'), '/') . '/';
 
-        $this->manifestLanguages = $this->container->getParameter('manifest_languages');
-        $this->labelFieldsV2 = $this->container->getParameter('iiif2_labels');
-        $this->licenseLabelsV2 = $this->container->getParameter('iiif2_license_labels');
-        $this->attributionFieldV2 = $this->container->getParameter('iiif2_attribution');
+        $this->manifestLanguages = $this->parameterBag->get('manifest_languages');
+        $this->labelFieldsV2 = $this->parameterBag->get('iiif2_labels');
+        $this->licenseLabelsV2 = $this->parameterBag->get('iiif2_license_labels');
+        $this->attributionFieldV2 = $this->parameterBag->get('iiif2_attribution');
 
-        $this->publishers = $this->container->getParameter('publishers');
-        $this->manifestLabelV3 = $this->container->getParameter('iiif_manifest_label');
-        $this->canvasLabelV3 = $this->container->getParameter('iiif_canvas_label');
-        $this->rightsSourceV3 = $this->container->getParameter('iiif_rights_source');
-        $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
-        $this->metadataFieldsV3 = $this->container->getParameter('iiif_metadata_fields');
+        $this->publishers = $this->parameterBag->get('publishers');
+        $this->manifestLabelV3 = $this->parameterBag->get('iiif_manifest_label');
+        $this->canvasLabelV3 = $this->parameterBag->get('iiif_canvas_label');
+        $this->rightsSourceV3 = $this->parameterBag->get('iiif_rights_source');
+        $this->requiredStatementV3 = $this->parameterBag->get('iiif_required_statement');
+        $this->metadataFieldsV3 = $this->parameterBag->get('iiif_metadata_fields');
 
-        $this->placeholderId = $this->container->getParameter('placeholder_id');
+        $this->placeholderId = $this->parameterBag->get('placeholder_id');
 
-        $this->cantaloupeUrl = $this->container->getParameter('cantaloupe_url');
-        $curlOpts = $this->container->getParameter('cantaloupe_curl_opts');
+        $this->cantaloupeUrl = $this->parameterBag->get('cantaloupe_url');
+        $curlOpts = $this->parameterBag->get('cantaloupe_curl_opts');
         $this->cantaloupeCurlOpts = array();
         foreach($curlOpts as $key => $value) {
             $this->cantaloupeCurlOpts[constant($key)] = $value;
         }
 
-        $this->resourceSpace = new ResourceSpace($this->container);
+        $this->resourceSpace = new ResourceSpace($this->parameterBag);
 
         $resourceSpaceId = $input->getArgument('rs_id');
         if(!empty($resourceSpaceId) && !preg_match('/^[0-9]+$/', $resourceSpaceId)) {
@@ -135,7 +146,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         // Always create a top-level collection
         $this->createTopLevelCollection = $resourceSpaceId == null;
 
-        $this->resourceSpaceManifestField = $this->container->getParameter('resourcespace_manifest_field');
+        $this->resourceSpaceManifestField = $this->parameterBag->get('resourcespace_manifest_field');
 
         $resources = $this->resourceSpace->getAllResources();
         if ($resources === null) {
@@ -144,15 +155,12 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         }
         $this->imageData = array();
 
-        $this->publicUse = $this->container->getParameter('public_use');
-        $em = $this->container->get('doctrine')->getManager();
-        //Disable SQL logging to improve performance
-        $em->getConnection()->getConfiguration()->setSQLLogger(null);
+        $this->publicUse = $this->parameterBag->get('public_use');
 
         foreach($resources as $resource) {
             $resourceId = $resource['ref'];
             /* @var $publicData ResourceData[] */
-            $publicData = $em->createQueryBuilder()
+            $publicData = $this->entityManager->createQueryBuilder()
                 ->select('i')
                 ->from(ResourceData::class, 'i')
                 ->where('i.id = :id')
@@ -198,7 +206,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         // For good measure, sort the image data based on ResourceSpace id
         ksort($this->imageData);
 
-        $this->generateAndStoreManifests($em);
+        $this->generateAndStoreManifests();
         $this->storeAllManifestsInSqlite();
 
         if($this->createTopLevelCollection && file_exists($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite')) {
@@ -256,25 +264,25 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return null;
     }
 
-    private function generateAndStoreManifests(EntityManagerInterface $em)
+    private function generateAndStoreManifests()
     {
-        $validate = $this->container->getParameter('validate_manifests');
-        $validatorUrl = $this->container->getParameter('validator_url');
+        $validate = $this->parameterBag->get('validate_manifests');
+        $validatorUrl = $this->parameterBag->get('validator_url');
 
         // Top-level collection containing a link to all manifests
         $manifestsv2 = array();
         $manifestsv3 = array();
 
         if($this->createTopLevelCollection) {
-            $this->deleteAllManifestsV2($em);
-            $this->deleteAllManifests($em);
+            $this->deleteAllManifestsV2();
+            $this->deleteAllManifests();
         }
 
         if(in_array('2', $this->iiifVersions)) {
-            $this->generateAndStoreManifestsV2($em, $this->mainIiifVersion == '2', $validate, $validatorUrl, $manifestsv2);
+            $this->generateAndStoreManifestsV2($this->mainIiifVersion == '2', $validate, $validatorUrl, $manifestsv2);
         }
         if(in_array('3', $this->iiifVersions)) {
-            $this->generateAndStoreManifestsV3($em, $this->mainIiifVersion == '3', $validate, $validatorUrl, $manifestsv3);
+            $this->generateAndStoreManifestsV3($this->mainIiifVersion == '3', $validate, $validatorUrl, $manifestsv3);
         }
 
         //TODO do we actually need a top-level manifest?
@@ -293,9 +301,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'manifests' => $manifestsv2
             );
 
-            $this->deleteManifestV2($em, 0);
+            $this->deleteManifestV2(0);
 
-            $manifestDocument = $this->storeManifestV2($em, $collection, 0);
+            $manifestDocument = $this->storeManifestV2($collection, 0);
 
             $valid = true;
             if ($validate) {
@@ -303,9 +311,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if (!$valid) {
 //                    echo 'Top-level collection ' . $collectionId . ' is not valid.' . PHP_EOL;
                     $this->logger->error('Top-level collection ' . $collectionId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->remove($manifestDocument);
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
             }
 
@@ -332,9 +340,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'items' => $manifestsv3
             );
 
-            $this->deleteManifest($em, 0);
+            $this->deleteManifest(0);
 
-            $manifestDocument = $this->storeManifest($em, $collection, 0);
+            $manifestDocument = $this->storeManifest($collection, 0);
 
             $valid = true;
             if ($validate) {
@@ -342,9 +350,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if (!$valid) {
 //                    echo 'Top-level collection ' . $collectionId . ' is not valid.' . PHP_EOL;
                     $this->logger->error('Top-level collection ' . $collectionId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->remove($manifestDocument);
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
             }
 
@@ -359,7 +367,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->logger->info('Done, created and stored ' . count($manifestsv3) . ' IIIF 3 manifests.');
     }
 
-    private function generateAndStoreManifestsV2(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
+    private function generateAndStoreManifestsV2($storeInLido, $validate, $validatorUrl, &$manifests)
     {
         foreach($this->imageData as $resourceId => $data) {
             if(array_key_exists('is_alto_transcription', $data)) {
@@ -369,7 +377,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             /* @var $rsDataRaw ResourceData[] */
-            $rsDataRaw = $em->createQueryBuilder()
+            $rsDataRaw = $this->entityManager->createQueryBuilder()
                 ->select('i')
                 ->from(ResourceData::class, 'i')
                 ->where('i.id = :id')
@@ -736,10 +744,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             if(!$this->createTopLevelCollection) {
-                $this->deleteManifestV2($em, $resourceId);
+                $this->deleteManifestV2($resourceId);
             }
 
-            $manifestDocument = $this->storeManifestV2($em, $manifest, $resourceId);
+            $manifestDocument = $this->storeManifestV2($manifest, $resourceId);
 
             // Validate the manifest
             // We can only pass a URL to the validator, so the manifest needs to be stored and served already before validation
@@ -750,9 +758,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if (!$valid) {
 //                    echo 'Manifest ' . $manifestId . ' is not valid.' . PHP_EOL;
                     $this->logger->error('Manifest ' . $manifestId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->remove($manifestDocument);
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
             }
 
@@ -840,9 +848,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     {
         $arr = array(
             '@context' => 'http://iiif.io/api/auth/1/context.json',
-            '@id'      => $this->container->getParameter('authentication_url'),
+            '@id'      => $this->parameterBag->get('authentication_url'),
         );
-        foreach($this->container->getParameter('authentication_service_description') as $key => $value) {
+        foreach($this->parameterBag->get('authentication_service_description') as $key => $value) {
             $arr[$key] = $value;
         }
         return $arr;
@@ -868,7 +876,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return array($manifestSequence);
     }
 
-    public function generateAndStoreManifestsV3(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
+    public function generateAndStoreManifestsV3($storeInLido, $validate, $validatorUrl, &$manifests)
     {
         foreach($this->imageData as $resourceId => $imageData) {
             if(array_key_exists('is_alto_transcription', $imageData)) {
@@ -877,7 +885,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
-            $rsDataRaw = $em->createQueryBuilder()
+            $rsDataRaw = $this->entityManager->createQueryBuilder()
                 ->select('i')
                 ->from(ResourceData::class, 'i')
                 ->where('i.id = :id')
@@ -1050,7 +1058,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     continue;
                 }
 
-                $rsDataRaw = $em->createQueryBuilder()
+                $rsDataRaw = $this->entityManager->createQueryBuilder()
                     ->select('i')
                     ->from(ResourceData::class, 'i')
                     ->where('i.id = :id')
@@ -1116,7 +1124,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                                 $transcription = GenerateTranscriptionFromAlto::generate($this->altoTranscriptionFiles[$key], $canvasId, $manifestId, $this->serviceUrl, '3', $resourceId, $index);
                                 if($transcription !== null) {
                                     $this->altoTranscriptions[$key] = $transcription;
-                                    $this->storeTranscription($em, $transcription);
+                                    $this->storeTranscription($transcription);
                                     $annotations = [
                                         'id' => $transcription->getTranscriptionId(),
                                         'type' => 'AnnotationPage'
@@ -1372,10 +1380,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             if(!$this->createTopLevelCollection) {
-                $this->deleteManifest($em, $resourceId);
+                $this->deleteManifest($resourceId);
             }
 
-            $manifestDocument = $this->storeManifest($em, $manifest, $resourceId);
+            $manifestDocument = $this->storeManifest($manifest, $resourceId);
 
             // Validate the manifest
             // We can only pass a URL to the validator, so the manifest needs to be stored and served already before validation
@@ -1386,9 +1394,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if (!$valid) {
 //                    echo 'Manifest ' . $manifestId . ' is not valid.' . PHP_EOL;
                     $this->logger->error('Manifest ' . $manifestId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->remove($manifestDocument);
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
             }
 
@@ -1475,79 +1483,79 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return $label;
     }
 
-    private function deleteAllManifestsV2(EntityManagerInterface $em)
+    private function deleteAllManifestsV2()
     {
-        $qb = $em->createQueryBuilder();
+        $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(IIIfManifestV2::class, 'manifest')->getQuery();
         $query->execute();
-        $em->flush();
+        $this->entityManager->flush();
     }
 
-    private function deleteAllManifests(EntityManagerInterface $em)
+    private function deleteAllManifests()
     {
-        $qb = $em->createQueryBuilder();
+        $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(IIIfManifest::class, 'manifest')->getQuery();
         $query->execute();
-        $em->flush();
+        $this->entityManager->flush();
     }
 
-    private function deleteManifestV2(EntityManagerInterface $em, $manifestId)
+    private function deleteManifestV2($manifestId)
     {
-        $qb = $em->createQueryBuilder();
+        $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(IIIfManifestV2::class, 'manifest')
                     ->where('manifest.id = :manif_id')
                     ->setParameter('manif_id', $manifestId)
                     ->getQuery();
         $query->execute();
-        $em->flush();
+        $this->entityManager->flush();
     }
 
-    private function deleteManifest(EntityManagerInterface $em, $manifestId)
+    private function deleteManifest($manifestId)
     {
-        $qb = $em->createQueryBuilder();
+        $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(IIIfManifest::class, 'manifest')
             ->where('manifest.id = :manif_id')
             ->setParameter('manif_id', $manifestId)
             ->getQuery();
         $query->execute();
-        $em->flush();
+        $this->entityManager->flush();
     }
 
-    private function storeTranscription(EntityManagerInterface $em, $transcription)
+    private function storeTranscription($transcription)
     {
-        $qb = $em->createQueryBuilder();
+        $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(Transcription::class, 'transcription')
             ->where('transcription.transcriptionId = :id')
             ->setParameter('id', $transcription->getTranscriptionId())
             ->getQuery();
         $query->execute();
-        $em->flush();
+        $this->entityManager->flush();
 
-        $em->persist($transcription);
-        $em->flush();
+        $this->entityManager->persist($transcription);
+        $this->entityManager->flush();
     }
 
-    private function storeManifestV2(EntityManagerInterface $em, $manifest, $manifestId)
+    private function storeManifestV2($manifest, $manifestId)
     {
         // Store the manifest in mysql
         $manifestDocument = new IIIFManifestV2();
         $manifestDocument->setId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
-        $em->persist($manifestDocument);
-        $em->flush();
-        $em->clear();
+        $this->entityManager->persist($manifestDocument);
+        $this->entityManager->flush();
+        $this->entityManager->clear();
         return $manifestDocument;
     }
 
-    private function storeManifest(EntityManagerInterface $em, $manifest, $manifestId)
+    private function storeManifest($manifest, $manifestId)
     {
         // Store the manifest in mysql
         $manifestDocument = new IIIFManifest();
         $manifestDocument->setId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
-        $em->persist($manifestDocument);
-        $em->flush();
-        $em->clear();
+        $this->entityManager->persist($manifestDocument);
+        $this->entityManager->flush();
+        $this->entityManager->clear();
         return $manifestDocument;
     }
 

@@ -7,34 +7,32 @@ use App\Entity\IIIfManifestV2;
 use App\Utils\Authenticator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class CollectionController extends AbstractController
 {
-    /**
-     * @var EntityManagerInterface
-     */
-    private $doctrine;
+    private $parameterBag;
+    private $entityManager;
 
-    public function __construct(EntityManagerInterface $doctrine) {
-        $this->doctrine = $doctrine;
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager) {
+        $this->parameterBag = $parameterBag;
+        $this->entityManager = $entityManager;
     }
 
-    /**
-     * @Route("/iiif/{iiifVersion}/collection/top", name="collection", requirements={"iiifVersion"="2|3"})
-     */
+    #[Route(path: '/iiif/{iiifVersion}/collection/top', name: 'collection', requirements: ['iiifVersion' => '2|3'])]
     public function collectionAction(Request $request, $iiifVersion)
     {
         // Authenticate the user through the AD FS with SAML
-        if(!Authenticator::authenticate($this->getParameter('adfs_requirements'))) {
+        if(!Authenticator::authenticate($this->parameterBag->get('adfs_requirements'))) {
             return new Response('Sorry, you are not allowed to access this document.', 403);
         } else {
             // Make sure the service URL name ends with a trailing slash
-            $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
+            $baseUrl = rtrim($this->parameterBag->get('service_url'), '/') . '/';
 
-            $manifest = $this->doctrine->getRepository($iiifVersion === '2' ? IIIfManifestV2::class : IIIfManifest::class)->findOneBy(['id' => 0]);
+            $manifest = $this->entityManager->getRepository($iiifVersion === '2' ? IIIfManifestV2::class : IIIfManifest::class)->findOneBy(['id' => 0]);
             if ($manifest != null) {
                 $headers = array(
                     'Content-Type' => 'application/json',

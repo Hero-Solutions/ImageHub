@@ -6,31 +6,29 @@ use App\Entity\IIIfManifest;
 use App\Utils\Authenticator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class MeemooManifestController extends AbstractController
 {
-    /**
-     * @var EntityManagerInterface
-     */
-    private $doctrine;
+    private $parameterBag;
+    private $entityManager;
 
-    public function __construct(EntityManagerInterface $doctrine) {
-        $this->doctrine = $doctrine;
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager) {
+        $this->parameterBag = $parameterBag;
+        $this->entityManager = $entityManager;
     }
 
-    /**
-     * @Route("/meemoo/iiif/{iiifVersion}/{manifestId}/manifest.json", name="meemoo_manifest", requirements={"iiifVersion"="2|3"})
-     */
+    #[Route(path: '/meemoo/iiif/{iiifVersion}/{manifestId}/manifest.json', name: 'meemoo_manifest', requirements: ['iiifVersion' => '2|3'])]
     public function manifestAction(Request $request, $iiifVersion, $manifestId = '')
     {
         // Make sure the service URL name ends with a trailing slash
-        $baseUrl = rtrim($this->getParameter('meemoo')['service_url'], '/') . '/';
+        $baseUrl = rtrim($this->parameterBag->get('meemoo')['service_url'], '/') . '/';
 
         if($request->getMethod() == 'HEAD') {
-            $ids = $this->doctrine
+            $ids = $this->entityManager
                 ->createQueryBuilder()
                 ->select('m.id')
                 ->from(IIIfManifest::class, 'm')
@@ -44,7 +42,7 @@ class MeemooManifestController extends AbstractController
                 return new Response('', 404);
             }
         } else {
-            $manifest = $this->doctrine->getRepository(IIIfManifest::class)->findOneBy(['id' => $manifestId]);
+            $manifest = $this->entityManager->getRepository(IIIfManifest::class)->findOneBy(['id' => $manifestId]);
             if ($manifest == null) {
                 return new Response('Sorry, the requested document does not exist.', 404);
             } else {
@@ -74,7 +72,7 @@ class MeemooManifestController extends AbstractController
                 }
                 if (!$authenticated) {
                     // Authenticate the user through the AD FS with SAML
-                    if (Authenticator::authenticate($this->getParameter('adfs_requirements'))) {
+                    if (Authenticator::authenticate($this->parameterBag->get('adfs_requirements'))) {
                         $authenticated = true;
                     }
                 }

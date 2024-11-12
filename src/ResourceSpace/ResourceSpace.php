@@ -3,7 +3,7 @@
 namespace App\ResourceSpace;
 
 use App\Utils\StringUtil;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class ResourceSpace
 {
@@ -11,12 +11,12 @@ class ResourceSpace
     private $apiUsername;
     private $apiKey;
 
-    public function __construct(ContainerInterface $container)
+    public function __construct(ParameterBagInterface $parameterBag)
     {
         // Make sure the API URL does not end with a '?' character
-        $this->apiUrl = rtrim($container->getParameter('resourcespace_api_url'), '?');
-        $this->apiUsername = $container->getParameter('resourcespace_api_username');
-        $this->apiKey = $container->getParameter('resourcespace_api_key');
+        $this->apiUrl = rtrim($parameterBag->get('resourcespace_api_url'), '?');
+        $this->apiUsername = $parameterBag->get('resourcespace_api_username');
+        $this->apiKey = $parameterBag->get('resourcespace_api_key');
     }
 
     public function generateCreditLines($creditLineDefinition, $resourceSpaceData, &$datahubData)

@@ -4,21 +4,15 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass="App\Repository\IIIfManifestRepository")
- * @ORM\Table(name="iiif_manifest")
- */
+#[ORM\Entity(repositoryClass: "App\Repository\IIIfManifestRepository")]
+#[ORM\Table(name: "iiif_manifest")]
 class IIIfManifest
 {
-    /**
-     * @ORM\Id()
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id()]
+    #[ORM\Column(type: "integer")]
     private $id;
 
-    /**
-     * @ORM\Column(type="text")
-     */
+    #[ORM\Column(type: "text")]
     private $data;
 
     public function getId(): ?int

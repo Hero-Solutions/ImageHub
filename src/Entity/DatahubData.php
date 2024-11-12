@@ -4,27 +4,19 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass="App\Repository\DatahubDataRepository")
- * @ORM\Table(name="datahub_data")
- */
+#[ORM\Entity(repositoryClass: "App\Repository\DatahubDataRepository")]
+#[ORM\Table(name: "datahub_data")]
 class DatahubData
 {
-    /**
-     * @ORM\Id()
-     * @ORM\Column(type="string", length=255)
-     */
+    #[ORM\Id()]
+    #[ORM\Column(type: "string", length: 255)]
     private $id;
 
-    /**
-     * @ORM\Id()
-     * @ORM\Column(type="string", length=255)
-     */
+    #[ORM\Id()]
+    #[ORM\Column(type: "string", length: 255)]
     private $name;
 
-    /**
-     * @ORM\Column(type="text")
-     */
+    #[ORM\Column(type: "text")]
     private $value;
 
     public function getId(): ?string

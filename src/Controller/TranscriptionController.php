@@ -6,35 +6,33 @@ use App\Entity\Transcription;
 use App\Utils\Authenticator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class TranscriptionController extends AbstractController
 {
-    /**
-     * @var EntityManagerInterface
-     */
-    private $doctrine;
+    private $parameterBag;
+    private $entityManager;
 
-    public function __construct(EntityManagerInterface $doctrine) {
-        $this->doctrine = $doctrine;
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager) {
+        $this->parameterBag = $parameterBag;
+        $this->entityManager = $entityManager;
     }
 
-    /**
-     * @Route("/iiif/{iiifVersion}/transcriptions/{manifestId}/{transcriptionId}.json", name="transcription", requirements={"iiifVersion"="2|3"})
-     */
+    #[Route(path: '/iiif/{iiifVersion}/transcriptions/{manifestId}/{transcriptionId}.json', name: 'transcription', requirements: ['iiifVersion' => '2|3'])]
     public function transcriptionAction(Request $request, $iiifVersion, $manifestId = '', $transcriptionId = '')
     {
         // Make sure the service URL name ends with a trailing slash
-        $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
+        $baseUrl = rtrim($this->parameterBag->get('service_url'), '/') . '/';
 
-        $transcription = $this->doctrine->getRepository(Transcription::class)->findOneBy(['transcriptionId' => $baseUrl . $iiifVersion . '/transcriptions/' . $manifestId . '/' . $transcriptionId . '.json']);
+        $transcription = $this->entityManager->getRepository(Transcription::class)->findOneBy(['transcriptionId' => $baseUrl . $iiifVersion . '/transcriptions/' . $manifestId . '/' . $transcriptionId . '.json']);
         if ($transcription === null) {
             //Check if we want to return the matching IIIF 3 transcription instead
             if($iiifVersion === '2') {
-                $transcription = $this->doctrine->getRepository(Transcription::class)->findOneBy(['manifestId' => $baseUrl . '3/transcriptions/' . $manifestId . '/' . $transcriptionId . '.json']);
+                $transcription = $this->entityManager->getRepository(Transcription::class)->findOneBy(['manifestId' => $baseUrl . '3/transcriptions/' . $manifestId . '/' . $transcriptionId . '.json']);
                 if($transcription === null) {
                     return new Response('Sorry, the requested document does not exist.', 404);
                 } else {
@@ -45,7 +43,7 @@ class TranscriptionController extends AbstractController
             }
         } else {
             $authenticated = true;
-            $whitelist = $this->getParameter('authentication_whitelist');
+            $whitelist = $this->parameterBag->get('authentication_whitelist');
             $whitelisted = false;
             if ($request->getClientIp() != null) {
                 if (in_array($request->getClientIp(), $whitelist)) {
@@ -66,7 +64,7 @@ class TranscriptionController extends AbstractController
             }
             if (!$authenticated) {
                 // Authenticate the user through the AD FS with SAML
-                if (Authenticator::authenticate($this->getParameter('adfs_requirements'))) {
+                if (Authenticator::authenticate($this->parameterBag->get('adfs_requirements'))) {
                     $authenticated = true;
                 }
             }

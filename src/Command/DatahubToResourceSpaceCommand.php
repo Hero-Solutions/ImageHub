@@ -3,10 +3,10 @@
 namespace App\Command;
 
 use App\Entity\DatahubData;
-use App\Entity\IIIfManifest;
 use App\Entity\ResourceData;
 use App\ResourceSpace\ResourceSpace;
 use App\Utils\StringUtil;
+use Doctrine\ORM\EntityManagerInterface;
 use DOMDocument;
 use DOMXPath;
 use Phpoaipmh\Endpoint;
@@ -19,11 +19,13 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInterface, LoggerAwareInterface
+class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterface
 {
+    private $parameterBag;
+    private $entityManager;
+
     private $datahubUrl;
     private $datahubLanguage;
     private $namespace;
@@ -59,9 +61,11 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             ->setHelp('');
     }
 
-    public function setContainer(ContainerInterface $container = null)
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager)
     {
-        $this->container = $container;
+        $this->parameterBag = $parameterBag;
+        $this->entityManager = $entityManager;
+        parent::__construct();
     }
 
     public function setLogger(LoggerInterface $logger): void
@@ -80,68 +84,68 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
         $this->datahubUrl = $input->getArgument('url');
         if (!$this->datahubUrl) {
-            $this->datahubUrl = $this->container->getParameter('datahub_url');
+            $this->datahubUrl = $this->parameterBag->get('datahub_url');
         }
 
-        $this->datahubLanguage = $this->container->getParameter('datahub_language');
-        $this->namespace = $this->container->getParameter('datahub_namespace');
-        $this->metadataPrefix = $this->container->getParameter('datahub_metadataprefix');
-        $this->relatedWorksXpath = $this->container->getParameter('datahub_related_works_xpath');
-        $this->excludeRelations = $this->container->getParameter('exclude_relations');
-        $this->storeDatahubRecordIds = $this->container->getParameter('store_datahub_record_ids');
-        $this->storeTranscriptions = $this->container->getParameter('store_transcriptions');
-        $this->transcriptionFields = $this->container->getParameter('transcription_fields');
-        $this->dataDefinition = $this->container->getParameter('datahub_data_definition');
-        $this->creditLineDefinition = $this->container->getParameter('credit_line');
-        $publicUse = $this->container->getParameter('public_use');
-        $recommendedForPublication = $this->container->getParameter('recommended_for_publication');
-        $iiifSortNumber = $this->container->getParameter('iiif_sort_number');
-        $inCopyright = $this->container->getParameter('in_copyright');
+        $this->datahubLanguage = $this->parameterBag->get('datahub_language');
+        $this->namespace = $this->parameterBag->get('datahub_namespace');
+        $this->metadataPrefix = $this->parameterBag->get('datahub_metadataprefix');
+        $this->relatedWorksXpath = $this->parameterBag->get('datahub_related_works_xpath');
+        $this->excludeRelations = $this->parameterBag->get('exclude_relations');
+        $this->storeDatahubRecordIds = $this->parameterBag->get('store_datahub_record_ids');
+        $this->storeTranscriptions = $this->parameterBag->get('store_transcriptions');
+        $this->transcriptionFields = $this->parameterBag->get('transcription_fields');
+        $this->dataDefinition = $this->parameterBag->get('datahub_data_definition');
+        $this->creditLineDefinition = $this->parameterBag->get('credit_line');
+        $publicUse = $this->parameterBag->get('public_use');
+        $recommendedForPublication = $this->parameterBag->get('recommended_for_publication');
+        $iiifSortNumber = $this->parameterBag->get('iiif_sort_number');
+        $inCopyright = $this->parameterBag->get('in_copyright');
 
         $this->rsFieldsToPersist = [];
-        $iiif2Labels = $this->container->getParameter('iiif2_labels');
+        $iiif2Labels = $this->parameterBag->get('iiif2_labels');
         foreach($iiif2Labels as $language => $fieldName) {
             if (!array_key_exists($fieldName, $this->rsFieldsToPersist)) {
                 $this->rsFieldsToPersist[$fieldName] = $fieldName;
             }
         }
-        $iiifAttribution = $this->container->getParameter('iiif2_attribution');
+        $iiifAttribution = $this->parameterBag->get('iiif2_attribution');
         if(!array_key_exists($iiifAttribution, $this->rsFieldsToPersist)) {
             $this->rsFieldsToPersist[$iiifAttribution] = $iiifAttribution;
         }
-        $iiif3ManifestLabel = $this->container->getParameter('iiif_manifest_label');
+        $iiif3ManifestLabel = $this->parameterBag->get('iiif_manifest_label');
         foreach($iiif3ManifestLabel as $language => $fieldName) {
             if(!array_key_exists($fieldName, $this->rsFieldsToPersist)) {
                 $this->rsFieldsToPersist[$fieldName] = $fieldName;
             }
         }
-        $iiif3CanvasLabel = $this->container->getParameter('iiif_canvas_label');
+        $iiif3CanvasLabel = $this->parameterBag->get('iiif_canvas_label');
         foreach($iiif3CanvasLabel as $language => $fieldName) {
             if(!array_key_exists($fieldName, $this->rsFieldsToPersist)) {
                 $this->rsFieldsToPersist[$fieldName] = $fieldName;
             }
         }
-        $iiif3RightsSource = $this->container->getParameter('iiif_rights_source');
+        $iiif3RightsSource = $this->parameterBag->get('iiif_rights_source');
         if(!array_key_exists($iiif3RightsSource, $this->rsFieldsToPersist)) {
             $this->rsFieldsToPersist[$iiif3RightsSource] = $iiif3RightsSource;
         }
-        $iiif3Behavior = $this->container->getParameter('iiif_behavior');
+        $iiif3Behavior = $this->parameterBag->get('iiif_behavior');
         if(!array_key_exists($iiif3Behavior, $this->rsFieldsToPersist)) {
             $this->rsFieldsToPersist[$iiif3Behavior] = $iiif3Behavior;
         }
-        $iiif3RequiredStatement = $this->container->getParameter('iiif_required_statement');
+        $iiif3RequiredStatement = $this->parameterBag->get('iiif_required_statement');
         foreach($iiif3RequiredStatement['value'] as $language => $field) {
             if(!array_key_exists($field, $this->rsFieldsToPersist)) {
                 $this->rsFieldsToPersist[$field] = $field;
             }
         }
-        $datahubMetadataFields = $this->container->getParameter('datahub_metadata_fields');
+        $datahubMetadataFields = $this->parameterBag->get('datahub_metadata_fields');
         foreach($datahubMetadataFields as $field => $label) {
             if(!array_key_exists($field, $this->rsFieldsToPersist)) {
                 $this->rsFieldsToPersist[$field] = $field;
             }
         }
-        $iiif3MetadataFields = $this->container->getParameter('iiif_metadata_fields');
+        $iiif3MetadataFields = $this->parameterBag->get('iiif_metadata_fields');
         foreach($iiif3MetadataFields as $fieldName => $field) {
             foreach($field['value'] as $language => $fieldData) {
                 if (!array_key_exists($fieldData, $this->rsFieldsToPersist)) {
@@ -150,14 +154,10 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
             }
         }
 
-        $this->resourceSpace = new ResourceSpace($this->container);
-
-        $em = $this->container->get('doctrine')->getManager();
-        //Disable SQL logging to improve performance
-        $em->getConnection()->getConfiguration()->setSQLLogger(null);
+        $this->resourceSpace = new ResourceSpace($this->parameterBag);
 
         if($resourceSpaceId == null) {
-            $this->cacheAllDatahubData($em);
+            $this->cacheAllDatahubData();
             if($this->failedFetchingDatahubData) {
                 return 1;
             }
@@ -179,19 +179,19 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
         $originalFilenames = array();
 
         if($resourceSpaceId == null) {
-            $em->createQueryBuilder()
+            $this->entityManager->createQueryBuilder()
                 ->delete(ResourceData::class, 'data')
                 ->getQuery()
                 ->execute();
-            $em->flush();
+            $this->entityManager->flush();
         } else {
-            $em->createQueryBuilder()
+            $this->entityManager->createQueryBuilder()
                 ->delete(ResourceData::class, 'data')
                 ->where('data.id = :id')
                 ->setParameter('id', $resourceSpaceId)
                 ->getQuery()
                 ->execute();
-            $em->flush();
+            $this->entityManager->flush();
         }
 
         $rsIdsToInventoryNumbers = array();
@@ -215,7 +215,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                     $resourceData->setId($resourceId);
                     $resourceData->setName('is_alto_transcription');
                     $resourceData->setValue('1');
-                    $em->persist($resourceData);
+                    $this->entityManager->persist($resourceData);
                     $resourceKeys[$key] = $key;
                 }
             }
@@ -227,7 +227,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 $resourceData->setId($resourceId);
                 $resourceData->setName('file_checksum');
                 $resourceData->setValue($fileChecksum);
-                $em->persist($resourceData);
+                $this->entityManager->persist($resourceData);
                 $resourceKeys[$key] = $key;
             }
 
@@ -239,7 +239,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                     $resourceData->setId($resourceId);
                     $resourceData->setName('sourceinvnr');
                     $resourceData->setValue($inventoryNumber);
-                    $em->persist($resourceData);
+                    $this->entityManager->persist($resourceData);
                     $resourceKeys[$key] = $key;
                 }
             }
@@ -255,7 +255,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 $resourceData->setId($resourceId);
                 $resourceData->setName('is_public');
                 $resourceData->setValue($isPublic ? '1' : '0');
-                $em->persist($resourceData);
+                $this->entityManager->persist($resourceData);
                 $resourceKeys[$key] = $key;
             }
 
@@ -266,7 +266,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 $resourceData->setId($resourceId);
                 $resourceData->setName('is_recommended_for_pub');
                 $resourceData->setValue($isRecommendedForPub ? '1' : '0');
-                $em->persist($resourceData);
+                $this->entityManager->persist($resourceData);
             }
 
             $isInCopyright = $this->resourceSpace->isCheckboxChecked($rsData, $inCopyright);
@@ -276,13 +276,13 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 $resourceData->setId($resourceId);
                 $resourceData->setName('is_in_copyright');
                 $resourceData->setValue($isInCopyright ? '1' : '0');
-                $em->persist($resourceData);
+                $this->entityManager->persist($resourceData);
             }
 
             $dhData = array();
             if (!empty($inventoryNumber)) {
                 $rsIdsToInventoryNumbers[$resourceId] = $inventoryNumber;
-                $dhData_ = $em->createQueryBuilder()
+                $dhData_ = $this->entityManager->createQueryBuilder()
                     ->select('i')
                     ->from(DatahubData::class, 'i')
                     ->where('i.id = :id')
@@ -304,7 +304,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                             $resourceData->setId($resourceId);
                             $resourceData->setName('dh_record_id');
                             $resourceData->setValue($recordId);
-                            $em->persist($resourceData);
+                            $this->entityManager->persist($resourceData);
                             $resourceKeys[$key] = $key;
                         }
                     } else {
@@ -321,7 +321,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                     $resourceData->setName('iiif_sort_number');
                     $resourceData->setValue($index);
                     $this->resourceSpaceSortOrders[$resourceId] = $index;
-                    $em->persist($resourceData);
+                    $this->entityManager->persist($resourceData);
                 }
                 $this->resourceSpace->generateCreditLines($this->creditLineDefinition, $rsData, $dhData);
                 $this->updateResourceSpaceFields($resourceId, $rsData, $dhData);
@@ -334,22 +334,22 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                         $resourceData->setId($resourceId);
                         $resourceData->setName($key);
                         $resourceData->setValue($dhData[$key]);
-                        $em->persist($resourceData);
+                        $this->entityManager->persist($resourceData);
                         $resourceKeys[$key_] = $key_;
                     } else if (!empty($rsData[$key])) {
                         $resourceData = new ResourceData();
                         $resourceData->setId($resourceId);
                         $resourceData->setName($key);
                         $resourceData->setValue($rsData[$key]);
-                        $em->persist($resourceData);
+                        $this->entityManager->persist($resourceData);
                         $resourceKeys[$key_] = $key_;
                     }
                 }
             }
             $n++;
             if ($n % 20 == 0) {
-                $em->flush();
-                $em->clear();
+                $this->entityManager->flush();
+                $this->entityManager->clear();
             }
             if($this->verbose) {
                 if ($n % 1000 == 0) {
@@ -358,8 +358,8 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                 }
             }
         }
-        $em->flush();
-        $em->clear();
+        $this->entityManager->flush();
+        $this->entityManager->clear();
 
         if($resourceSpaceId == null) {
             // Sort by oldest > newest resources to generally improve sort orders in related resources
@@ -456,28 +456,28 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                     $relatedResourcesObj->setId($resourceId);
                     $relatedResourcesObj->setName('related_resources');
                     $relatedResourcesObj->setValue(implode(',', $relatedResources));
-                    $em->persist($relatedResourcesObj);
+                    $this->entityManager->persist($relatedResourcesObj);
                     $resourceKeys[$key] = $key;
                     $n++;
                 }
                 if($n % 20 == 0) {
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
                 if($this->verbose) {
     //                echo 'At id ' . $resourceId . ' - ' . $n . '/' . $total . ' relations.' . PHP_EOL;
                     $this->logger->info('At id ' . $resourceId . ' - ' . $n . '/' . $total . ' relations.');
                 }
             }
-            $em->flush();
-            $em->clear();
+            $this->entityManager->flush();
+            $this->entityManager->clear();
 
             $this->storeAllTranscriptionsInDb();
         }
         return 0;
     }
 
-    function cacheAllDatahubData($em)
+    function cacheAllDatahubData()
     {
         $firstRun = true;
         try {
@@ -514,9 +514,9 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
 
                 if($firstRun) {
                     $firstRun = false;
-                    $qb = $em->createQueryBuilder();
+                    $qb = $this->entityManager->createQueryBuilder();
                     $qb->delete(DatahubData::class, 'data')->getQuery()->execute();
-                    $em->flush();
+                    $this->entityManager->flush();
                 }
 
                 foreach ($this->dataDefinition as $key => $dataDef) {
@@ -660,7 +660,7 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                         ->setParameter('id', $id)
                         ->getQuery();
                     $query->execute();
-                    $em->flush();
+                    $this->entityManager->flush();
 
                     $datahubData['dh_record_id'] = $recordId;
                     if($this->storeDatahubRecordIds) {
@@ -672,10 +672,10 @@ class DatahubToResourceSpaceCommand extends Command implements ContainerAwareInt
                         $data->setId($id);
                         $data->setName($key);
                         $data->setValue($value);
-                        $em->persist($data);
+                        $this->entityManager->persist($data);
                     }
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
             }
 //            var_dump($relations);

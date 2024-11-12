@@ -3,16 +3,19 @@
 namespace App\Command;
 
 use App\ResourceSpace\ResourceSpace;
-use App\Utils\StringUtil;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class CsvToResourceSpaceCommand extends Command implements ContainerAwareInterface
+class CsvToResourceSpaceCommand extends Command implements LoggerAwareInterface
 {
+    private $parameterBag;
+    private $logger;
+
     private $resourceSpace;
 
     protected function configure()
@@ -24,16 +27,22 @@ class CsvToResourceSpaceCommand extends Command implements ContainerAwareInterfa
             ->setHelp('');
     }
 
-    public function setContainer(ContainerInterface $container = null)
+    public function __construct(ParameterBagInterface $parameterBag)
     {
-        $this->container = $container;
+        $this->parameterBag = $parameterBag;
+        parent::__construct();
+    }
+
+    public function setLogger(LoggerInterface $logger): void
+    {
+        $this->logger = $logger;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $csvFile = $input->getArgument('csv');
 
-        $this->resourceSpace = new ResourceSpace($this->container);
+        $this->resourceSpace = new ResourceSpace($this->parameterBag);
 
         $csvData = $this->readRecordsFromCsv($csvFile);
 

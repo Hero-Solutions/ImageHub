@@ -11,9 +11,12 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterface, LoggerAwareInterface
+class FtpToResourceSpaceCommand extends Command implements LoggerAwareInterface
 {
+    private $parameterBag;
+
     /**
      * @var ResourceSpace
      */
@@ -26,6 +29,12 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
             ->setName('app:ftp-to-resourcespace')
             ->setDescription('Checks the FTP upload folder for new images, checks if the upload appears to be done, uploads them to a local ResourceSpace installation and deletes the local image at the end.')
             ->setHelp('');
+    }
+
+    public function __construct(ParameterBagInterface $parameterBag)
+    {
+        $this->parameterBag = $parameterBag;
+        parent::__construct();
     }
 
     /**
@@ -44,9 +53,9 @@ class FtpToResourceSpaceCommand extends Command implements ContainerAwareInterfa
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->verbose = $input->getOption('verbose');
-        $this->resourceSpace = new ResourceSpace($this->container);
+        $this->resourceSpace = new ResourceSpace($this->parameterBag);
 
-        $this->ftpFolder = $this->container->getParameter('ftp_folder');
+        $this->ftpFolder = $this->parameterBag->get('ftp_folder');
 
         if(!is_dir($this->ftpFolder)) {
             $this->logger->error('Error: FTP folder ' . $this->ftpFolder . ' does not exist.');
