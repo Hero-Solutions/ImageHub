@@ -164,6 +164,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
         foreach($resources as $resource) {
             $resourceId = $resource['ref'];
+            if($resourceSpaceId !== null && $resourceId != $resourceId) {
+                continue;
+            }
+
             /* @var $publicData ResourceData[] */
             $publicData = $em->createQueryBuilder()
                 ->select('i')
@@ -212,7 +216,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         ksort($this->imageData);
 
         $this->generateAndStoreManifests($em);
-        $this->storeAllManifestsInSqlite();
+        if($this->createTopLevelCollection) {
+            $this->storeAllManifestsInSqlite();
+        }
 
         if($this->createTopLevelCollection && file_exists($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite')) {
             rename($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.iiif_manifests.sqlite');
