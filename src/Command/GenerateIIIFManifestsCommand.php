@@ -28,6 +28,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
     private $entityManager;
 
     private $verbose;
+    private $resourceSpaceAnnotationsUrl;
     private $datahubUrl;
     private $metadataPrefix;
     private $cantaloupeUrl;
@@ -57,6 +58,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
     private $imageData;
     private $altoTranscriptionFiles = [];
     private $altoTranscriptions = [];
+    private $annotations = [];
 
     private $iiifVersions;
     private $mainIiifVersion;
@@ -103,6 +105,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
     {
         $this->verbose = $input->getOption('verbose');
 
+        $this->resourceSpaceAnnotationsUrl = $this->parameterBag->get('resourcespace_annotations_url');
         $this->datahubUrl = $this->parameterBag->get('datahub_url');
         $this->metadataPrefix = $this->parameterBag->get('datahub_metadataprefix');
         $this->oneManifestPerObject = $this->parameterBag->get('one_manifest_per_object');
@@ -153,12 +156,26 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
             $this->logger->error( 'Error: no resourcespace data.');
             return 0;
         }
+
+        if(!empty($this->resourceSpaceAnnotationsUrl)) {
+            $annotations = json_decode(file_get_contents($this->resourceSpaceAnnotationsUrl . '?key=' . $this->container->getParameter('resourcespace_api_key')), true);
+            if(isset($annotations['error'])) {
+                $this->logger->error( 'Error fetching annotations: ' . $annotations['error']);
+            } else if(isset($annotations['data'])) {
+                $this->annotations = $annotations['data'];
+            }
+        }
+
         $this->imageData = array();
 
         $this->publicUse = $this->parameterBag->get('public_use');
 
         foreach($resources as $resource) {
             $resourceId = $resource['ref'];
+            if($resourceSpaceId !== null && $resourceId != $resourceSpaceId) {
+                continue;
+            }
+
             /* @var $publicData ResourceData[] */
             $publicData = $this->entityManager->createQueryBuilder()
                 ->select('i')
@@ -207,7 +224,9 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         ksort($this->imageData);
 
         $this->generateAndStoreManifests();
-        $this->storeAllManifestsInSqlite();
+        if($this->createTopLevelCollection) {
+            $this->storeAllManifestsInSqlite();
+        }
 
         if($this->createTopLevelCollection && file_exists($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite')) {
             rename($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.iiif_manifests.sqlite');
@@ -1290,6 +1309,37 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
                     'items'             => array($annotationPage),
                     'thumbnail'         => $thmb
                 );
+                if(array_key_exists($relatedRef, $this->annotations)) {
+                    if(!empty($this->annotations[$relatedRef])) {
+                        $annotationItems = [];
+                        $annotationIndex = 0;
+                        foreach($this->annotations[$relatedRef] as $annotation) {
+                            $annotationIndex++;
+                            $scaleX = $annotation['preview_width'] <= 0 ? 1 : $this->imageData[$relatedRef]['width'] / $annotation['preview_width'];
+                            $scaleY = $annotation['preview_height'] <= 0 ? 1 : $this->imageData[$relatedRef]['height'] / $annotation['preview_height'];
+                            $x = round($annotation['left_pos'] * $scaleX);
+                            $y = round($annotation['top_pos'] * $scaleY);
+                            $w = round($annotation['width'] * $scaleX);
+                            $h = round($annotation['height'] * $scaleY);
+                            $annotationItems[] = [
+                                'id'         => $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/annotation/' . $annotationIndex,
+                                'type'       => 'Annotation',
+                                'motivation' => 'commenting',
+                                'body' => [
+                                    'type'   => 'TextualBody',
+                                    'value'  => $annotation['annotation'],
+                                    'format' => 'text/plain'
+                                ],
+                                'target' => $canvasId . '#xywh=' . $x . ',' . $y . ',' . $w . ',' . $h
+                            ];
+                        }
+                        $canvas['annotations'] = [
+                            'id'    => $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/page/' . $index,
+                            'type'  => 'AnnotationPage',
+                            'items' => $annotationItems
+                        ];
+                    }
+                }
                 if(!empty($rendering)) {
                     $canvas['rendering'] = $rendering;
                 }
