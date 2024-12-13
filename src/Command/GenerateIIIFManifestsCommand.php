@@ -24,6 +24,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInterface, LoggerAwareInterface
 {
     private $verbose;
+    private $resourceSpaceAnnotationsUrl;
     private $datahubUrl;
     private $metadataPrefix;
     private $cantaloupeUrl;
@@ -53,6 +54,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     private $imageData;
     private $altoTranscriptionFiles = [];
     private $altoTranscriptions = [];
+    private $annotations = [];
 
     private $iiifVersions;
     private $mainIiifVersion;
@@ -92,6 +94,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     {
         $this->verbose = $input->getOption('verbose');
 
+        $this->resourceSpaceAnnotationsUrl = $this->container->getParameter('resourcespace_annotations_url');
         $this->datahubUrl = $this->container->getParameter('datahub_url');
         $this->metadataPrefix = $this->container->getParameter('datahub_metadataprefix');
         $this->oneManifestPerObject = $this->container->getParameter('one_manifest_per_object');
@@ -142,6 +145,13 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $this->logger->error( 'Error: no resourcespace data.');
             return 0;
         }
+
+        if(!empty($this->resourceSpaceAnnotationsUrl)) {
+            $annotations = file_get_contents($this->resourceSpaceAnnotationsUrl . '?key=' . $this->container->getParameter('resourcespace_api_key'));
+            var_dump($annotations);
+            if(true) exit(0);
+        }
+
         $this->imageData = array();
 
         $this->publicUse = $this->container->getParameter('public_use');

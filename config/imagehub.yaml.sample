@@ -3,6 +3,7 @@ parameters:
     resourcespace_api_url: 'http://127.0.0.1/api/'
     resourcespace_api_username: 'admin'
     resourcespace_api_key: 'e681651ae76d8df9e41fdf4a0fd0bb3955157ab5b2064c950951fd3ccc319c4a'
+    resourcespace_annotations_url: ''
 
     datahub_url: 'http://datahub.iiif.vlaamsekunstcollectie.be'
 
