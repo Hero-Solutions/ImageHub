@@ -148,10 +148,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
         if(!empty($this->resourceSpaceAnnotationsUrl)) {
             $annotations = json_decode(file_get_contents($this->resourceSpaceAnnotationsUrl . '?key=' . $this->container->getParameter('resourcespace_api_key')));
-            if(isset($annotations['error'])) {
-                $this->logger->error( 'Error fetching annotations: ' . $annotations['error']);
-            } else if(isset($annotations['data]'])) {
-                $this->annotations = $annotations['data'];
+            if(isset($annotations->error)) {
+                $this->logger->error( 'Error fetching annotations: ' . $annotations->error);
+            } else if(isset($annotations->data)) {
+                $this->annotations = $annotations->data;
                 var_dump($this->annotations);
             }
         }
