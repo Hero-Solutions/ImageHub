@@ -1309,10 +1309,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                             $annotationIndex++;
                             $scaleX = $annotation['preview_width'] <= 0 ? 1 : $this->imageData[$relatedRef]['width'] / $annotation['preview_width'];
                             $scaleY = $annotation['preview_height'] <= 0 ? 1 : $this->imageData[$relatedRef]['height'] / $annotation['preview_height'];
-                            $x = $annotation['left_pos'] * $scaleX;
-                            $y = $annotation['top_pos'] * $scaleY;
-                            $w = $annotation['width'] * $scaleX;
-                            $h = $annotation['height'] * $scaleY;
+                            $x = round($annotation['left_pos'] * $scaleX);
+                            $y = round($annotation['top_pos'] * $scaleY);
+                            $w = round($annotation['width'] * $scaleX);
+                            $h = round($annotation['height'] * $scaleY);
                             $annotationItems[] = [
                                 'id'         => $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/annotation/' . $annotationIndex,
                                 'type'       => 'Annotation',
