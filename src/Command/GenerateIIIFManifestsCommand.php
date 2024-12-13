@@ -164,7 +164,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
         foreach($resources as $resource) {
             $resourceId = $resource['ref'];
-            if($resourceSpaceId !== null && $resourceId !== $resourceSpaceId) {
+            if($resourceSpaceId !== null && $resourceId != $resourceSpaceId) {
                 continue;
             }
 
