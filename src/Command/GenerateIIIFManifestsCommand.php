@@ -152,7 +152,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $this->logger->error( 'Error fetching annotations: ' . $annotations->error);
             } else if(isset($annotations->data)) {
                 $this->annotations = $annotations->data;
-                var_dump($this->annotations);
             }
         }
 
@@ -1296,6 +1295,37 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'items'             => array($annotationPage),
                     'thumbnail'         => $thmb
                 );
+                if(array_key_exists($relatedRef, $this->annotations)) {
+                    if(!empty($this->annotations[$relatedRef])) {
+                        $annotationItems = [];
+                        $annotationIndex = 0;
+                        foreach($this->annotations[$relatedRef] as $annotation) {
+                            $annotationIndex++;
+                            $scaleX = $annotation['preview_width'] <= 0 ? 1 : $this->imageData[$relatedRef]['width'] / $annotation['preview_width'];
+                            $scaleY = $annotation['preview_height'] <= 0 ? 1 : $this->imageData[$relatedRef]['height'] / $annotation['preview_height'];
+                            $x = $annotation['left_pos'] * $scaleX;
+                            $y = $annotation['top_pos'] * $scaleY;
+                            $w = $annotation['width'] * $scaleX;
+                            $h = $annotation['height'] * $scaleY;
+                            $annotationItems[] = [
+                                'id'         => $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/annotation/' . $annotationIndex,
+                                'type'       => 'Annotation',
+                                'motivation' => 'commenting',
+                                'body' => [
+                                    'type'   => 'TextualBody',
+                                    'value'  => $annotation['annotation'],
+                                    'format' => 'text/plain'
+                                ],
+                                'target' => $canvasId . '#xywh=' . $x . ',' . $y . ',' . $w . ',' . $h
+                            ];
+                        }
+                        $canvas['annotations'] = [
+                            'id'    => $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/page/' . $index,
+                            'type'  => 'AnnotationPage',
+                            'items' => $annotationItems
+                        ];
+                    }
+                }
                 if(!empty($rendering)) {
                     $canvas['rendering'] = $rendering;
                 }
