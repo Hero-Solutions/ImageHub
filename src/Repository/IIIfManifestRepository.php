@@ -3,8 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\IIIfManifest;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\ORM\EntityRepository;
 
 /**
  * @method IIIfManifest|null find($id, $lockMode = null, $lockVersion = null)
@@ -12,13 +11,8 @@ use Doctrine\Persistence\ManagerRegistry;
  * @method IIIfManifest[]    findAll()
  * @method IIIfManifest[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class IIIfManifestRepository extends ServiceEntityRepository
+class IIIfManifestRepository extends EntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
-        parent::__construct($registry, IIIfManifest::class);
-    }
-
     // /**
     //  * @return IIIfManifest[] Returns an array of IIIfManifest objects
     //  */

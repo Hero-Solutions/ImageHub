@@ -3,8 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Transcription;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\ORM\EntityRepository;
 
 /**
  * @method Transcription|null find($id, $lockMode = null, $lockVersion = null)
@@ -12,13 +11,8 @@ use Doctrine\Persistence\ManagerRegistry;
  * @method Transcription[]    findAll()
  * @method Transcription[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class TranscriptionRepository extends ServiceEntityRepository
+class TranscriptionRepository extends EntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
-        parent::__construct($registry, Transcription::class);
-    }
-
     // /**
     //  * @return Transcription[] Returns an array of Transcription objects
     //  */

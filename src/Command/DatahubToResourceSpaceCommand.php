@@ -204,6 +204,8 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
             $resourceId = $resource['ref'];
             $rsData = $this->resourceSpace->getResourceSpaceData($resourceId);
 
+            //TODO fetch either hashsum or latest update, so we know if we need to update image dimensions or not
+
             $filename = $rsData['originalfilename'];
             $originalFilenames[$resourceId] = $filename;
 
