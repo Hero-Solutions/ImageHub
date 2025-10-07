@@ -10,14 +10,14 @@ class ResourceData
 {
     #[ORM\Id()]
     #[ORM\Column(type: "integer")]
-    private $id;
+    private int $id;
 
     #[ORM\Id()]
     #[ORM\Column(type: "string", length: 50)]
-    private $name;
+    private string $name;
 
     #[ORM\Column(type: "text")]
-    private $value;
+    private string $value;
 
     public function getId(): ?string
     {

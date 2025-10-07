@@ -10,14 +10,16 @@ class ImageDimensions
 {
     #[ORM\Id()]
     #[ORM\Column(type: "integer")]
-    private $id;
+    private int $id;
 
-    #[ORM\Id()]
-    #[ORM\Column(type: "string", length: 50)]
-    private $name;
+    #[ORM\Column(type: "text", length: 32)]
+    private string $checksum;
 
-    #[ORM\Column(type: "text")]
-    private $value;
+    #[ORM\Column(type: "integer")]
+    private int $width;
+
+    #[ORM\Column(type: "integer")]
+    private int $height;
 
     public function getId(): ?string
     {
@@ -27,31 +29,39 @@ class ImageDimensions
     public function setId(string $id): self
     {
         $this->id = $id;
-
         return $this;
     }
 
-    public function getName(): ?string
+    public function getChecksum(): string
     {
-        return $this->name;
+        return $this->checksum;
     }
 
-    public function setName(string $name): self
+    public function setChecksum(string $checksum): self
     {
-        $this->name = $name;
-
+        $this->checksum = $checksum;
         return $this;
     }
 
-    public function getValue(): ?string
+    public function getWidth(): int
     {
-        return $this->value;
+        return $this->width;
     }
 
-    public function setValue(string $value): self
+    public function setWidth(int $width): self
     {
-        $this->value = $value;
+        $this->width = $width;
+        return $this;
+    }
 
+    public function getHeight(): int
+    {
+        return $this->height;
+    }
+
+    public function setHeight(int $height): self
+    {
+        $this->height = $height;
         return $this;
     }
 }

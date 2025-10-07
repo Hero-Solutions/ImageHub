@@ -10,10 +10,10 @@ class IIIfManifest
 {
     #[ORM\Id()]
     #[ORM\Column(type: "integer")]
-    private $id;
+    private int $id;
 
     #[ORM\Column(type: "text")]
-    private $data;
+    private string $data;
 
     public function getId(): ?int
     {
@@ -23,7 +23,6 @@ class IIIfManifest
     public function setId(int $id): self
     {
         $this->id = $id;
-
         return $this;
     }
 
@@ -35,7 +34,6 @@ class IIIfManifest
     public function setData(string $data): self
     {
         $this->data = $data;
-
         return $this;
     }
 }

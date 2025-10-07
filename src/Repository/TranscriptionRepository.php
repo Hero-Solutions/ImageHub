@@ -17,7 +17,7 @@ class TranscriptionRepository extends EntityRepository
     //  * @return Transcription[] Returns an array of Transcription objects
     //  */
     /*
-    public function findByExampleField($value)
+    public function findByExampleField($value): array
     {
         return $this->createQueryBuilder('i')
             ->andWhere('i.exampleField = :val')

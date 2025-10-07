@@ -13,11 +13,7 @@ use Doctrine\ORM\EntityRepository;
  */
 class DatahubDataRepository extends EntityRepository
 {
-    // /**
-    //  * @return DatahubData[] Returns an array of DatahubData objects
-    //  */
-
-    public function findById($id)
+    public function findById($id): array
     {
         return $this->createQueryBuilder('i')
             ->andWhere('i.id = :val')

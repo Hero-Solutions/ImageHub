@@ -8,7 +8,7 @@ use Exception;
 
 class GenerateTranscriptionFromAlto
 {
-    public static function generate($altoUrl, $canvasId, $manifestUrl, $serviceUrl, $iiifVersion, $manifestId, $transcriptionId)
+    public static function generate($altoUrl, $canvasId, $manifestUrl, $serviceUrl, $iiifVersion, $manifestId, $transcriptionId): ?Transcription
     {
         $transcription = null;
         try {

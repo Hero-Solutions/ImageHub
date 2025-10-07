@@ -13,37 +13,38 @@ use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareInterface
 {
-    private $parameterBag;
-    private $entityManager;
+    private ParameterBagInterface $parameterBag;
+    private EntityManagerInterface $entityManager;
+    private ContainerInterface $container;
+    private LoggerInterface $logger;
 
-    private $verbose;
+    private bool $verbose;
 
-    private $manifestLanguages;
+    private array $manifestLanguages;
 
-    private $meemoo;
+    private array $meemoo;
 
-    private $publishers;
-    private $manifestLabelV3;
-    private $canvasLabelV3;
-    private $rightsSourceV3;
-    private $requiredStatementV3;
-    private $metadataFieldsV3;
+    private array $publishers;
+    private array $manifestLabelV3;
+    private string $rightsSourceV3;
+    private array $requiredStatementV3;
+    private array $metadataFieldsV3;
+    private array $meemooCsvHeaders;
 
-    private $imageData;
-    private $publicManifestsAdded;
+    private array $imageData;
+    private array $publicManifestsAdded;
 
-    private $serviceUrl;
-    private $createTopLevelCollection;
+    private string $serviceUrl;
+    private bool $createTopLevelCollection;
 
-    private $manifestDb;
+    private ?SQLite3 $manifestDb = null;
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('app:generate-meemoo-iiif-manifests')
@@ -58,10 +59,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
         parent::__construct();
     }
 
-    /**
-     * Sets the container.
-     */
-    public function setContainer(ContainerInterface $container = null)
+    public function setContainer(ContainerInterface $container = null): void
     {
         $this->container = $container;
     }
@@ -77,8 +75,6 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
 
         $this->createTopLevelCollection = true;
 
-        $this->iiifVersions = $this->parameterBag->get('iiif_versions');
-        $this->mainIiifVersion = $this->parameterBag->get('main_iiif_version');
         // Make sure the service URL name ends with a trailing slash
         $this->meemoo = $this->parameterBag->get('meemoo');
         $this->serviceUrl = rtrim($this->meemoo['service_url'], '/') . '/';
@@ -88,7 +84,6 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
 
         $this->publishers = $this->parameterBag->get('publishers');
         $this->manifestLabelV3 = $this->parameterBag->get('iiif_manifest_label');
-        $this->canvasLabelV3 = $this->parameterBag->get('iiif_canvas_label');
         $this->rightsSourceV3 = $this->parameterBag->get('iiif_rights_source');
         $this->requiredStatementV3 = $this->parameterBag->get('iiif_required_statement');
         $this->metadataFieldsV3 = $this->parameterBag->get('iiif_metadata_fields');
@@ -106,7 +101,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
         return 0;
     }
 
-    private function getMeemooImageData()
+    private function getMeemooImageData(): void
     {
         $this->imageData = [];
 
@@ -150,7 +145,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
         }
     }
 
-    private function generateAndStoreManifests()
+    private function generateAndStoreManifests(): void
     {
         $validate = $this->parameterBag->get('validate_manifests');
         $validatorUrl = $this->parameterBag->get('validator_url');
@@ -199,7 +194,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
         $this->logger->info('Done, created and stored ' . count($manifestsv3) . ' IIIF 3 manifests.');
     }
 
-    public function generateAndStoreManifestsV3($storeInLido, $validate, $validatorUrl, &$manifests)
+    public function generateAndStoreManifestsV3($storeInLido, $validate, $validatorUrl, &$manifests): void
     {
         foreach($this->imageData as $resourceId => $imageData) {
 
@@ -227,12 +222,12 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
                 }
 
                 // Replace comma by ' - ' for date ranges
-                if(preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $value)) {
+                if(preg_match('/^[0-9]{3,4}-[0-9]{1,2}-[0-9]{1,2}, *[0-9]{3,4}-[0-9]{1,2}-[0-9]{1,2}$/', $value)) {
                     $value = str_replace(' ', '', $value);
                     $value = str_replace(',', ' - ', $value);
 
                     // Remove date and month when the exact date is clearly unknown
-                    if(preg_match('/^[0-9]{3,4}\-01\-01 \- [0-9]{3,4}\-12\-31$/', $value)) {
+                    if(preg_match('/^[0-9]{3,4}-01-01 - [0-9]{3,4}-12-31$/', $value)) {
                         $value = str_replace('-01-01', '', $value);
                         $value = str_replace('-12-31', '', $value);
                     }
@@ -315,7 +310,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
                         $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
                     } else if ($rightsSource === 'Public domain / CC-PDM') {
                         $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                    } else if (strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
+                    } else if (str_contains($rightsSource, 'SABAM') || str_contains($rightsSource, '©')) {
                         $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
                     } else {
                         $rights = 'https://rightsstatements.org/page/UND/1.0/';
@@ -601,7 +596,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
         }
     }
 
-    private function deleteManifest($manifestId)
+    private function deleteManifest($manifestId): void
     {
         $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(IIIfManifest::class, 'manifest')
@@ -612,7 +607,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
         $this->entityManager->flush();
     }
 
-    private function storeManifest($manifest, $manifestId)
+    private function storeManifest($manifest, $manifestId): IIIfManifest
     {
         // Store the manifest in mongodb
         $manifestDocument = new IIIFManifest();
@@ -624,7 +619,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
         return $manifestDocument;
     }
 
-    private function validateManifest($validatorUrl, $manifestId)
+    private function validateManifest($validatorUrl, $manifestId): bool
     {
         $valid = true;
         try {
@@ -656,7 +651,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
         return $valid;
     }
 
-    private function getAuthenticationService()
+    private function getAuthenticationService(): array
     {
         $arr = array(
             '@context' => 'http://iiif.io/api/auth/1/context.json',
@@ -668,9 +663,9 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
         return $arr;
     }
 
-    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail)
+    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail): void
     {
-        if($this->manifestDb == null) {
+        if($this->manifestDb === null) {
             $this->manifestDb = new SQLite3('/tmp/import.iiif_manifests_meemoo.sqlite');
             $this->manifestDb->exec('DROP TABLE IF EXISTS data');
             $this->manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');

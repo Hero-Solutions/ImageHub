@@ -3,12 +3,14 @@
 namespace App\Command;
 
 use App\Entity\DatahubData;
+use App\Entity\ImageDimensions;
 use App\Entity\ResourceData;
 use App\ResourceSpace\ResourceSpace;
 use App\Utils\StringUtil;
 use Doctrine\ORM\EntityManagerInterface;
 use DOMDocument;
 use DOMXPath;
+use Exception;
 use Phpoaipmh\Endpoint;
 use Phpoaipmh\Exception\HttpException;
 use Phpoaipmh\Exception\OaipmhException;
@@ -20,36 +22,37 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\HttpKernel\KernelInterface;
 
 class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterface
 {
-    private $parameterBag;
-    private $entityManager;
+    private ParameterBagInterface $parameterBag;
+    private EntityManagerInterface $entityManager;
+    private KernelInterface $kernel;
 
-    private $datahubUrl;
-    private $datahubLanguage;
-    private $namespace;
-    private $metadataPrefix;
-    private $dataDefinition;
-    private $creditLineDefinition;
-    private $relatedWorksXpath;
-    private $excludeRelations;
-    private $storeDatahubRecordIds;
-    private $storeTranscriptions;
-    private $transcriptionFields;
+    private string $datahubUrl;
+    private string $datahubLanguage;
+    private string $namespace;
+    private string $metadataPrefix;
+    private array $dataDefinition;
+    private string $relatedWorksXpath;
+    private array $excludeRelations;
+    private bool $storeDatahubRecordIds;
+    private array $transcriptionFields;
+    private string $cantaloupeUrl;
+    private array $cantaloupeCurlOpts;
 
-    private $rsFieldsToPersist;
+    private bool $verbose;
 
-    private $verbose;
+    private ResourceSpace $resourceSpace;
 
-    private $resourceSpace;
-
-    private $datahubRecordDb;
-    private $datahubRecordIds;
-    private $transcriptions = [];
-    private $resourceSpaceSortOrders = [];
-    private $relations = array();
-    private $failedFetchingDatahubData;
+    private SQLite3 $datahubRecordDb;
+    private array $datahubRecordIds;
+    private array $transcriptions = [];
+    private array $resourceSpaceSortOrders = [];
+    private array $relations = [];
+    private bool $failedFetchingDatahubData;
+    private LoggerInterface $logger;
 
     protected function configure()
     {
@@ -61,10 +64,11 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
             ->setHelp('');
     }
 
-    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager)
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager, KernelInterface $kernel)
     {
         $this->parameterBag = $parameterBag;
         $this->entityManager = $entityManager;
+        $this->kernel = $kernel;
         parent::__construct();
     }
 
@@ -93,63 +97,70 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         $this->relatedWorksXpath = $this->parameterBag->get('datahub_related_works_xpath');
         $this->excludeRelations = $this->parameterBag->get('exclude_relations');
         $this->storeDatahubRecordIds = $this->parameterBag->get('store_datahub_record_ids');
-        $this->storeTranscriptions = $this->parameterBag->get('store_transcriptions');
+        $storeTranscriptions = $this->parameterBag->get('store_transcriptions');
         $this->transcriptionFields = $this->parameterBag->get('transcription_fields');
         $this->dataDefinition = $this->parameterBag->get('datahub_data_definition');
-        $this->creditLineDefinition = $this->parameterBag->get('credit_line');
+        $creditLineDefinition = $this->parameterBag->get('credit_line');
         $publicUse = $this->parameterBag->get('public_use');
         $recommendedForPublication = $this->parameterBag->get('recommended_for_publication');
         $iiifSortNumber = $this->parameterBag->get('iiif_sort_number');
         $inCopyright = $this->parameterBag->get('in_copyright');
 
-        $this->rsFieldsToPersist = [];
+        $this->cantaloupeUrl = $this->parameterBag->get('cantaloupe_url');
+        $curlOpts = $this->parameterBag->get('cantaloupe_curl_opts');
+        $this->cantaloupeCurlOpts = array();
+        foreach($curlOpts as $key => $value) {
+            $this->cantaloupeCurlOpts[constant($key)] = $value;
+        }
+
+        $rsFieldsToPersist = [];
         $iiif2Labels = $this->parameterBag->get('iiif2_labels');
         foreach($iiif2Labels as $language => $fieldName) {
-            if (!array_key_exists($fieldName, $this->rsFieldsToPersist)) {
-                $this->rsFieldsToPersist[$fieldName] = $fieldName;
+            if (!array_key_exists($fieldName, $rsFieldsToPersist)) {
+                $rsFieldsToPersist[$fieldName] = $fieldName;
             }
         }
         $iiifAttribution = $this->parameterBag->get('iiif2_attribution');
-        if(!array_key_exists($iiifAttribution, $this->rsFieldsToPersist)) {
-            $this->rsFieldsToPersist[$iiifAttribution] = $iiifAttribution;
+        if(!array_key_exists($iiifAttribution, $rsFieldsToPersist)) {
+            $rsFieldsToPersist[$iiifAttribution] = $iiifAttribution;
         }
         $iiif3ManifestLabel = $this->parameterBag->get('iiif_manifest_label');
         foreach($iiif3ManifestLabel as $language => $fieldName) {
-            if(!array_key_exists($fieldName, $this->rsFieldsToPersist)) {
-                $this->rsFieldsToPersist[$fieldName] = $fieldName;
+            if(!array_key_exists($fieldName, $rsFieldsToPersist)) {
+                $rsFieldsToPersist[$fieldName] = $fieldName;
             }
         }
         $iiif3CanvasLabel = $this->parameterBag->get('iiif_canvas_label');
         foreach($iiif3CanvasLabel as $language => $fieldName) {
-            if(!array_key_exists($fieldName, $this->rsFieldsToPersist)) {
-                $this->rsFieldsToPersist[$fieldName] = $fieldName;
+            if(!array_key_exists($fieldName, $rsFieldsToPersist)) {
+                $rsFieldsToPersist[$fieldName] = $fieldName;
             }
         }
         $iiif3RightsSource = $this->parameterBag->get('iiif_rights_source');
-        if(!array_key_exists($iiif3RightsSource, $this->rsFieldsToPersist)) {
-            $this->rsFieldsToPersist[$iiif3RightsSource] = $iiif3RightsSource;
+        if(!array_key_exists($iiif3RightsSource, $rsFieldsToPersist)) {
+            $rsFieldsToPersist[$iiif3RightsSource] = $iiif3RightsSource;
         }
         $iiif3Behavior = $this->parameterBag->get('iiif_behavior');
-        if(!array_key_exists($iiif3Behavior, $this->rsFieldsToPersist)) {
-            $this->rsFieldsToPersist[$iiif3Behavior] = $iiif3Behavior;
+        if(!array_key_exists($iiif3Behavior, $rsFieldsToPersist)) {
+            $rsFieldsToPersist[$iiif3Behavior] = $iiif3Behavior;
         }
         $iiif3RequiredStatement = $this->parameterBag->get('iiif_required_statement');
         foreach($iiif3RequiredStatement['value'] as $language => $field) {
-            if(!array_key_exists($field, $this->rsFieldsToPersist)) {
-                $this->rsFieldsToPersist[$field] = $field;
+            if(!array_key_exists($field, $rsFieldsToPersist)) {
+                $rsFieldsToPersist[$field] = $field;
             }
         }
         $datahubMetadataFields = $this->parameterBag->get('datahub_metadata_fields');
         foreach($datahubMetadataFields as $field => $label) {
-            if(!array_key_exists($field, $this->rsFieldsToPersist)) {
-                $this->rsFieldsToPersist[$field] = $field;
+            if(!array_key_exists($field, $rsFieldsToPersist)) {
+                $rsFieldsToPersist[$field] = $field;
             }
         }
         $iiif3MetadataFields = $this->parameterBag->get('iiif_metadata_fields');
         foreach($iiif3MetadataFields as $fieldName => $field) {
             foreach($field['value'] as $language => $fieldData) {
-                if (!array_key_exists($fieldData, $this->rsFieldsToPersist)) {
-                    $this->rsFieldsToPersist[$fieldData] = $fieldData;
+                if (!array_key_exists($fieldData, $rsFieldsToPersist)) {
+                    $rsFieldsToPersist[$fieldData] = $fieldData;
                 }
             }
         }
@@ -169,6 +180,17 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         if ($resources === null) {
             $this->logger->error( 'Error: no resourcespace data.');
             return 1;
+        }
+
+        $imageDimensionsArray = $this->entityManager->createQueryBuilder()
+            ->select('i')
+            ->from(ImageDimensions::class, 'i')
+            ->getQuery()
+            ->getResult();
+        /* @var $imageDimensions ImageDimensions[] */
+        $imageDimensions = [];
+        foreach($imageDimensionsArray as $imageDimension) {
+            $imageDimensions[$imageDimension->getId()] = $imageDimension;
         }
 
         $recordIds = array();
@@ -204,13 +226,11 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
             $resourceId = $resource['ref'];
             $rsData = $this->resourceSpace->getResourceSpaceData($resourceId);
 
-            //TODO fetch either hashsum or latest update, so we know if we need to update image dimensions or not
-
             $filename = $rsData['originalfilename'];
             $originalFilenames[$resourceId] = $filename;
 
             $extension = $resource['file_extension'];
-            if($extension === 'xml' && strpos($filename, 'alto') !== false) {
+            if($extension === 'xml' && str_contains($filename, 'alto')) {
                 $key = $resourceId . '@is_alto_transcription';
                 if(!array_key_exists($key, $resourceKeys)) {
                     $resourceData = new ResourceData();
@@ -223,6 +243,18 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
             }
 
             $fileChecksum = $resource['file_checksum'];
+            if(!empty($fileChecksum)) {
+                $fetchDimensions = true;
+                if (array_key_exists($resourceId, $imageDimensions)) {
+                    $dimensions = $imageDimensions[$resourceId];
+                    $fetchDimensions = empty($dimensions->getChecksum()) || $dimensions->getChecksum() !== $fileChecksum;
+                }
+
+                if ($fetchDimensions) {
+                    $this->cacheCantaloupeData($resourceId, $fileChecksum);
+                }
+            }
+
             $key = $resourceId . '@file_checksum';
             if(!array_key_exists($key, $resourceKeys)) {
                 $resourceData = new ResourceData();
@@ -234,7 +266,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
             }
 
             $inventoryNumber = $rsData['sourceinvnr'];
-            if(!array_key_exists('sourceinvnr', $this->rsFieldsToPersist)) {
+            if(!array_key_exists('sourceinvnr', $rsFieldsToPersist)) {
                 $key = $resourceId . '@sourceinvnr';
                 if(!array_key_exists($key, $resourceKeys)) {
                     $resourceData = new ResourceData();
@@ -246,7 +278,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 }
             }
 
-            if($this->storeTranscriptions) {
+            if($storeTranscriptions) {
                 $this->storeTranscriptions($inventoryNumber, $resourceId, $rsData);
             }
 
@@ -325,10 +357,10 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                     $this->resourceSpaceSortOrders[$resourceId] = $index;
                     $this->entityManager->persist($resourceData);
                 }
-                $this->resourceSpace->generateCreditLines($this->creditLineDefinition, $rsData, $dhData);
+                $this->resourceSpace->generateCreditLines($creditLineDefinition, $rsData, $dhData);
                 $this->updateResourceSpaceFields($resourceId, $rsData, $dhData);
             }
-            foreach ($this->rsFieldsToPersist as $key => $value) {
+            foreach ($rsFieldsToPersist as $key => $value) {
                 $key_ = $resourceId . '@' . $key;
                 if(!array_key_exists($key_, $resourceKeys)) {
                     if (array_key_exists($key, $dhData)) {
@@ -406,7 +438,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 $relations = array();
                 $isThisPublic = $publicImages[$resourceId];
                 $isThisRecommendedForPublication = $recommendedImagesForPub[$resourceId];
-                // Add relations when one of the following coditions is met:
+                // Add relations when one of the following conditions is met:
                 // - The 'related' resource is actually itself
                 // - Both resources are for public use and both are recommended for publication
                 // - This resource is not public, but the other one is public (public images added to research images)
@@ -479,7 +511,39 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         return 0;
     }
 
-    function cacheAllDatahubData()
+    private function cacheCantaloupeData($resourceId, $checksum): void
+    {
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_URL, $this->cantaloupeUrl . $resourceId . '.tif/info.json');
+            foreach($this->cantaloupeCurlOpts as $key => $value) {
+                curl_setopt($ch, $key, $value);
+            }
+            $jsonData = curl_exec($ch);
+            if (curl_errno($ch)) {
+                $this->logger->error(curl_error($ch));
+                curl_close($ch);
+            } else {
+                curl_close($ch);
+                $data = json_decode($jsonData);
+                if($this->verbose) {
+//                echo 'Retrieved image ' . $resourceId . ' from Cantaloupe.' . PHP_EOL;
+                    $this->logger->info('Retrieved image ' . $resourceId . ' from Cantaloupe');
+                }
+                $imageDimensions = new ImageDimensions();
+                $imageDimensions->setId($resourceId);
+                $imageDimensions->setChecksum($checksum);
+                $imageDimensions->setWidth($data->width);
+                $imageDimensions->setHeight($data->height);
+            }
+        } catch(Exception $e) {
+//            echo $e->getMessage() . PHP_EOL;
+            $this->logger->error($e->getMessage());
+        }
+    }
+
+    function cacheAllDatahubData(): void
     {
         $firstRun = true;
         try {
@@ -681,23 +745,18 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 }
             }
 //            var_dump($relations);
-            if($this->storeDatahubRecordIds && file_exists($this->container->get('kernel')->getProjectDir() . '/public/new_import.datahub_record_ids.sqlite')) {
-                rename($this->container->get('kernel')->getProjectDir() . '/public/new_import.datahub_record_ids.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.datahub_record_ids.sqlite');
+            if($this->storeDatahubRecordIds && file_exists($this->kernel->getProjectDir() . '/public/new_import.datahub_record_ids.sqlite')) {
+                rename($this->kernel->getProjectDir() . '/public/new_import.datahub_record_ids.sqlite', $this->kernel->getProjectDir() . '/public/import.datahub_record_ids.sqlite');
             }
         }
-        catch(OaipmhException $e) {
-//            echo 'OAI-PMH error: ' . $e . PHP_EOL;
-            $this->logger->error('OAI-PMH error: ' . $e);
-            $this->failedFetchingDatahubData = true;
-        }
-        catch(HttpException $e) {
+        catch(OaipmhException|HttpException $e) {
 //            echo 'OAI-PMH error: ' . $e . PHP_EOL;
             $this->logger->error('OAI-PMH error: ' . $e);
             $this->failedFetchingDatahubData = true;
         }
     }
 
-    private function addAllRelations()
+    private function addAllRelations(): void
     {
         $relations = array();
 
@@ -746,7 +805,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         }
     }
 
-    private function isHigherOrder($type, $highestType)
+    private function isHigherOrder($type, $highestType): bool
     {
         if($highestType == null) {
             return true;
@@ -761,7 +820,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         }
     }
 
-    private function fixSortOrders()
+    private function fixSortOrders(): void
     {
         foreach($this->relations as $recordId => $value) {
             if(count($value) > 1) {
@@ -815,12 +874,12 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         }
     }
 
-    private function sortRelatedWorks($a, $b)
+    private function sortRelatedWorks($a, $b): int
     {
         return $a['sort_order'] - $b['sort_order'];
     }
 
-    function updateResourceSpaceFields($resourceId, $rsData, $dhData)
+    function updateResourceSpaceFields($resourceId, $rsData, $dhData): void
     {
         $updatedFields = 0;
         foreach($dhData as $key => $value) {
@@ -879,10 +938,10 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
     }
 
     // Build the xpath based on the provided namespace
-    private function buildXPath($xpath, $language)
+    private function buildXPath($xpath, $language): string
     {
         $prepend = '';
-        if(strpos($xpath, '(') === 0) {
+        if(str_starts_with($xpath, '(')) {
             $prepend = '(';
             $xpath = substr($xpath, 1);
         }
@@ -893,18 +952,17 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         $xpath = preg_replace('/\/([^\/])/', '/' . $this->namespace . ':${1}', $xpath);
         $xpath = preg_replace('/ and (?!@xml)/', ' and ' . $this->namespace . ':${1}', $xpath);
         $xpath = preg_replace('/ or (?!@xml)/', ' or ' . $this->namespace . ':${1}', $xpath);
-        if(strpos($xpath, '/') !== 0) {
+        if(!str_starts_with($xpath, '/')) {
             $xpath = $this->namespace . ':' . $xpath;
         }
         $xpath = 'descendant::' . $xpath;
-        $xpath = $prepend . $xpath;
-        return $xpath;
+        return $prepend . $xpath;
     }
 
-    private function storeDatahubRecordId($sourceinvnr, $recordId)
+    private function storeDatahubRecordId($sourceinvnr, $recordId): void
     {
         if($this->datahubRecordDb == null) {
-            $this->datahubRecordDb = new SQLite3($this->container->get('kernel')->getProjectDir() . '/public/new_import.datahub_record_ids.sqlite');
+            $this->datahubRecordDb = new SQLite3($this->kernel->getProjectDir() . '/public/new_import.datahub_record_ids.sqlite');
             $this->datahubRecordDb->exec('DROP TABLE IF EXISTS data');
             $this->datahubRecordDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
             $this->datahubRecordIds = [];
@@ -919,7 +977,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         }
     }
 
-    private function storeTranscriptions($sourceinvnr, $resourceId, $resourceData)
+    private function storeTranscriptions($sourceinvnr, $resourceId, $resourceData): void
     {
         $pos = strpos($sourceinvnr, 'tg:kmska');
         if($pos === false) {
@@ -943,9 +1001,9 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         }
     }
 
-    private function storeAllTranscriptionsInDb()
+    private function storeAllTranscriptionsInDb(): void
     {
-        $transcriptionsDb = new SQLite3($this->container->get('kernel')->getProjectDir() . '/public/new_import.transcriptions.sqlite');
+        $transcriptionsDb = new SQLite3($this->kernel->getProjectDir() . '/public/new_import.transcriptions.sqlite');
         $transcriptionsDb->exec('DROP TABLE IF EXISTS data');
         $transcriptionsDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->transcriptions as $inventoryNumber => $transcriptions) {

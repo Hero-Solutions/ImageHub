@@ -17,7 +17,7 @@ class IIIfManifestV2Repository extends EntityRepository
     //  * @return IIIfManifestV2[] Returns an array of IIIfManifest objects
     //  */
     /*
-    public function findByExampleField($value)
+    public function findByExampleField($value): array
     {
         return $this->createQueryBuilder('i')
             ->andWhere('i.exampleField = :val')

@@ -32,7 +32,6 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
     private $datahubUrl;
     private $metadataPrefix;
     private $cantaloupeUrl;
-    private $cantaloupeCurlOpts;
     private $publicUse;
     private $oneManifestPerObject;
 
@@ -134,11 +133,6 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         $this->placeholderId = $this->parameterBag->get('placeholder_id');
 
         $this->cantaloupeUrl = $this->parameterBag->get('cantaloupe_url');
-        $curlOpts = $this->parameterBag->get('cantaloupe_curl_opts');
-        $this->cantaloupeCurlOpts = array();
-        foreach($curlOpts as $key => $value) {
-            $this->cantaloupeCurlOpts[constant($key)] = $value;
-        }
 
         $this->resourceSpace = new ResourceSpace($this->parameterBag);
 
@@ -254,36 +248,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         }
     }
 
-    private function getCantaloupeData($resourceId)
-    {
-        try {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch, CURLOPT_URL, $this->cantaloupeUrl . $resourceId . '.tif/info.json');
-            foreach($this->cantaloupeCurlOpts as $key => $value) {
-                curl_setopt($ch, $key, $value);
-            }
-            $jsonData = curl_exec($ch);
-            if (curl_errno($ch)) {
-                $this->logger->error(curl_error($ch));
-                curl_close($ch);
-            } else {
-                curl_close($ch);
-                $data = json_decode($jsonData);
-                if($this->verbose) {
-//                echo 'Retrieved image ' . $resourceId . ' from Cantaloupe' . PHP_EOL;
-                    $this->logger->info('Retrieved image ' . $resourceId . ' from Cantaloupe');
-                }
-                return array('height' => $data->height, 'width' => $data->width);
-            }
-        } catch(Exception $e) {
-//            echo $e->getMessage() . PHP_EOL;
-            $this->logger->error($e->getMessage());
-        }
-        return null;
-    }
-
-    private function generateAndStoreManifests()
+    private function generateAndStoreManifests(): void
     {
         $validate = $this->parameterBag->get('validate_manifests');
         $validatorUrl = $this->parameterBag->get('validator_url');

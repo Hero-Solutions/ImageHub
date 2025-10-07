@@ -3,22 +3,17 @@
 namespace App\Command;
 
 use App\ResourceSpace\ResourceSpace;
-use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class CsvToResourceSpaceCommand extends Command implements LoggerAwareInterface
+class CsvToResourceSpaceCommand extends Command
 {
-    private $parameterBag;
-    private $logger;
+    private ParameterBagInterface $parameterBag;
 
-    private $resourceSpace;
-
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('app:csv-to-resourcespace')
@@ -33,16 +28,11 @@ class CsvToResourceSpaceCommand extends Command implements LoggerAwareInterface
         parent::__construct();
     }
 
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->logger = $logger;
-    }
-
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $csvFile = $input->getArgument('csv');
 
-        $this->resourceSpace = new ResourceSpace($this->parameterBag);
+        $resourceSpace = new ResourceSpace($this->parameterBag);
 
         $csvData = $this->readRecordsFromCsv($csvFile);
 
@@ -56,7 +46,7 @@ class CsvToResourceSpaceCommand extends Command implements LoggerAwareInterface
             if (!empty($id)) {
                 foreach ($csvLine as $key => $value) {
                     if ($key !== 'ref' && $key !== 'originalfilename' && $value != 'NULL' && !empty($value)) {
-                        $this->resourceSpace->updateField($id, $key, $value);
+                        $resourceSpace->updateField($id, $key, $value);
                         echo 'Update resource ' . $id . ', set ' . $key . ' to ' . $value . PHP_EOL;
                     }
                 }
@@ -66,7 +56,7 @@ class CsvToResourceSpaceCommand extends Command implements LoggerAwareInterface
         return 0;
     }
 
-    private function readRecordsFromCsv($csvFile)
+    private function readRecordsFromCsv($csvFile): array
     {
         $csvData = array();
         if (($handle = fopen($csvFile, "r")) !== false) {

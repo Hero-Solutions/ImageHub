@@ -11,16 +11,16 @@ class Transcription
     #[ORM\Id()]
     #[ORM\GeneratedValue()]
     #[ORM\Column(type: "integer")]
-    private $id;
+    private int $id;
 
     #[ORM\Column(type: "string", length: 255)]
-    private $transcriptionId;
+    private ?string $transcriptionId;
 
     #[ORM\Column(type: "string", length: 255)]
-    private $altoUrl;
+    private ?string $altoUrl;
 
     #[ORM\Column(type: "text")]
-    private $data;
+    private ?string $data;
 
     public function getId(): ?int
     {
@@ -35,18 +35,18 @@ class Transcription
     public function setTranscriptionId(string $transcriptionId): self
     {
         $this->transcriptionId = $transcriptionId;
-
         return $this;
     }
 
-    public function getAltoUrl()
+    public function getAltoUrl(): ?string
     {
         return $this->altoUrl;
     }
 
-    public function setAltoUrl($altoUrl)
+    public function setAltoUrl($altoUrl): self
     {
         $this->altoUrl = $altoUrl;
+        return $this;
     }
 
     public function getData(): ?string
@@ -57,7 +57,6 @@ class Transcription
     public function setData(string $data): self
     {
         $this->data = $data;
-
         return $this;
     }
 }
