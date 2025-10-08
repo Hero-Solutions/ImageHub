@@ -536,6 +536,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 $imageDimensions->setChecksum($checksum);
                 $imageDimensions->setWidth($data->width);
                 $imageDimensions->setHeight($data->height);
+                $this->entityManager->persist($imageDimensions);
             }
         } catch(Exception $e) {
 //            echo $e->getMessage() . PHP_EOL;

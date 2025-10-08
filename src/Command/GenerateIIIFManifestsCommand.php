@@ -4,6 +4,7 @@ namespace App\Command;
 
 use App\Entity\IIIfManifest;
 use App\Entity\IIIfManifestV2;
+use App\Entity\ImageDimensions;
 use App\Entity\ResourceData;
 use App\Entity\Transcription;
 use App\ResourceSpace\ResourceSpace;
@@ -229,7 +230,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         return 0;
     }
 
-    private function getImageData($resourceId, $isPublic)
+    private function getImageData($resourceId, $isPublic): void
     {
         if($isPublic) {
             $url = $this->publicUse['public_folder'];
@@ -238,8 +239,16 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         }
         $url .= $resourceId;
 
-        $imageData = $this->getCantaloupeData($url);
-        if($imageData) {
+        /* @var $imageDimensions ImageDimensions[] */
+        $imageDimensions = $this->entityManager->createQueryBuilder()
+            ->select('i')
+            ->from(ImageDimensions::class, 'i')
+            ->where('i.id = :id')
+            ->setParameter('id', $resourceId)
+            ->getQuery()
+            ->getResult();
+        if(!empty($imageDimensions)) {
+            $imageData = [ 'width' => $imageDimensions[0]->getWidth(), 'height' => $imageDimensions[0]->getHeight() ];
             $imageData['canvas_base'] = $this->serviceUrl;
             $imageData['service_id'] = $this->cantaloupeUrl . $url . '.tif';
             $imageData['image_url'] = $this->cantaloupeUrl . $url . '.tif/full/full/0/default.jpg';
