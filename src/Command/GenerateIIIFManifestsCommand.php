@@ -865,7 +865,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if ($d->getName() === 'publisher') {
                     $publisher = $value;
                 }
-                if($d->getName() === 'iiifsortnumber') {
+                if($d->getName() === 'iiif_sort_number') {
                     $iiifSortNumber = intval($value);
                 } else if($d->getName() === 'file_checksum') {
                     $fileChecksum = $value;
