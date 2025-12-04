@@ -30,7 +30,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
     private EntityManagerInterface $entityManager;
     private KernelInterface $kernel;
 
-    private string $datahubUrl;
+    private ?string $datahubUrl;
     private string $datahubLanguage;
     private string $namespace;
     private string $metadataPrefix;
