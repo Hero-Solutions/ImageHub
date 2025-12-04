@@ -30,7 +30,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
     private EntityManagerInterface $entityManager;
     private KernelInterface $kernel;
 
-    private ?string $datahubUrl;
+    private string $datahubUrl;
     private string $datahubLanguage;
     private string $namespace;
     private string $metadataPrefix;
@@ -86,10 +86,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
             $resourceSpaceId = null;
         }
 
-        $this->datahubUrl = $input->getArgument('url');
-        if (!$this->datahubUrl) {
-            $this->datahubUrl = $this->parameterBag->get('datahub_url');
-        }
+        $this->datahubUrl = $input->getArgument('url') ?? $this->parameterBag->get('datahub_url');
 
         $this->datahubLanguage = $this->parameterBag->get('datahub_language');
         $this->namespace = $this->parameterBag->get('datahub_namespace');
