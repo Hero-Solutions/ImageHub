@@ -46,12 +46,12 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
 
     private ResourceSpace $resourceSpace;
 
-    private SQLite3 $datahubRecordDb;
-    private array $datahubRecordIds;
+    private ?SQLite3 $datahubRecordDb = null;
+    private ?array $datahubRecordIds = null;
     private array $transcriptions = [];
     private array $resourceSpaceSortOrders = [];
     private array $relations = [];
-    private bool $failedFetchingDatahubData;
+    private bool $failedFetchingDatahubData = false;
     private LoggerInterface $logger;
 
     protected function configure()
