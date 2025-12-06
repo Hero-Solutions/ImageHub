@@ -180,7 +180,7 @@ class ResourceSpace
     public function getAllResources(): mixed
     {
         # We need to supply something to param1, otherwise ResourceSpace returns a 500 (it's become a mandatory argument)
-        $allResources = $this->doApiCall('do_search&param1=%27%27');
+        $allResources = $this->doApiCall('do_search&search=' . urlencode("\'\'"));
 
         if ($allResources == 'Invalid signature') {
             echo 'Error: invalid ResourceSpace API key. Please paste the key found in the ResourceSpace user management into app/config/parameters.yml.' . PHP_EOL;
