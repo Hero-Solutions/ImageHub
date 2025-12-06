@@ -31,3 +31,11 @@ CREATE TABLE IF NOT EXISTS `resource_data` (
   `value` MEDIUMTEXT NOT NULL,
   PRIMARY KEY(`id`, `name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `image_dimensions` (
+    `id` INT UNSIGNED NOT NULL,
+    `checksum` VARCHAR(32) NOT NULL,
+    `width` INT UNSIGNED NOT NULL,
+    `height` INT UNSIGNED NOT NULL,
+    PRIMARY KEY(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
