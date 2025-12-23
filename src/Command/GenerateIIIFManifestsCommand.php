@@ -63,7 +63,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
     private $createTopLevelCollection;
     private $resourceSpaceManifestField;
 
-    private $imageIds;
+    private $imageIds = [];
     private $fileChecksums = [];
     private $datahubMetadataToStore = [];
     private $manifestsToStore = [];
