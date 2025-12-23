@@ -527,7 +527,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 $data = json_decode($jsonData);
                 if($this->verbose) {
 //                echo 'Retrieved image ' . $resourceId . ' from Cantaloupe.' . PHP_EOL;
-                    $this->logger->info('Retrieved image ' . $resourceId . ' from Cantaloupe');
+                    $this->logger->info('Retrieved image ' . $resourceId . ' from Cantaloupe: ' . $jsonData);
                 }
                 $imageDimensions = new ImageDimensions();
                 $imageDimensions->setId($resourceId);
