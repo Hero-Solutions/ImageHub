@@ -30,6 +30,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
     private ParameterBagInterface $parameterBag;
     private EntityManagerInterface $entityManager;
     private string $projectDir;
+    private array $publicUse;
 
     private string $datahubUrl;
     private string $datahubLanguage;
@@ -99,10 +100,11 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         $this->transcriptionFields = $this->parameterBag->get('transcription_fields');
         $this->dataDefinition = $this->parameterBag->get('datahub_data_definition');
         $creditLineDefinition = $this->parameterBag->get('credit_line');
-        $publicUse = $this->parameterBag->get('public_use');
         $recommendedForPublication = $this->parameterBag->get('recommended_for_publication');
         $iiifSortNumber = $this->parameterBag->get('iiif_sort_number');
         $inCopyright = $this->parameterBag->get('in_copyright');
+
+        $this->publicUse = $this->parameterBag->get('public_use');
 
         $this->cantaloupeUrl = $this->parameterBag->get('cantaloupe_url');
         $curlOpts = $this->parameterBag->get('cantaloupe_curl_opts');
@@ -240,6 +242,17 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 }
             }
 
+            $isPublic = $this->resourceSpace->isPublicUse($rsData, $this->publicUse);
+            $key = $resourceId . '@is_public';
+            if(!array_key_exists($key, $resourceKeys)) {
+                $resourceData = new ResourceData();
+                $resourceData->setId($resourceId);
+                $resourceData->setName('is_public');
+                $resourceData->setValue($isPublic ? '1' : '0');
+                $this->entityManager->persist($resourceData);
+                $resourceKeys[$key] = $key;
+            }
+
             $fileChecksum = $resource['file_checksum'];
             if(!empty($fileChecksum)) {
                 $fetchDimensions = true;
@@ -249,7 +262,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 }
 
                 if ($fetchDimensions) {
-                    $this->cacheCantaloupeData($resourceId, $fileChecksum);
+                    $this->cacheCantaloupeData($resourceId, $isPublic, $fileChecksum);
                 }
             }
 
@@ -278,17 +291,6 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
 
             if($storeTranscriptions) {
                 $this->storeTranscriptions($inventoryNumber, $resourceId, $rsData);
-            }
-
-            $isPublic = $this->resourceSpace->isPublicUse($rsData, $publicUse);
-            $key = $resourceId . '@is_public';
-            if(!array_key_exists($key, $resourceKeys)) {
-                $resourceData = new ResourceData();
-                $resourceData->setId($resourceId);
-                $resourceData->setName('is_public');
-                $resourceData->setValue($isPublic ? '1' : '0');
-                $this->entityManager->persist($resourceData);
-                $resourceKeys[$key] = $key;
             }
 
             $isRecommendedForPub = $this->resourceSpace->isCheckboxChecked($rsData, $recommendedForPublication);
@@ -509,12 +511,18 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         return 0;
     }
 
-    private function cacheCantaloupeData($resourceId, $checksum): void
+    private function cacheCantaloupeData($resourceId, $isPublic, $checksum): void
     {
+        if($isPublic) {
+            $prefix = $this->publicUse['public_folder'];
+        } else {
+            $prefix = $this->publicUse['private_folder'];
+        }
+
         try {
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch, CURLOPT_URL, $this->cantaloupeUrl . $resourceId . '.tif/info.json');
+            curl_setopt($ch, CURLOPT_URL, $this->cantaloupeUrl . $prefix . $resourceId . '.tif/info.json');
             foreach($this->cantaloupeCurlOpts as $key => $value) {
                 curl_setopt($ch, $key, $value);
             }
