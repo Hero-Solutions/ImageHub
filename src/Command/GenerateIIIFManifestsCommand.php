@@ -19,32 +19,29 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterface
 {
-    private $parameterBag;
-    private $entityManager;
+    private ParameterBagInterface $parameterBag;
+    private EntityManagerInterface $entityManager;
+    private string $projectDir;
 
-    private $verbose;
-    private $resourceSpaceAnnotationsUrl;
-    private $datahubUrl;
-    private $metadataPrefix;
-    private $cantaloupeUrl;
-    private $publicUse;
-    private $oneManifestPerObject;
+    private bool $verbose;
+    private string $resourceSpaceAnnotationsUrl;
+    private string $datahubUrl;
+    private string $metadataPrefix;
+    private string $cantaloupeUrl;
+    private array $publicUse;
+    private bool $oneManifestPerObject;
 
-    private $usePlaceholderForImagesInCopyright;
-    private $inCopyrightKey;
-    private $storeDatahubMetadata;
-    private $datahubMetadataFields;
+    private bool $storeDatahubMetadata;
+    private array $datahubMetadataFields;
 
-    private $manifestLanguages;
 
     private $labelFieldsV2;
-    private $licenseLabelsV2;
     private $attributionFieldV2;
 
     private $publishers;
@@ -81,10 +78,11 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
             ->setHelp('');
     }
 
-    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager)
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager, #[Autowire('%kernel.project_dir%')] string $projectDir)
     {
         $this->parameterBag = $parameterBag;
         $this->entityManager = $entityManager;
+        $this->projectDir = $projectDir;
         parent::__construct();
     }
 
@@ -109,8 +107,6 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         $this->datahubUrl = $this->parameterBag->get('datahub_url');
         $this->metadataPrefix = $this->parameterBag->get('datahub_metadataprefix');
         $this->oneManifestPerObject = $this->parameterBag->get('one_manifest_per_object');
-        $this->usePlaceholderForImagesInCopyright = $this->parameterBag->get('use_placeholder_for_images_in_copyright');
-        $this->inCopyrightKey = $this->parameterBag->get('in_copyright');
         $this->storeDatahubMetadata = $this->parameterBag->get('store_datahub_metadata');
         $this->datahubMetadataFields = $this->parameterBag->get('datahub_metadata_fields');
 
@@ -119,9 +115,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         // Make sure the service URL name ends with a trailing slash
         $this->serviceUrl = rtrim($this->parameterBag->get('service_url'), '/') . '/';
 
-        $this->manifestLanguages = $this->parameterBag->get('manifest_languages');
         $this->labelFieldsV2 = $this->parameterBag->get('iiif2_labels');
-        $this->licenseLabelsV2 = $this->parameterBag->get('iiif2_license_labels');
         $this->attributionFieldV2 = $this->parameterBag->get('iiif2_attribution');
 
         $this->publishers = $this->parameterBag->get('publishers');
@@ -223,8 +217,8 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
             $this->storeAllManifestsInSqlite();
         }
 
-        if($this->createTopLevelCollection && file_exists($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite')) {
-            rename($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.iiif_manifests.sqlite');
+        if($this->createTopLevelCollection && file_exists($this->projectDir . '/public/new_import.iiif_manifests.sqlite')) {
+            rename($this->projectDir . '/public/new_import.iiif_manifests.sqlite', $this->projectDir . '/public/import.iiif_manifests.sqlite');
         }
 
         return 0;
@@ -1662,7 +1656,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
 
     private function storeAllManifestsInSqlite()
     {
-        $manifestDb = new SQLite3($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite');
+        $manifestDb = new SQLite3($this->projectDir . '/public/new_import.iiif_manifests.sqlite');
         $manifestDb->exec('DROP TABLE IF EXISTS data');
         $manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->manifestsToStore as $sourceinvnr => $manifestData) {

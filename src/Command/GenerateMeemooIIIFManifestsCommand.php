@@ -13,14 +13,15 @@ use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareInterface
 {
     private ParameterBagInterface $parameterBag;
+    private string $projectDir;
     private EntityManagerInterface $entityManager;
-    private ContainerInterface $container;
     private LoggerInterface $logger;
 
     private bool $verbose;
@@ -52,10 +53,11 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
             ->setHelp('');
     }
 
-    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager)
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager, #[Autowire('%kernel.project_dir%')] string $projectDir)
     {
         $this->parameterBag = $parameterBag;
         $this->entityManager = $entityManager;
+        $this->projectDir = $projectDir;
         parent::__construct();
     }
 
@@ -95,7 +97,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
         $this->generateAndStoreManifests();
 
         if($this->createTopLevelCollection && file_exists('/tmp/import.iiif_manifests_meemoo.sqlite')) {
-            rename('/tmp/import.iiif_manifests_meemoo.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.iiif_manifests_meemoo.sqlite');
+            rename('/tmp/import.iiif_manifests_meemoo.sqlite', $this->projectDir . '/public/import.iiif_manifests_meemoo.sqlite');
         }
 
         return 0;

@@ -21,6 +21,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
 
@@ -28,7 +29,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
 {
     private ParameterBagInterface $parameterBag;
     private EntityManagerInterface $entityManager;
-    private KernelInterface $kernel;
+    private string $projectDir;
 
     private string $datahubUrl;
     private string $datahubLanguage;
@@ -64,11 +65,11 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
             ->setHelp('');
     }
 
-    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager, KernelInterface $kernel)
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager, #[Autowire('%kernel.project_dir%')] string $projectDir)
     {
         $this->parameterBag = $parameterBag;
         $this->entityManager = $entityManager;
-        $this->kernel = $kernel;
+        $this->projectDir = $projectDir;
         parent::__construct();
     }
 
@@ -743,8 +744,8 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 }
             }
 //            var_dump($relations);
-            if($this->storeDatahubRecordIds && file_exists($this->kernel->getProjectDir() . '/public/new_import.datahub_record_ids.sqlite')) {
-                rename($this->kernel->getProjectDir() . '/public/new_import.datahub_record_ids.sqlite', $this->kernel->getProjectDir() . '/public/import.datahub_record_ids.sqlite');
+            if($this->storeDatahubRecordIds && file_exists($this->projectDir . '/public/new_import.datahub_record_ids.sqlite')) {
+                rename($this->projectDir . '/public/new_import.datahub_record_ids.sqlite', $this->projectDir . '/public/import.datahub_record_ids.sqlite');
             }
         }
         catch(OaipmhException|HttpException $e) {
@@ -960,7 +961,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
     private function storeDatahubRecordId($sourceinvnr, $recordId): void
     {
         if($this->datahubRecordDb == null) {
-            $this->datahubRecordDb = new SQLite3($this->kernel->getProjectDir() . '/public/new_import.datahub_record_ids.sqlite');
+            $this->datahubRecordDb = new SQLite3($this->projectDir . '/public/new_import.datahub_record_ids.sqlite');
             $this->datahubRecordDb->exec('DROP TABLE IF EXISTS data');
             $this->datahubRecordDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
             $this->datahubRecordIds = [];
@@ -1001,7 +1002,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
 
     private function storeAllTranscriptionsInDb(): void
     {
-        $transcriptionsDb = new SQLite3($this->kernel->getProjectDir() . '/public/new_import.transcriptions.sqlite');
+        $transcriptionsDb = new SQLite3($this->projectDir . '/public/new_import.transcriptions.sqlite');
         $transcriptionsDb->exec('DROP TABLE IF EXISTS data');
         $transcriptionsDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->transcriptions as $inventoryNumber => $transcriptions) {
