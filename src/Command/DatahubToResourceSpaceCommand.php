@@ -537,12 +537,14 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
 //                echo 'Retrieved image ' . $resourceId . ' from Cantaloupe.' . PHP_EOL;
                     $this->logger->info('Retrieved image ' . $resourceId . ' from Cantaloupe.');
                 }
-                $imageDimensions = new ImageDimensions();
-                $imageDimensions->setId($resourceId);
-                $imageDimensions->setChecksum($checksum);
-                $imageDimensions->setWidth($data->width);
-                $imageDimensions->setHeight($data->height);
-                $this->entityManager->persist($imageDimensions);
+                if(!empty($data)) {
+                    $imageDimensions = new ImageDimensions();
+                    $imageDimensions->setId($resourceId);
+                    $imageDimensions->setChecksum($checksum);
+                    $imageDimensions->setWidth($data->width);
+                    $imageDimensions->setHeight($data->height);
+                    $this->entityManager->persist($imageDimensions);
+                }
             }
         } catch(Exception $e) {
 //            echo $e->getMessage() . PHP_EOL;
