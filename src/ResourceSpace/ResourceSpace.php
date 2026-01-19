@@ -227,7 +227,7 @@ class ResourceSpace
                 }
             }
         }
-        return $sortNumber;
+        return intval($sortNumber);
     }
 
     private function getResourceInfo($id): mixed
