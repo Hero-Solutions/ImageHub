@@ -254,7 +254,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
             }
 
             $fileChecksum = $resource['file_checksum'];
-            if(!empty($fileChecksum)) {
+            if(array_key_exists('generateiiifimage', $rsData) && !empty($rsData['generateiiifimage'])) {
                 $fetchDimensions = true;
                 if (array_key_exists($resourceId, $imageDimensions)) {
                     $dimensions = $imageDimensions[$resourceId];
@@ -264,16 +264,16 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 if ($fetchDimensions) {
                     $this->cacheCantaloupeData($resourceId, $isPublic, $fileChecksum);
                 }
+            }
 
-                $key = $resourceId . '@file_checksum';
-                if(!array_key_exists($key, $resourceKeys)) {
-                    $resourceData = new ResourceData();
-                    $resourceData->setId($resourceId);
-                    $resourceData->setName('file_checksum');
-                    $resourceData->setValue($fileChecksum);
-                    $this->entityManager->persist($resourceData);
-                    $resourceKeys[$key] = $key;
-                }
+            $key = $resourceId . '@file_checksum';
+            if(!empty($fileChecksum) && !array_key_exists($key, $resourceKeys)) {
+                $resourceData = new ResourceData();
+                $resourceData->setId($resourceId);
+                $resourceData->setName('file_checksum');
+                $resourceData->setValue($fileChecksum);
+                $this->entityManager->persist($resourceData);
+                $resourceKeys[$key] = $key;
             }
 
             $inventoryNumber = $rsData['sourceinvnr'];
@@ -547,7 +547,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
 
             $imageDimensions = new ImageDimensions();
             $imageDimensions->setId($resourceId);
-            $imageDimensions->setChecksum($checksum);
+            $imageDimensions->setChecksum($checksum ?? '');
             $imageDimensions->setWidth($data->width);
             $imageDimensions->setHeight($data->height);
 
