@@ -89,7 +89,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
     /**
      * Sets the container.
      */
-    public function setContainer(ContainerInterface $container = null)
+    public function setContainer(?ContainerInterface $container): void
     {
         $this->container = $container;
     }

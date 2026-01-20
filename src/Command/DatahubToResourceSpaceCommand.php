@@ -264,16 +264,16 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 if ($fetchDimensions) {
                     $this->cacheCantaloupeData($resourceId, $isPublic, $fileChecksum);
                 }
-            }
 
-            $key = $resourceId . '@file_checksum';
-            if(!array_key_exists($key, $resourceKeys)) {
-                $resourceData = new ResourceData();
-                $resourceData->setId($resourceId);
-                $resourceData->setName('file_checksum');
-                $resourceData->setValue($fileChecksum);
-                $this->entityManager->persist($resourceData);
-                $resourceKeys[$key] = $key;
+                $key = $resourceId . '@file_checksum';
+                if(!array_key_exists($key, $resourceKeys)) {
+                    $resourceData = new ResourceData();
+                    $resourceData->setId($resourceId);
+                    $resourceData->setName('file_checksum');
+                    $resourceData->setValue($fileChecksum);
+                    $this->entityManager->persist($resourceData);
+                    $resourceKeys[$key] = $key;
+                }
             }
 
             $inventoryNumber = $rsData['sourceinvnr'];
