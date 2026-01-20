@@ -521,35 +521,39 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
 
         try {
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_URL, $this->cantaloupeUrl . $prefix . $resourceId . '.tif/info.json');
-            foreach($this->cantaloupeCurlOpts as $key => $value) {
+            foreach ($this->cantaloupeCurlOpts as $key => $value) {
                 curl_setopt($ch, $key, $value);
             }
+
             $jsonData = curl_exec($ch);
-            if (curl_errno($ch)) {
+            if ($jsonData === false) {
                 $this->logger->error(curl_error($ch));
-                curl_close($ch);
-            } else {
-                curl_close($ch);
-                $data = json_decode($jsonData);
-                if(!empty($data)) {
-                    if($this->verbose) {
-//                echo 'Retrieved image ' . $resourceId . ' from Cantaloupe.' . PHP_EOL;
-                        $this->logger->info('Retrieved image ' . $resourceId . ' from Cantaloupe.');
-                    }
-                    $imageDimensions = new ImageDimensions();
-                    $imageDimensions->setId($resourceId);
-                    $imageDimensions->setChecksum($checksum);
-                    $imageDimensions->setWidth($data->width);
-                    $imageDimensions->setHeight($data->height);
-                    $this->entityManager->persist($imageDimensions);
-                } else if($this->verbose) {
+                return;
+            }
+
+            $data = json_decode($jsonData);
+            if (empty($data)) {
+                if ($this->verbose) {
                     $this->logger->info('Error: Failed to retrieve image ' . $resourceId . ' from Cantaloupe.');
                 }
+                return;
             }
-        } catch(Exception $e) {
-//            echo $e->getMessage() . PHP_EOL;
+
+            if ($this->verbose) {
+                $this->logger->info('Retrieved image ' . $resourceId . ' from Cantaloupe.');
+            }
+
+            $imageDimensions = new ImageDimensions();
+            $imageDimensions->setId($resourceId);
+            $imageDimensions->setChecksum($checksum);
+            $imageDimensions->setWidth($data->width);
+            $imageDimensions->setHeight($data->height);
+
+            $this->entityManager->persist($imageDimensions);
+
+        } catch (Exception $e) {
             $this->logger->error($e->getMessage());
         }
     }
