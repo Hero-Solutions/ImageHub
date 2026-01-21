@@ -44,20 +44,22 @@ class ResourceSpace
 
             if(array_key_exists('copyrightnoticeofart', $datahubData)) {
                 $copyright = $datahubData['copyrightnoticeofart'];
-                if(strpos($copyright, 'CC0') !== false) {
+                if(str_contains($copyright, 'CC0')) {
                     $suffix .= ' (CC0)';
-                } else if(strpos($copyright, 'SABAM') !== false) {
-                    $prefix = $copyright . ' ' . $definition['sabam_suffix'] . ', ' . date('Y') .'<br/>';
+                } else if(strtolower(trim($copyright)) === 'public domain' || strtolower(trim($copyright)) === 'publiek domein') {
+                    $suffix .= ' (' . $copyright . ')';
+                } else if(str_contains($copyright, 'SABAM')) {
+                    $prefix = $copyright . ' ' . $definition['sabam_suffix'] . ', ' . date('Y') . '. ';
                 } else {
-                    $prefix = $copyright . date('Y') . '<br/>';
+                    $prefix = $copyright . ', ' . date('Y') . '. ';
                 }
             }
 
             if(!empty($prefix) || !empty($creditLine)) {
-                $suffix = '<br/>' . $suffix;
+                $suffix = '. ' . $suffix;
             }
 
-            $datahubData[$definition['field']] = $prefix . implode('<br/>', $creditLine) . $suffix;
+            $datahubData[$definition['field']] = $prefix . implode('. ', $creditLine) . $suffix;
         }
     }
 
@@ -97,11 +99,11 @@ class ResourceSpace
         $photographerLine = '';
         if($photo != null || $photographer != null) {
             if($photo == $photographer || $photographer == null) {
-                $photographerLine = $photoTrans . ': ' . str_replace('\n', '<br/>', $photo);
+                $photographerLine = $photoTrans . ': ' . str_replace('\n', '. ', $photo);
             } else if($photo == null) {
-                $photographerLine = $photographerTrans . ': ' . str_replace('\n', '<br/>', $photographer);
+                $photographerLine = $photographerTrans . ': ' . str_replace('\n', '. ', $photographer);
             } else {
-                $photographerLine = $photoTrans . ': ' . str_replace('\n', '<br/>', $photo) . '<br/>' . $photographerTrans . ': ' . str_replace('\n', '<br/>', $photographer);
+                $photographerLine = $photoTrans . ': ' . str_replace('\n', '. ', $photo) . '. ' . $photographerTrans . ': ' . str_replace('\n', '. ', $photographer);
             }
         }
         return $photographerLine;
