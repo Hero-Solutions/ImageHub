@@ -545,6 +545,14 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 $this->logger->info('Retrieved image ' . $resourceId . ' from Cantaloupe.');
             }
 
+            $qb = $this->entityManager->createQueryBuilder();
+            $query = $qb->delete(ImageDimensions::class, 'data')
+                ->where('data.id = :id')
+                ->setParameter('id', $resourceId)
+                ->getQuery();
+            $query->execute();
+            $this->entityManager->flush();
+
             $imageDimensions = new ImageDimensions();
             $imageDimensions->setId($resourceId);
             $imageDimensions->setChecksum($checksum ?? '');

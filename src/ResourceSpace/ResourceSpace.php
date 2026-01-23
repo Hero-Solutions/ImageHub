@@ -24,25 +24,25 @@ class ResourceSpace
         foreach($creditLineDefinition as $languge => $definition) {
             $creditLine = array();
 
-            if(array_key_exists('creatorofartworkobje', $datahubData)) {
+            if(array_key_exists('creatorofartworkobje', $datahubData) && !empty($datahubData['creatorofartworkobje'])) {
                 $creditLine[] = $datahubData['creatorofartworkobje'];
             }
-            if(array_key_exists($definition['title_field'], $datahubData)) {
+            if(array_key_exists($definition['title_field'], $datahubData) && !empty($datahubData[$definition['title_field']])) {
                 $creditLine[] = $datahubData[$definition['title_field']];
             }
-            if(array_key_exists('sourceinvnr', $resourceSpaceData)) {
+            if(array_key_exists('sourceinvnr', $resourceSpaceData) && !empty($resourceSpaceData['sourceinvnr'])) {
                 $creditLine[] = $definition['invnr'] . ' ' . $resourceSpaceData['sourceinvnr'];
             }
 
             $photographer = $this->getPhotographerInfo($resourceSpaceData, $definition['photo'], $definition['photographer']);
-            if($photographer != null) {
+            if(!empty($photographer)) {
                 $creditLine[] = $photographer;
             }
 
             $prefix = '';
             $suffix = $definition['suffix'];
 
-            if(array_key_exists('copyrightnoticeofart', $datahubData)) {
+            if(array_key_exists('copyrightnoticeofart', $datahubData) && !empty($datahubData['copyrightnoticeofart'])) {
                 $copyright = $datahubData['copyrightnoticeofart'];
                 if(str_contains($copyright, 'CC0')) {
                     $suffix .= ' (CC0)';
