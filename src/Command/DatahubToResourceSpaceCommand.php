@@ -53,6 +53,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
     private array $transcriptions = [];
     private array $resourceSpaceSortOrders = [];
     private array $relations = [];
+    private array $imageDimensions = [];
     private bool $failedFetchingDatahubData = false;
     private LoggerInterface $logger;
 
@@ -187,10 +188,8 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
             ->from(ImageDimensions::class, 'i')
             ->getQuery()
             ->getResult();
-        /* @var $imageDimensions ImageDimensions[] */
-        $imageDimensions = [];
         foreach($imageDimensionsArray as $imageDimension) {
-            $imageDimensions[$imageDimension->getId()] = $imageDimension;
+            $this->imageDimensions[$imageDimension->getId()] = $imageDimension;
         }
 
         $recordIds = array();
@@ -256,8 +255,8 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
             $fileChecksum = $resource['file_checksum'];
             if(array_key_exists('generateiiifimage', $rsData) && !empty($rsData['generateiiifimage'])) {
                 $fetchDimensions = true;
-                if (array_key_exists($resourceId, $imageDimensions)) {
-                    $dimensions = $imageDimensions[$resourceId];
+                if (array_key_exists($resourceId, $this->imageDimensions)) {
+                    $dimensions = $this->imageDimensions[$resourceId];
                     $fetchDimensions = empty($dimensions->getChecksum()) || $dimensions->getChecksum() !== $fileChecksum;
                 }
 
@@ -545,21 +544,19 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 $this->logger->info('Retrieved image ' . $resourceId . ' from Cantaloupe.');
             }
 
-            $qb = $this->entityManager->createQueryBuilder();
-            $query = $qb->delete(ImageDimensions::class, 'data')
-                ->where('data.id = :id')
-                ->setParameter('id', $resourceId)
-                ->getQuery();
-            $query->execute();
-            $this->entityManager->flush();
+            if(array_key_exists($resourceId, $this->imageDimensions)) {
+                $imageDimensions = $this->imageDimensions[$resourceId];
+            } else {
+                $imageDimensions = new ImageDimensions();
+                $imageDimensions->setId($resourceId);
+                $this->entityManager->persist($imageDimensions);
+            }
 
-            $imageDimensions = new ImageDimensions();
-            $imageDimensions->setId($resourceId);
             $imageDimensions->setChecksum($checksum ?? '');
             $imageDimensions->setWidth($data->width);
             $imageDimensions->setHeight($data->height);
 
-            $this->entityManager->persist($imageDimensions);
+            $this->entityManager->flush();
 
         } catch (Exception $e) {
             $this->logger->error($e->getMessage());
