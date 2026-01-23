@@ -943,7 +943,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 $result = $this->resourceSpace->updateField($resourceId, $key, $value);
                 if($result !== 'true') {
 //                    echo 'Error updating field ' . $key . ' for resource id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
-                    $this->logger->error('Error updating field ' . $key . ' for resource id ' . $resourceId . ':' . PHP_EOL . $result);
+                    $this->logger->error('Error updating field ' . $key . ' for resource id ' . $resourceId . ': ' . $result . ' (data: ' . $key . '=' . $value . ')');
                 } else {
                     $updatedFields++;
                 }
