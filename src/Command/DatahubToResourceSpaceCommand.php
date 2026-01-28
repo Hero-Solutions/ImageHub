@@ -104,6 +104,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         $recommendedForPublication = $this->parameterBag->get('recommended_for_publication');
         $iiifSortNumber = $this->parameterBag->get('iiif_sort_number');
         $inCopyright = $this->parameterBag->get('in_copyright');
+        $resourceSpaceManifestField = $this->parameterBag->get('resourcespace_manifest_field');
 
         $this->publicUse = $this->parameterBag->get('public_use');
 
@@ -124,6 +125,9 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         $iiifAttribution = $this->parameterBag->get('iiif2_attribution');
         if(!array_key_exists($iiifAttribution, $rsFieldsToPersist)) {
             $rsFieldsToPersist[$iiifAttribution] = $iiifAttribution;
+        }
+        if(!array_key_exists($resourceSpaceManifestField, $rsFieldsToPersist)) {
+            $rsFieldsToPersist[$resourceSpaceManifestField] = $resourceSpaceManifestField;
         }
         $iiif3ManifestLabel = $this->parameterBag->get('iiif_manifest_label');
         foreach($iiif3ManifestLabel as $language => $fieldName) {
