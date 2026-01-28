@@ -287,9 +287,7 @@ class GenerateIIIFManifestsCommand extends Command
                 'manifests' => $manifestsv2
             );
 
-            $this->deleteManifestV2(0);
-
-            $manifestDocument = $this->storeManifestV2($collection, 0);
+            $manifestDocument = $this->storeTmpManifestV2($collection, 0);
 
             $valid = true;
             if ($validate) {
@@ -328,9 +326,7 @@ class GenerateIIIFManifestsCommand extends Command
                 'items' => $manifestsv3
             );
 
-            $this->deleteManifest(0);
-
-            $manifestDocument = $this->storeManifest($collection, 0);
+            $manifestDocument = $this->storeTmpManifest($collection, 0);
 
             $valid = true;
             if ($validate) {
@@ -738,7 +734,7 @@ class GenerateIIIFManifestsCommand extends Command
                 $this->deleteManifestV2($resourceId);
             }
 
-            $manifestDocument = $this->storeManifestV2($manifest, $resourceId);
+            $manifestDocument = $this->storeTmpManifestV2($manifest, $resourceId);
 
             // Validate the manifest
             // We can only pass a URL to the validator, so the manifest needs to be stored and served already before validation
@@ -1406,7 +1402,7 @@ class GenerateIIIFManifestsCommand extends Command
                 $this->deleteManifest($resourceId);
             }
 
-            $manifestDocument = $this->storeManifest($manifest, $resourceId);
+            $manifestDocument = $this->storeTmpManifest($manifest, $resourceId);
 
             // Validate the manifest
             // We can only pass a URL to the validator, so the manifest needs to be stored and served already before validation
@@ -1596,7 +1592,7 @@ class GenerateIIIFManifestsCommand extends Command
         $this->entityManager->flush();
     }
 
-    private function storeManifestV2($manifest, $manifestId): TmpIIIfManifestV2
+    private function storeTmpManifestV2($manifest, $manifestId): TmpIIIfManifestV2
     {
         // Store the manifest in mysql
         $manifestDocument = new TmpIIIFManifestV2();
@@ -1607,7 +1603,7 @@ class GenerateIIIFManifestsCommand extends Command
         return $manifestDocument;
     }
 
-    private function storeManifest($manifest, $manifestId): TmpIIIfManifest
+    private function storeTmpManifest($manifest, $manifestId): TmpIIIfManifest
     {
         // Store the manifest in mysql
         $manifestDocument = new TmpIIIFManifest();
