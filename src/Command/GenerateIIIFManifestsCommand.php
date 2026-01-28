@@ -312,8 +312,6 @@ class GenerateIIIFManifestsCommand extends Command
                 }
 //                echo 'Done, created and stored ' . count($manifests) . ' manifests.' . PHP_EOL;
             }
-
-            $this->entityManager->detach($manifestDocument);
         }
         $this->logger->info('Done, created and stored ' . count($manifestsv2) . ' IIIF 2 manifests.');
 
@@ -793,7 +791,6 @@ class GenerateIIIFManifestsCommand extends Command
                     }
                 }
             }
-            $this->entityManager->detach($manifestDocument);
         }
     }
 
@@ -1460,7 +1457,6 @@ class GenerateIIIFManifestsCommand extends Command
                     }
                 }
             }
-            $this->entityManager->detach($manifestDocument);
         }
     }
 
