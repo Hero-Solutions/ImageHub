@@ -771,12 +771,14 @@ class GenerateIIIFManifestsCommand extends Command
 
                     //Add to ResourceSpace metadata (if enabled)
                     if($this->resourceSpaceManifestField !== '') {
-                        $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
-                        if($result !== 'true') {
-                            //                    echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
-                            $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
-                        } else if($this->verbose) {
-                            $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                        if(!array_key_exists($this->resourceSpaceManifestField, $rsData) || $rsData[$this->resourceSpaceManifestField] !== $manifestId) {
+                            $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
+                            if ($result !== 'true') {
+            //                    echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
+                                $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
+                            } else if ($this->verbose) {
+                                $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                            }
                         }
                     }
 
@@ -1438,12 +1440,14 @@ class GenerateIIIFManifestsCommand extends Command
 
                     //Add to ResourceSpace metadata (if enabled)
                     if ($this->resourceSpaceManifestField !== '') {
-                        $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
-                        if ($result !== 'true') {
-//                        echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
-                            $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
-                        } else if ($this->verbose) {
-                            $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                        if(!array_key_exists($this->resourceSpaceManifestField, $rsData) || $rsData[$this->resourceSpaceManifestField] !== $manifestId) {
+                            $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
+                            if ($result !== 'true') {
+        //                        echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
+                                $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
+                            } else if ($this->verbose) {
+                                $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
+                            }
                         }
                     }
 
