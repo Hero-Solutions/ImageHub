@@ -83,8 +83,8 @@ class GenerateIIIFManifestsCommand extends Command
     public function __construct(
         ParameterBagInterface $parameterBag,
         EntityManagerInterface $entityManager,
-        #[Autowire('%kernel.project_dir%')] string $projectDir,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        #[Autowire('%kernel.project_dir%')] string $projectDir
     ) {
         parent::__construct();
         $this->parameterBag = $parameterBag;
