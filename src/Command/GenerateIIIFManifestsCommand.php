@@ -6,6 +6,8 @@ use App\Entity\IIIfManifest;
 use App\Entity\IIIfManifestV2;
 use App\Entity\ImageDimensions;
 use App\Entity\ResourceData;
+use App\Entity\TmpIIIfManifest;
+use App\Entity\TmpIIIfManifestV2;
 use App\Entity\Transcription;
 use App\ResourceSpace\ResourceSpace;
 use App\Utils\GenerateTranscriptionFromAlto;
@@ -20,13 +22,13 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterface
+class GenerateIIIFManifestsCommand extends Command
 {
     private ParameterBagInterface $parameterBag;
     private EntityManagerInterface $entityManager;
+    private LoggerInterface $logger;
     private string $projectDir;
 
     private bool $verbose;
@@ -41,35 +43,35 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
     private array $datahubMetadataFields;
 
 
-    private $labelFieldsV2;
-    private $attributionFieldV2;
+    private array $labelFieldsV2;
+    private string $attributionFieldV2;
 
-    private $publishers;
-    private $manifestLabelV3;
-    private $canvasLabelV3;
-    private $rightsSourceV3;
-    private $requiredStatementV3;
-    private $metadataFieldsV3;
+    private array $publishers;
+    private array $manifestLabelV3;
+    private array $canvasLabelV3;
+    private string $rightsSourceV3;
+    private array $requiredStatementV3;
+    private array $metadataFieldsV3;
 
-    private $resourceSpace;
-    private $imageData;
-    private $altoTranscriptionFiles = [];
-    private $altoTranscriptions = [];
-    private $annotations = [];
+    private ResourceSpace $resourceSpace;
+    private array $imageData;
+    private array $altoTranscriptionFiles = [];
+    private array $altoTranscriptions = [];
+    private array $annotations = [];
 
-    private $iiifVersions;
-    private $mainIiifVersion;
-    private $serviceUrl;
-    private $createTopLevelCollection;
-    private $resourceSpaceManifestField;
+    private array $iiifVersions;
+    private string $mainIiifVersion;
+    private string $serviceUrl;
+    private bool $createTopLevelCollection;
+    private string $resourceSpaceManifestField;
 
-    private $imageIds = [];
-    private $fileChecksums = [];
-    private $datahubMetadataToStore = [];
-    private $manifestsToStore = [];
-    private $placeholderId;
+    private array $imageIds = [];
+    private array $fileChecksums = [];
+    private array $datahubMetadataToStore = [];
+    private array $manifestsToStore = [];
+    private int $placeholderId;
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('app:generate-iiif-manifests')
@@ -78,24 +80,16 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
             ->setHelp('');
     }
 
-    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager, #[Autowire('%kernel.project_dir%')] string $projectDir)
-    {
+    public function __construct(
+        ParameterBagInterface $parameterBag,
+        EntityManagerInterface $entityManager,
+        #[Autowire('%kernel.project_dir%')] string $projectDir,
+        LoggerInterface $logger
+    ) {
+        parent::__construct();
         $this->parameterBag = $parameterBag;
         $this->entityManager = $entityManager;
         $this->projectDir = $projectDir;
-        parent::__construct();
-    }
-
-    /**
-     * Sets the container.
-     */
-    public function setContainer(?ContainerInterface $container): void
-    {
-        $this->container = $container;
-    }
-
-    public function setLogger(LoggerInterface $logger): void
-    {
         $this->logger = $logger;
     }
 
@@ -147,7 +141,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         }
 
         if(!empty($this->resourceSpaceAnnotationsUrl)) {
-            $annotations = json_decode(file_get_contents($this->resourceSpaceAnnotationsUrl . '?key=' . $this->container->getParameter('resourcespace_api_key')), true);
+            $annotations = json_decode(file_get_contents($this->resourceSpaceAnnotationsUrl . '?key=' . $this->parameterBag->get('resourcespace_api_key')), true);
             if(isset($annotations['error'])) {
                 $this->logger->error( 'Error fetching annotations: ' . $annotations['error']);
             } else if(isset($annotations['data'])) {
@@ -158,6 +152,10 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         $this->imageData = array();
 
         $this->publicUse = $this->parameterBag->get('public_use');
+
+        if($this->createTopLevelCollection) {
+            $this->createTmpManifestTables();
+        }
 
         foreach($resources as $resource) {
             $resourceId = $resource['ref'];
@@ -215,6 +213,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         $this->generateAndStoreManifests();
         if($this->createTopLevelCollection) {
             $this->storeAllManifestsInSqlite();
+            $this->renameTmpManifestTables();
         }
 
         if($this->createTopLevelCollection && file_exists($this->projectDir . '/public/new_import.iiif_manifests.sqlite')) {
@@ -261,8 +260,8 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         $manifestsv3 = array();
 
         if($this->createTopLevelCollection) {
-            $this->deleteAllManifestsV2();
-            $this->deleteAllManifests();
+            $this->deleteAllTmpManifestsV2();
+            $this->deleteAllTmpManifests();
         }
 
         if(in_array('2', $this->iiifVersions)) {
@@ -311,6 +310,8 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
                 }
 //                echo 'Done, created and stored ' . count($manifests) . ' manifests.' . PHP_EOL;
             }
+
+            $this->entityManager->detach($manifestDocument);
         }
         $this->logger->info('Done, created and stored ' . count($manifestsv2) . ' IIIF 2 manifests.');
 
@@ -350,13 +351,16 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
                 }
 //                echo 'Done, created and stored ' . count($manifests) . ' manifests.' . PHP_EOL;
             }
+
+            $this->entityManager->detach($manifestDocument);
         }
         $this->logger->info('Done, created and stored ' . count($manifestsv3) . ' IIIF 3 manifests.');
     }
 
-    private function generateAndStoreManifestsV2($storeInLido, $validate, $validatorUrl, &$manifests)
+    private function generateAndStoreManifestsV2($storeInLido, $validate, $validatorUrl, &$manifests): void
     {
-        foreach($this->imageData as $resourceId => $data) {
+        foreach($this->imageData as $resourceId => $data)
+        {
             if(array_key_exists('is_alto_transcription', $data)) {
                 if($data['is_alto_transcription']) {
                     continue;
@@ -791,10 +795,11 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
                     }
                 }
             }
+            $this->entityManager->detach($manifestDocument);
         }
     }
 
-    private function generateCanvasV2($serviceId, $relatedRef, $imageUrl, $canvasId, $publicUse)
+    private function generateCanvasV2($serviceId, $relatedRef, $imageUrl, $canvasId, $publicUse): array
     {
         $service = array(
             '@context' => 'http://iiif.io/api/image/2/context.json',
@@ -831,7 +836,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         return $newCanvas;
     }
 
-    private function getAuthenticationService()
+    private function getAuthenticationService(): array
     {
         $arr = array(
             '@context' => 'http://iiif.io/api/auth/1/context.json',
@@ -843,7 +848,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         return $arr;
     }
 
-    private function createSequenceV2($canvases, $startCanvas)
+    private function createSequenceV2($canvases, $startCanvas): array
     {
         // Fill in sequence data
         if($startCanvas == null) {
@@ -863,7 +868,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         return array($manifestSequence);
     }
 
-    public function generateAndStoreManifestsV3($storeInLido, $validate, $validatorUrl, &$manifests)
+    public function generateAndStoreManifestsV3($storeInLido, $validate, $validatorUrl, &$manifests): void
     {
         foreach($this->imageData as $resourceId => $imageData) {
             if(array_key_exists('is_alto_transcription', $imageData)) {
@@ -1457,6 +1462,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
                     }
                 }
             }
+            $this->entityManager->detach($manifestDocument);
         }
     }
 
@@ -1501,23 +1507,23 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         return $label;
     }
 
-    private function deleteAllManifestsV2()
+    private function deleteAllTmpManifestsV2(): void
     {
         $qb = $this->entityManager->createQueryBuilder();
-        $query = $qb->delete(IIIfManifestV2::class, 'manifest')->getQuery();
+        $query = $qb->delete(TmpIIIfManifestV2::class, 'manifest')->getQuery();
         $query->execute();
         $this->entityManager->flush();
     }
 
-    private function deleteAllManifests()
+    private function deleteAllTmpManifests(): void
     {
         $qb = $this->entityManager->createQueryBuilder();
-        $query = $qb->delete(IIIfManifest::class, 'manifest')->getQuery();
+        $query = $qb->delete(TmpIIIfManifest::class, 'manifest')->getQuery();
         $query->execute();
         $this->entityManager->flush();
     }
 
-    private function deleteManifestV2($manifestId)
+    private function deleteManifestV2($manifestId): void
     {
         $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(IIIfManifestV2::class, 'manifest')
@@ -1528,7 +1534,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         $this->entityManager->flush();
     }
 
-    private function deleteManifest($manifestId)
+    private function deleteManifest($manifestId): void
     {
         $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(IIIfManifest::class, 'manifest')
@@ -1539,7 +1545,44 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         $this->entityManager->flush();
     }
 
-    private function storeTranscription($transcription)
+    private function createTmpManifestTables(): void
+    {
+        $connection = $this->entityManager->getConnection();
+        $connection->executeStatement("CREATE TABLE IF NOT EXISTS tmp_iiif_manifest LIKE iiif_manifest");
+        $connection->executeStatement("TRUNCATE TABLE tmp_iiif_manifest");
+        $connection->executeStatement("CREATE TABLE IF NOT EXISTS tmp_iiif_manifest_v2 LIKE iiif_manifest_v2");
+        $connection->executeStatement("TRUNCATE TABLE tmp_iiif_manifest_v2");
+    }
+
+    private function renameTmpManifestTables(): void
+    {
+        $connection = $this->entityManager->getConnection();
+        $errors = [];
+
+        $countV3 = (int) $connection->fetchOne("SELECT COUNT(*) FROM tmp_iiif_manifest");
+        if ($countV3 > 0) {
+            $connection->executeStatement("RENAME TABLE iiif_manifest TO iiif_manifest_old, tmp_iiif_manifest TO iiif_manifest");
+            $connection->executeStatement("DROP TABLE iiif_manifest_old");
+            $connection->executeStatement("CREATE TABLE tmp_iiif_manifest LIKE iiif_manifest");
+        } else {
+            $errors[] = "Old manifests not overwritten - no new manifests were generated.";
+        }
+
+        $countV2 = (int) $connection->fetchOne("SELECT COUNT(*) FROM tmp_iiif_manifest_v2");
+        if ($countV2 > 0) {
+            $connection->executeStatement("RENAME TABLE iiif_manifest_v2 TO iiif_manifest_v2_old, tmp_iiif_manifest_v2 TO iiif_manifest_v2");
+            $connection->executeStatement("DROP TABLE iiif_manifest_v2_old");
+            $connection->executeStatement("CREATE TABLE tmp_iiif_manifest_v2 LIKE iiif_manifest_v2");
+        } else {
+            $errors[] = "Old V2 manifests not overwritten - no new V2 manifests were generated.";
+        }
+
+        foreach($errors as $err) {
+            $this->logger->error($err);
+        }
+    }
+
+    private function storeTranscription($transcription): void
     {
         $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(Transcription::class, 'transcription')
@@ -1553,31 +1596,29 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         $this->entityManager->flush();
     }
 
-    private function storeManifestV2($manifest, $manifestId)
+    private function storeManifestV2($manifest, $manifestId): TmpIIIfManifestV2
     {
         // Store the manifest in mysql
-        $manifestDocument = new IIIFManifestV2();
+        $manifestDocument = new TmpIIIFManifestV2();
         $manifestDocument->setId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
         $this->entityManager->persist($manifestDocument);
         $this->entityManager->flush();
-        $this->entityManager->clear();
         return $manifestDocument;
     }
 
-    private function storeManifest($manifest, $manifestId)
+    private function storeManifest($manifest, $manifestId): TmpIIIfManifest
     {
         // Store the manifest in mysql
-        $manifestDocument = new IIIFManifest();
+        $manifestDocument = new TmpIIIFManifest();
         $manifestDocument->setId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
         $this->entityManager->persist($manifestDocument);
         $this->entityManager->flush();
-        $this->entityManager->clear();
         return $manifestDocument;
     }
 
-    private function validateManifest($validatorUrl, $manifestId)
+    private function validateManifest($validatorUrl, $manifestId): bool
     {
         $valid = true;
         try {
@@ -1609,7 +1650,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         return $valid;
     }
 
-    private function storeManifestAndThumbnail($sourceinvnr, $resourceId, $relatedResources, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber)
+    private function storeManifestAndThumbnail($sourceinvnr, $resourceId, $relatedResources, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber): void
     {
         if($this->oneManifestPerObject) {
             $store = false;
@@ -1654,7 +1695,7 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         }
     }
 
-    private function storeAllManifestsInSqlite()
+    private function storeAllManifestsInSqlite(): void
     {
         $manifestDb = new SQLite3($this->projectDir . '/public/new_import.iiif_manifests.sqlite');
         $manifestDb->exec('DROP TABLE IF EXISTS data');
@@ -1682,7 +1723,8 @@ class GenerateIIIFManifestsCommand extends Command implements LoggerAwareInterfa
         }
     }
 
-    private function getQueryToStoreInDatahub($manifestData) {
+    private function getQueryToStoreInDatahub($manifestData): string
+    {
         $images = [];
         $metadata = [];
         foreach($manifestData['related_resources'] as $relatedResource) {
