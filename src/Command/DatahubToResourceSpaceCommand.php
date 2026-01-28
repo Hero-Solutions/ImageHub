@@ -908,44 +908,50 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
         $updatedFields = 0;
         foreach($dhData as $key => $value) {
             $update = false;
-            if(!array_key_exists($key, $rsData)) {
-                if($this->verbose) {
+            if (!array_key_exists($key, $rsData)) {
+                if ($this->verbose) {
 //                    echo 'Field ' . $key . ' does not exist, should be ' . $value . PHP_EOL;
                     $this->logger->info('Field ' . $key . ' does not exist, should be ' . $value);
                 }
                 $update = true;
-            } else if(strpos($rsData[$key], ',') !== false) {
-                //ResourceSpace uses commas as field delimiter, so we need to split them up to compare
-                $explodeVal = array_values(array_unique(explode(',', $value)));
-                $explodeRS = array_values(array_unique(explode(',', $rsData[$key])));
-                if(count($explodeRS) != count($explodeVal)) {
-                    $update = true;
-                } else {
-                    $count = count($explodeVal);
-                    for($i = 0; $i < $count; $i++) {
-                        $val = trim($explodeVal[$i]);
+            } else {
+                if ($rsData[$key] === str_replace('/', ', ', $value)) {
+                    continue;
+                }
+
+                if (str_contains($rsData[$key], ',')) {
+                    //ResourceSpace uses commas as field delimiter, so we need to split them up to compare
+                    $explodeVal = array_values(array_unique(explode(',', $value)));
+                    $explodeRS = array_values(array_unique(explode(',', $rsData[$key])));
+                    if (count($explodeRS) != count($explodeVal)) {
                         $update = true;
-                        for ($j = 0; $j < $count; $j++) {
-                            if ($val == trim($explodeRS[$j])) {
-                                $update = false;
+                    } else {
+                        $count = count($explodeVal);
+                        for ($i = 0; $i < $count; $i++) {
+                            $val = trim($explodeVal[$i]);
+                            $update = true;
+                            for ($j = 0; $j < $count; $j++) {
+                                if ($val == trim($explodeRS[$j])) {
+                                    $update = false;
+                                    break;
+                                }
+                            }
+                            if ($update) {
                                 break;
                             }
                         }
-                        if ($update) {
-                            break;
-                        }
                     }
+                } else if ($rsData[$key] != $value) {
+                    $update = true;
                 }
-            } else if($rsData[$key] != $value) {
-                $update = true;
             }
-            if($update) {
-                if($this->verbose) {
+            if ($update) {
+                if ($this->verbose) {
 //                        echo 'Mismatching field ' . $key . ', should be ' . $value . ', is ' . $oldData[$key] . PHP_EOL;
                     $this->logger->info('Mismatching field ' . $key . '. Should be "' . $value . '", is "' . (array_key_exists($key, $rsData) ? $rsData[$key] : '') . '"');
                 }
                 $result = $this->resourceSpace->updateField($resourceId, $key, $value);
-                if($result !== 'true') {
+                if ($result !== 'true') {
 //                    echo 'Error updating field ' . $key . ' for resource id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
                     $this->logger->error('Error updating field ' . $key . ' for resource id ' . $resourceId . ': ' . $result . ' (data: ' . $key . '=' . $value . ')');
                 } else {
