@@ -70,6 +70,8 @@ class GenerateIIIFManifestsCommand extends Command
     private array $datahubMetadataToStore = [];
     private array $manifestsToStore = [];
     private int $placeholderId;
+    private int $memoryInUseByManifests;
+    private int $flushSize = 50 * 1024 * 1024;//Flush every 50MB of data
 
     protected function configure(): void
     {
@@ -211,6 +213,8 @@ class GenerateIIIFManifestsCommand extends Command
         ksort($this->imageData);
 
         $this->generateAndStoreManifests();
+        $this->entityManager->flush();
+        $this->entityManager->clear();
         if($this->createTopLevelCollection) {
             $this->storeAllManifestsInSqlite();
             $this->renameTmpManifestTables();
@@ -347,8 +351,6 @@ class GenerateIIIFManifestsCommand extends Command
                 }
 //                echo 'Done, created and stored ' . count($manifests) . ' manifests.' . PHP_EOL;
             }
-
-            $this->entityManager->detach($manifestDocument);
         }
         $this->logger->info('Done, created and stored ' . count($manifestsv3) . ' IIIF 3 manifests.');
     }
@@ -1594,23 +1596,52 @@ class GenerateIIIFManifestsCommand extends Command
 
     private function storeTmpManifestV2($manifest, $manifestId): TmpIIIfManifestV2
     {
+        $baseMemoryUsage = memory_get_usage();
+
         // Store the manifest in mysql
         $manifestDocument = new TmpIIIFManifestV2();
         $manifestDocument->setId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
         $this->entityManager->persist($manifestDocument);
-        $this->entityManager->flush();
+
+        $extraMemory = memory_get_usage() - $baseMemoryUsage;
+
+        //Flush at least every 100 manifests
+        if($extraMemory < $this->flushSize / 100) {
+            $extraMemory = $this->flushSize / 100;
+        }
+        $this->memoryInUseByManifests += $extraMemory;
+        if($this->memoryInUseByManifests >= $this->flushSize) {
+            $this->entityManager->flush();
+            $this->entityManager->clear();
+            $this->memoryInUseByManifests = 0;
+        }
+
         return $manifestDocument;
     }
 
     private function storeTmpManifest($manifest, $manifestId): TmpIIIfManifest
     {
+        $baseMemoryUsage = memory_get_usage();
+
         // Store the manifest in mysql
         $manifestDocument = new TmpIIIFManifest();
         $manifestDocument->setId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
         $this->entityManager->persist($manifestDocument);
-        $this->entityManager->flush();
+
+        $extraMemory = memory_get_usage() - $baseMemoryUsage;
+
+        //Flush at least every 100 manifests
+        if($extraMemory < $this->flushSize / 100) {
+            $extraMemory = $this->flushSize / 100;
+        }
+        $this->memoryInUseByManifests += $extraMemory;
+        if($this->memoryInUseByManifests >= $this->flushSize) {
+            $this->entityManager->flush();
+            $this->entityManager->clear();
+            $this->memoryInUseByManifests = 0;
+        }
         return $manifestDocument;
     }
 
