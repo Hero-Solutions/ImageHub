@@ -914,7 +914,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                     $this->logger->info('Field ' . $key . ' does not exist, should be ' . $value);
                 }
                 $update = true;
-            } else if(str_contains($rsData[$key], ',')) {
+            } else if(str_contains($rsData[$key], ',') || str_contains($value, ',')) {
                 //ResourceSpace uses commas as field delimiter, so we need to split them up to compare
                 $explodeVal = array_values(array_unique(explode(',', $value)));
                 $explodeRS = array_values(array_unique(explode(',', $rsData[$key])));
