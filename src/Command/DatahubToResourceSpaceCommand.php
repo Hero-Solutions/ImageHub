@@ -926,7 +926,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                         $val = trim($explodeVal[$i]);
                         $update = true;
                         for ($j = 0; $j < $count; $j++) {
-                            if ($val == trim($explodeRS[$j])) {
+                            if (strtolower($val) == strtolower(trim($explodeRS[$j]))) {
                                 $update = false;
                                 break;
                             }
@@ -936,7 +936,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                         }
                     }
                 }
-            } else if($rsData[$key] != $value) {
+            } else if(strtolower($rsData[$key]) != strtolower($value)) {
                 $update = true;
             }
             if($update) {
