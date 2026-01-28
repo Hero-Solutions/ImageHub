@@ -381,6 +381,7 @@ class GenerateIIIFManifestsCommand extends Command
             $data['file_checksum'] = '';
             $publisher = '';
             $iiifSortNumber = -1;
+            $oldManifestId = '';
             $rsData = [];
             foreach($rsDataRaw as $d) {
                 $value = $d->getValue();
@@ -425,19 +426,19 @@ class GenerateIIIFManifestsCommand extends Command
                         }
                     }
                 }
-                if ($d->getName() == 'is_recommended_for_pub') {
+                if ($d->getName() === 'is_recommended_for_pub') {
                     $data['recommended_for_publication'] = $value === '1';
                 }
-                if ($d->getName() == 'sourceinvnr') {
+                if ($d->getName() === 'sourceinvnr') {
                     $data['sourceinvnr'] = $value;
                 }
-                if ($d->getName() == 'related_resources') {
+                if ($d->getName() === 'related_resources') {
                     $data['related_resources'] = explode(',', $value);
                 }
-                if ($d->getName() == 'iiifbehavior') {
+                if ($d->getName() === 'iiifbehavior') {
                     $data['iiifbehavior'] = strtolower($value);
                 }
-                if ($d->getName() == 'file_checksum') {
+                if ($d->getName() === 'file_checksum') {
                     $data['file_checksum'] = $value;
                 }
                 if ($d->getName() === 'publisher') {
@@ -445,6 +446,9 @@ class GenerateIIIFManifestsCommand extends Command
                 }
                 if ($d->getName() === 'iiif_sort_number') {
                     $iiifSortNumber = intval($value);
+                }
+                if($d->getName() === $this->resourceSpaceManifestField) {
+                    $oldManifestId = $value;
                 }
                 $rsData[$d->getName()] = $value;
             }
@@ -770,15 +774,13 @@ class GenerateIIIFManifestsCommand extends Command
                     }
 
                     //Add to ResourceSpace metadata (if enabled)
-                    if($this->resourceSpaceManifestField !== '') {
-                        if(!array_key_exists($this->resourceSpaceManifestField, $rsData) || $rsData[$this->resourceSpaceManifestField] !== $manifestId) {
-                            $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
-                            if ($result !== 'true') {
-            //                    echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
-                                $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
-                            } else if ($this->verbose) {
-                                $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
-                            }
+                    if($this->resourceSpaceManifestField !== '' && $oldManifestId !== $manifestId) {
+                        $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
+                        if ($result !== 'true') {
+        //                    echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
+                            $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
+                        } else if ($this->verbose) {
+                            $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
                         }
                     }
 
@@ -891,6 +893,7 @@ class GenerateIIIFManifestsCommand extends Command
             $inventoryNumber = '';
             $publisher = '';
             $datahubRecordId = '';
+            $oldManifestId = '';
 
             /* @var $d ResourceData */
             foreach ($rsDataRaw as $d) {
@@ -913,8 +916,10 @@ class GenerateIIIFManifestsCommand extends Command
                     $recommendedForPublication = $value === '1';
                 } else if($d->getName() === 'sourceinvnr') {
                     $inventoryNumber = $value;
-                } else if($d->getName() == 'dh_record_id') {
+                } else if($d->getName() === 'dh_record_id') {
                     $datahubRecordId = $value;
+                } else if($d->getName() === $this->resourceSpaceManifestField) {
+                    $oldManifestId = $value;
                 } else {
                     $rsData[$d->getName()] = $value;
                 }
@@ -1439,15 +1444,13 @@ class GenerateIIIFManifestsCommand extends Command
                     }
 
                     //Add to ResourceSpace metadata (if enabled)
-                    if ($this->resourceSpaceManifestField !== '') {
-                        if(!array_key_exists($this->resourceSpaceManifestField, $rsData) || $rsData[$this->resourceSpaceManifestField] !== $manifestId) {
-                            $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
-                            if ($result !== 'true') {
-        //                        echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
-                                $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
-                            } else if ($this->verbose) {
-                                $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
-                            }
+                    if ($this->resourceSpaceManifestField !== '' && $oldManifestId !== $manifestId) {
+                        $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
+                        if ($result !== 'true') {
+    //                        echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
+                            $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
+                        } else if ($this->verbose) {
+                            $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
                         }
                     }
 
