@@ -16,7 +16,7 @@ class StringUtil
 
     public static function getDateRange(string $earliestDate, string $latestDate): string
     {
-        return StringUtil::getFullDate($earliestDate, '01', '01') . ',' . StringUtil::getFullDate($latestDate,'12', '31');
+        return StringUtil::getFullDate($earliestDate, '01', '01') . '/' . StringUtil::getFullDate($latestDate,'12', '31');
     }
 
     public static function getFullDate(string $date, string $monthAppend, string $dayAppend): string
