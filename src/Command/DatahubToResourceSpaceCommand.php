@@ -915,7 +915,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 }
                 $update = true;
             } else {
-                if ($rsData[$key] === str_replace('/', ', ', $value)) {
+                if ($rsData[$key] === str_replace('/', ',', $value)) {
                     continue;
                 }
 
