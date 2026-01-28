@@ -71,7 +71,7 @@ class GenerateIIIFManifestsCommand extends Command
     private array $manifestsToStore = [];
     private int $placeholderId;
     private int $memoryInUseByManifests = 0;
-    private int $flushSize = 10 * 1024 * 1024;//Flush every 10MB of data
+    private int $flushSize = 50 * 1024 * 1024;//Flush every 50MB of data
 
     protected function configure(): void
     {
