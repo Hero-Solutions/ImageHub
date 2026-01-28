@@ -14,7 +14,6 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareInterface
@@ -59,11 +58,6 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareI
         $this->entityManager = $entityManager;
         $this->projectDir = $projectDir;
         parent::__construct();
-    }
-
-    public function setContainer(ContainerInterface $container = null): void
-    {
-        $this->container = $container;
     }
 
     public function setLogger(LoggerInterface $logger): void
