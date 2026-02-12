@@ -1325,9 +1325,6 @@ class GenerateIIIFManifestsCommand extends Command
 
                 if ($isStartCanvas && $startCanvas == null) {
                     $startCanvas = $canvasId;
-                }
-                //Thumbnail should always be the first image
-                if($thumbnail === null) {
                     $thumbnail = $serviceId;
                 }
 
