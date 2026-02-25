@@ -1,3 +1,11 @@
+CREATE TABLE IF NOT EXISTS `transcription` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `transcription_id` VARCHAR(255) NOT NULL,
+  `alto_url` VARCHAR(255) NOT NULL,
+  `data` LONGTEXT NOT NULL,
+  PRIMARY KEY (`id`)
+);
+
 CREATE TABLE IF NOT EXISTS `iiif_manifest_v2` (
     `id` INT UNSIGNED NOT NULL,
     `data` LONGTEXT NOT NULL,
@@ -22,4 +30,12 @@ CREATE TABLE IF NOT EXISTS `resource_data` (
   `name` VARCHAR(50) NOT NULL,
   `value` MEDIUMTEXT NOT NULL,
   PRIMARY KEY(`id`, `name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `image_dimensions` (
+    `id` INT UNSIGNED NOT NULL,
+    `checksum` VARCHAR(32) NOT NULL,
+    `width` INT UNSIGNED NOT NULL,
+    `height` INT UNSIGNED NOT NULL,
+    PRIMARY KEY(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -3,6 +3,7 @@ parameters:
     resourcespace_api_url: 'http://127.0.0.1/api/'
     resourcespace_api_username: 'admin'
     resourcespace_api_key: 'e681651ae76d8df9e41fdf4a0fd0bb3955157ab5b2064c950951fd3ccc319c4a'
+    resourcespace_annotations_url: ''
 
     datahub_url: 'http://datahub.iiif.vlaamsekunstcollectie.be'
 
@@ -15,6 +16,17 @@ parameters:
     store_datahub_record_ids: false
     one_manifest_per_object: true
     use_placeholder_for_images_in_copyright: false
+    store_transcriptions: false
+    transcription_fields:
+        original: transcription_original
+        en: translation_en
+        nl: translation_nl
+        fr: translation_fr
+    store_datahub_metadata: false
+    datahub_metadata_fields:
+      interpret-research: Interpretation research/restoration image
+      imagespectrum: Image spectrum
+      imageviewtype: Image view type
 
     placeholder_id: -1
 

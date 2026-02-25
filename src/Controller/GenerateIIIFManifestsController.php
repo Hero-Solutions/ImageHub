@@ -8,20 +8,25 @@ use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class GenerateIIIFManifestsController extends AbstractController implements LoggerAwareInterface
 {
-    /**
-     * @Route("/generate-iiif-manifests", name="generate-iiif-manifests")
-     */
+    private $parameterBag;
+
+    public function __construct(ParameterBagInterface $parameterBag) {
+        $this->parameterBag = $parameterBag;
+    }
+
+    #[Route("/generate-iiif-manifests", name:"generate-iiif-manifests")]
     public function generateIIIFManifestsAction(Request $request, KernelInterface $kernel)
     {
         $resourceSpaceApiKey = $request->query->get('api_key');
-        $actualResourceSpaceApiKey = $this->getParameter('resourcespace_api_key');
+        $actualResourceSpaceApiKey = $this->parameterBag->get('resourcespace_api_key');
         if($resourceSpaceApiKey == $actualResourceSpaceApiKey) {
 
             $debug = $request->query->get('debug');
@@ -58,7 +63,7 @@ class GenerateIIIFManifestsController extends AbstractController implements Logg
      *
      * @return void
      */
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
     }

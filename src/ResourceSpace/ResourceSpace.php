@@ -3,65 +3,67 @@
 namespace App\ResourceSpace;
 
 use App\Utils\StringUtil;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class ResourceSpace
 {
-    private $apiUrl;
-    private $apiUsername;
-    private $apiKey;
+    private string $apiUrl;
+    private string $apiUsername;
+    private string $apiKey;
 
-    public function __construct(ContainerInterface $container)
+    public function __construct(ParameterBagInterface $parameterBag)
     {
         // Make sure the API URL does not end with a '?' character
-        $this->apiUrl = rtrim($container->getParameter('resourcespace_api_url'), '?');
-        $this->apiUsername = $container->getParameter('resourcespace_api_username');
-        $this->apiKey = $container->getParameter('resourcespace_api_key');
+        $this->apiUrl = rtrim($parameterBag->get('resourcespace_api_url'), '?');
+        $this->apiUsername = $parameterBag->get('resourcespace_api_username');
+        $this->apiKey = $parameterBag->get('resourcespace_api_key');
     }
 
-    public function generateCreditLines($creditLineDefinition, $resourceSpaceData, &$datahubData)
+    public function generateCreditLines($creditLineDefinition, $resourceSpaceData, &$datahubData): void
     {
         foreach($creditLineDefinition as $languge => $definition) {
             $creditLine = array();
 
-            if(array_key_exists('creatorofartworkobje', $datahubData)) {
+            if(array_key_exists('creatorofartworkobje', $datahubData) && !empty($datahubData['creatorofartworkobje'])) {
                 $creditLine[] = $datahubData['creatorofartworkobje'];
             }
-            if(array_key_exists($definition['title_field'], $datahubData)) {
+            if(array_key_exists($definition['title_field'], $datahubData) && !empty($datahubData[$definition['title_field']])) {
                 $creditLine[] = $datahubData[$definition['title_field']];
             }
-            if(array_key_exists('sourceinvnr', $resourceSpaceData)) {
+            if(array_key_exists('sourceinvnr', $resourceSpaceData) && !empty($resourceSpaceData['sourceinvnr'])) {
                 $creditLine[] = $definition['invnr'] . ' ' . $resourceSpaceData['sourceinvnr'];
             }
 
             $photographer = $this->getPhotographerInfo($resourceSpaceData, $definition['photo'], $definition['photographer']);
-            if($photographer != null) {
+            if(!empty($photographer)) {
                 $creditLine[] = $photographer;
             }
 
             $prefix = '';
             $suffix = $definition['suffix'];
 
-            if(array_key_exists('copyrightnoticeofart', $datahubData)) {
+            if(array_key_exists('copyrightnoticeofart', $datahubData) && !empty($datahubData['copyrightnoticeofart'])) {
                 $copyright = $datahubData['copyrightnoticeofart'];
-                if(strpos($copyright, 'CC0') !== false) {
+                if(str_contains($copyright, 'CC0')) {
                     $suffix .= ' (CC0)';
-                } else if(strpos($copyright, 'SABAM') !== false) {
-                    $prefix = $copyright . ' ' . $definition['sabam_suffix'] . ', ' . date('Y') .'<br/>';
+                } else if(strtolower(trim($copyright)) === 'public domain' || strtolower(trim($copyright)) === 'publiek domein') {
+                    $suffix .= ' (' . $copyright . ')';
+                } else if(str_contains($copyright, 'SABAM')) {
+                    $prefix = $copyright . ' ' . $definition['sabam_suffix'] . ', ' . date('Y') . '. ';
                 } else {
-                    $prefix = $copyright . date('Y') . '<br/>';
+                    $prefix = $copyright . ', ' . date('Y') . '. ';
                 }
             }
 
             if(!empty($prefix) || !empty($creditLine)) {
-                $suffix = '<br/>' . $suffix;
+                $suffix = '. ' . $suffix;
             }
 
-            $datahubData[$definition['field']] = $prefix . implode('<br/>', $creditLine) . $suffix;
+            $datahubData[$definition['field']] = $prefix . implode('. ', $creditLine) . $suffix;
         }
     }
 
-    public function getPhotographerInfo($data, $photoTrans, $photographerTrans)
+    public function getPhotographerInfo($data, $photoTrans, $photographerTrans): string
     {
         $photo = null;
         if(array_key_exists('copyrightnoticeofima', $data)) {
@@ -97,18 +99,18 @@ class ResourceSpace
         $photographerLine = '';
         if($photo != null || $photographer != null) {
             if($photo == $photographer || $photographer == null) {
-                $photographerLine = $photoTrans . ': ' . str_replace('\n', '<br/>', $photo);
+                $photographerLine = $photoTrans . ': ' . str_replace('\n', '. ', $photo);
             } else if($photo == null) {
-                $photographerLine = $photographerTrans . ': ' . str_replace('\n', '<br/>', $photographer);
+                $photographerLine = $photographerTrans . ': ' . str_replace('\n', '. ', $photographer);
             } else {
-                $photographerLine = $photoTrans . ': ' . str_replace('\n', '<br/>', $photo) . '<br/>' . $photographerTrans . ': ' . str_replace('\n', '<br/>', $photographer);
+                $photographerLine = $photoTrans . ': ' . str_replace('\n', '. ', $photo) . '. ' . $photographerTrans . ': ' . str_replace('\n', '. ', $photographer);
             }
         }
         return $photographerLine;
 
     }
 
-    public function getCurrentResourceSpaceData()
+    public function getCurrentResourceSpaceData(): array
     {
         $resources = $this->getAllResources();
         $data = array();
@@ -119,7 +121,7 @@ class ResourceSpace
         return $data;
     }
 
-    public function getResourceSpaceData($ref)
+    public function getResourceSpaceData($ref): array
     {
         $extracted = array();
         $currentData = $this->getResourceInfo($ref);
@@ -133,7 +135,13 @@ class ResourceSpace
         return $extracted;
     }
 
-    public function getAllOriginalFilenames()
+    public function getResourcePath($ref, $extension): mixed
+    {
+        $data = $this->doApiCall('get_resource_path&ref=' . $ref . '&getfilepath=0&generate=0&extension=' . $extension);
+        return json_decode($data);
+    }
+
+    public function getAllOriginalFilenames(): array
     {
         $resources = $this->getAllResources();
         $resourceIds = array();
@@ -147,7 +155,7 @@ class ResourceSpace
         return $resourceIds;
     }
 
-    public function getOriginalFilenameForId($id)
+    public function getOriginalFilenameForId($id): ?string
     {
         $currentData = $this->getResourceInfo($id);
         if($currentData == null) {
@@ -159,7 +167,7 @@ class ResourceSpace
         return $this->getOriginalFilename($currentData);
     }
 
-    public function getOriginalFilename($data)
+    public function getOriginalFilename($data): ?string
     {
         $filename = null;
         foreach($data as $field) {
@@ -171,10 +179,10 @@ class ResourceSpace
         return $filename;
     }
 
-    public function getAllResources()
+    public function getAllResources(): mixed
     {
         # We need to supply something to param1, otherwise ResourceSpace returns a 500 (it's become a mandatory argument)
-        $allResources = $this->doApiCall('do_search&param1=%27%27');
+        $allResources = $this->doApiCall('do_search&search=' . urlencode("\'\'"));
 
         if ($allResources == 'Invalid signature') {
             echo 'Error: invalid ResourceSpace API key. Please paste the key found in the ResourceSpace user management into app/config/parameters.yml.' . PHP_EOL;
@@ -182,16 +190,15 @@ class ResourceSpace
             exit(1);
         }
 
-        $resources = json_decode($allResources, true);
-        return $resources;
+        return json_decode($allResources, true);
     }
 
-    public function isPublicUse($data, $publicUse)
+    public function isPublicUse($data, $publicUse): bool
     {
         $public = false;
         if(!empty($publicUse)) {
             if (array_key_exists($publicUse['key'], $data)) {
-                if(strpos($data[$publicUse['key']], $publicUse['value']) !== false) {
+                if(str_contains($data[$publicUse['key']], $publicUse['value'])) {
                     $public = true;
                 }
             }
@@ -199,7 +206,7 @@ class ResourceSpace
         return $public;
     }
 
-    public function isCheckboxChecked($data, $checkboxFieldDefinition)
+    public function isCheckboxChecked($data, $checkboxFieldDefinition): bool
     {
         $result = false;
         if(!empty($checkboxFieldDefinition)) {
@@ -212,7 +219,7 @@ class ResourceSpace
         return $result;
     }
 
-    public function getIIIFSortNumber($data, $iiifSortNumber)
+    public function getIIIFSortNumber($data, $iiifSortNumber): int
     {
         $sortNumber = -1;
         if(!empty($iiifSortNumber)) {
@@ -222,26 +229,26 @@ class ResourceSpace
                 }
             }
         }
-        return $sortNumber;
+        return intval($sortNumber);
     }
 
-    private function getResourceInfo($id)
+    private function getResourceInfo($id): mixed
     {
         $data = $this->doApiCall('get_resource_field_data&param1=' . $id);
         return json_decode($data, true);
     }
 
-    public function updateField($id, $key, $value)
+    public function updateField($id, $key, $value): string|false
     {
         return $this->doApiCall('update_field&param1=' . $id . '&param2=' . $key . '&param3=' . urlencode($value));
     }
 
-    public function createResource($file)
+    public function createResource($file): string|false
     {
         return $this->doApiCall('create_resource&param1=1&param2=0&param3=' . urlencode($file) . '&param4=0&param5=&param6=&param7=', 7200);
     }
 
-    private function doApiCall($query, $timeout = null)
+    private function doApiCall($query, $timeout = null): string|false
     {
         $query = 'user=' . $this->apiUsername . '&function=' . $query;
         $url = $this->apiUrl . '?' . $query . '&sign=' . $this->getSign($query);
@@ -254,7 +261,7 @@ class ResourceSpace
         return $data;
     }
 
-    private function getSign($query)
+    private function getSign($query): string
     {
         return hash('sha256', $this->apiKey . $query);
     }

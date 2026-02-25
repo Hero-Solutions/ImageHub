@@ -11,36 +11,40 @@ use Psr\Log\LoggerInterface;
 use SQLite3;
 use stdClass;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwareInterface, LoggerAwareInterface
+class GenerateMeemooIIIFManifestsCommand extends Command implements LoggerAwareInterface
 {
-    private $verbose;
+    private ParameterBagInterface $parameterBag;
+    private string $projectDir;
+    private EntityManagerInterface $entityManager;
+    private LoggerInterface $logger;
 
-    private $manifestLanguages;
+    private bool $verbose;
 
-    private $meemoo;
+    private array $manifestLanguages;
 
-    private $publishers;
-    private $manifestLabelV3;
-    private $canvasLabelV3;
-    private $rightsSourceV3;
-    private $requiredStatementV3;
-    private $metadataFieldsV3;
+    private array $meemoo;
 
-    private $imageData;
-    private $publicManifestsAdded;
+    private array $publishers;
+    private array $manifestLabelV3;
+    private string $rightsSourceV3;
+    private array $requiredStatementV3;
+    private array $metadataFieldsV3;
+    private array $meemooCsvHeaders;
 
-    private $serviceUrl;
-    private $createTopLevelCollection;
+    private array $imageData;
+    private array $publicManifestsAdded;
 
-    private $manifestDb;
+    private string $serviceUrl;
+    private bool $createTopLevelCollection;
 
-    protected function configure()
+    private ?SQLite3 $manifestDb = null;
+
+    protected function configure(): void
     {
         $this
             ->setName('app:generate-meemoo-iiif-manifests')
@@ -48,12 +52,12 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
             ->setHelp('');
     }
 
-    /**
-     * Sets the container.
-     */
-    public function setContainer(ContainerInterface $container = null)
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager, #[Autowire('%kernel.project_dir%')] string $projectDir)
     {
-        $this->container = $container;
+        $this->parameterBag = $parameterBag;
+        $this->entityManager = $entityManager;
+        $this->projectDir = $projectDir;
+        parent::__construct();
     }
 
     public function setLogger(LoggerInterface $logger): void
@@ -67,39 +71,33 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
 
         $this->createTopLevelCollection = true;
 
-        $this->iiifVersions = $this->container->getParameter('iiif_versions');
-        $this->mainIiifVersion = $this->container->getParameter('main_iiif_version');
         // Make sure the service URL name ends with a trailing slash
-        $this->meemoo = $this->container->getParameter('meemoo');
+        $this->meemoo = $this->parameterBag->get('meemoo');
         $this->serviceUrl = rtrim($this->meemoo['service_url'], '/') . '/';
         $this->meemooCsvHeaders = $this->meemoo['csv_headers'];
 
-        $this->manifestLanguages = $this->container->getParameter('manifest_languages');
+        $this->manifestLanguages = $this->parameterBag->get('manifest_languages');
 
-        $this->publishers = $this->container->getParameter('publishers');
-        $this->manifestLabelV3 = $this->container->getParameter('iiif_manifest_label');
-        $this->canvasLabelV3 = $this->container->getParameter('iiif_canvas_label');
-        $this->rightsSourceV3 = $this->container->getParameter('iiif_rights_source');
-        $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
-        $this->metadataFieldsV3 = $this->container->getParameter('iiif_metadata_fields');
+        $this->publishers = $this->parameterBag->get('publishers');
+        $this->manifestLabelV3 = $this->parameterBag->get('iiif_manifest_label');
+        $this->rightsSourceV3 = $this->parameterBag->get('iiif_rights_source');
+        $this->requiredStatementV3 = $this->parameterBag->get('iiif_required_statement');
+        $this->metadataFieldsV3 = $this->parameterBag->get('iiif_metadata_fields');
 
         $this->publicManifestsAdded = array();
-        $em = $this->container->get('doctrine')->getManager();
-        //Disable SQL logging to improve performance
-        $em->getConnection()->getConfiguration()->setSQLLogger(null);
 
         $this->getMeemooImageData();
 
-        $this->generateAndStoreManifests($em);
+        $this->generateAndStoreManifests();
 
         if($this->createTopLevelCollection && file_exists('/tmp/import.iiif_manifests_meemoo.sqlite')) {
-            rename('/tmp/import.iiif_manifests_meemoo.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.iiif_manifests_meemoo.sqlite');
+            rename('/tmp/import.iiif_manifests_meemoo.sqlite', $this->projectDir . '/public/import.iiif_manifests_meemoo.sqlite');
         }
 
         return 0;
     }
 
-    private function getMeemooImageData()
+    private function getMeemooImageData(): void
     {
         $this->imageData = [];
 
@@ -143,15 +141,15 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
         }
     }
 
-    private function generateAndStoreManifests(EntityManagerInterface $em)
+    private function generateAndStoreManifests(): void
     {
-        $validate = $this->container->getParameter('validate_manifests');
-        $validatorUrl = $this->container->getParameter('validator_url');
+        $validate = $this->parameterBag->get('validate_manifests');
+        $validatorUrl = $this->parameterBag->get('validator_url');
 
         // Top-level collection containing a link to all manifests
         $manifestsv3 = array();
 
-        $this->generateAndStoreManifestsV3($em, true, $validate, $validatorUrl, $manifestsv3);
+        $this->generateAndStoreManifestsV3(true, $validate, $validatorUrl, $manifestsv3);
 
         if($this->createTopLevelCollection && count($manifestsv3) > 0) {
             // Generate the top-level collection and store it in mongoDB
@@ -165,9 +163,9 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 'items' => $manifestsv3
             );
 
-            $this->deleteManifest($em, 2000000000);
+            $this->deleteManifest(2000000000);
 
-            $manifestDocument = $this->storeManifest($em, $collection, 2000000000);
+            $manifestDocument = $this->storeManifest($collection, 2000000000);
 
             $valid = true;
             if ($validate) {
@@ -175,9 +173,9 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 if (!$valid) {
 //                    echo 'Top-level collection ' . $collectionId . ' is not valid.' . PHP_EOL;
                     $this->logger->error('Top-level collection ' . $collectionId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->remove($manifestDocument);
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
             }
 
@@ -192,13 +190,13 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
         $this->logger->info('Done, created and stored ' . count($manifestsv3) . ' IIIF 3 manifests.');
     }
 
-    public function generateAndStoreManifestsV3(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
+    public function generateAndStoreManifestsV3($storeInLido, $validate, $validatorUrl, &$manifests): void
     {
         foreach($this->imageData as $resourceId => $imageData) {
 
             $inventoryNumber = $imageData['inventory_number'];
 
-            $rsDataRaw = $em->createQueryBuilder()
+            $rsDataRaw = $this->entityManager->createQueryBuilder()
                 ->select('i')
                 ->from(DatahubData::class, 'i')
                 ->where('i.id = :id')
@@ -220,12 +218,12 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 }
 
                 // Replace comma by ' - ' for date ranges
-                if(preg_match('/^[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}, *[0-9]{3,4}\-[0-9]{1,2}\-[0-9]{1,2}$/', $value)) {
+                if(preg_match('/^[0-9]{3,4}-[0-9]{1,2}-[0-9]{1,2}, *[0-9]{3,4}-[0-9]{1,2}-[0-9]{1,2}$/', $value)) {
                     $value = str_replace(' ', '', $value);
                     $value = str_replace(',', ' - ', $value);
 
                     // Remove date and month when the exact date is clearly unknown
-                    if(preg_match('/^[0-9]{3,4}\-01\-01 \- [0-9]{3,4}\-12\-31$/', $value)) {
+                    if(preg_match('/^[0-9]{3,4}-01-01 - [0-9]{3,4}-12-31$/', $value)) {
                         $value = str_replace('-01-01', '', $value);
                         $value = str_replace('-12-31', '', $value);
                     }
@@ -308,7 +306,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                         $rights = 'https://creativecommons.org/publicdomain/zero/1.0/';
                     } else if ($rightsSource === 'Public domain / CC-PDM') {
                         $rights = 'https://creativecommons.org/publicdomain/mark/1.0/';
-                    } else if (strpos($rightsSource, 'SABAM') !== false || strpos($rightsSource, '©') !== false) {
+                    } else if (str_contains($rightsSource, 'SABAM') || str_contains($rightsSource, '©')) {
                         $rights = 'https://rightsstatements.org/vocab/InC/1.0/';
                     } else {
                         $rights = 'https://rightsstatements.org/page/UND/1.0/';
@@ -548,7 +546,7 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 $manifest['service'] = $this->getAuthenticationService();
             }
 
-            $manifestDocument = $this->storeManifest($em, $manifest, $resourceId);
+            $manifestDocument = $this->storeManifest($manifest, $resourceId);
 
             // Validate the manifest
             // We can only pass a URL to the validator, so the manifest needs to be stored and served already before validation
@@ -559,9 +557,9 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
                 if (!$valid) {
 //                    echo 'Manifest ' . $manifestId . ' is not valid.' . PHP_EOL;
                     $this->logger->error('Manifest ' . $manifestId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->remove($manifestDocument);
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
             }
 
@@ -594,30 +592,30 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
         }
     }
 
-    private function deleteManifest(EntityManagerInterface $em, $manifestId)
+    private function deleteManifest($manifestId): void
     {
-        $qb = $em->createQueryBuilder();
+        $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(IIIfManifest::class, 'manifest')
             ->where('manifest.id = :manif_id')
             ->setParameter('manif_id', $manifestId)
             ->getQuery();
         $query->execute();
-        $em->flush();
+        $this->entityManager->flush();
     }
 
-    private function storeManifest(EntityManagerInterface $em, $manifest, $manifestId)
+    private function storeManifest($manifest, $manifestId): IIIfManifest
     {
         // Store the manifest in mongodb
         $manifestDocument = new IIIFManifest();
         $manifestDocument->setId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
-        $em->persist($manifestDocument);
-        $em->flush();
-        $em->clear();
+        $this->entityManager->persist($manifestDocument);
+        $this->entityManager->flush();
+        $this->entityManager->clear();
         return $manifestDocument;
     }
 
-    private function validateManifest($validatorUrl, $manifestId)
+    private function validateManifest($validatorUrl, $manifestId): bool
     {
         $valid = true;
         try {
@@ -649,21 +647,21 @@ class GenerateMeemooIIIFManifestsCommand extends Command implements ContainerAwa
         return $valid;
     }
 
-    private function getAuthenticationService()
+    private function getAuthenticationService(): array
     {
         $arr = array(
             '@context' => 'http://iiif.io/api/auth/1/context.json',
-            '@id'      => $this->container->getParameter('authentication_url'),
+            '@id'      => $this->parameterBag->get('authentication_url'),
         );
-        foreach($this->container->getParameter('authentication_service_description') as $key => $value) {
+        foreach($this->parameterBag->get('authentication_service_description') as $key => $value) {
             $arr[$key] = $value;
         }
         return $arr;
     }
 
-    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail)
+    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail): void
     {
-        if($this->manifestDb == null) {
+        if($this->manifestDb === null) {
             $this->manifestDb = new SQLite3('/tmp/import.iiif_manifests_meemoo.sqlite');
             $this->manifestDb->exec('DROP TABLE IF EXISTS data');
             $this->manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');

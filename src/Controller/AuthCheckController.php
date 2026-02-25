@@ -10,21 +10,26 @@ namespace App\Controller;
 
 
 use App\Utils\Authenticator;
-use SimpleSAML\Auth\Simple;
+use SimpleSAML_Auth_Simple;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class AuthCheckController extends AbstractController
 {
-    /**
-     * @Route("/imagehub/authcheck", name="authcheck")
-     */
+    private $parameterBag;
+
+    public function __construct(ParameterBagInterface $parameterBag) {
+        $this->parameterBag = $parameterBag;
+    }
+
+    #[Route("/authcheck", name:"authcheck")]
     public function authenticateAction(Request $request)
     {
-        $adfsRequirement = $this->getParameter('adfs_requirements');
+        $adfsRequirement = $this->parameterBag->get('adfs_requirements');
 
         // Forbidden by default
         $returnCode = 403;
@@ -32,7 +37,7 @@ class AuthCheckController extends AbstractController
         if($adfsRequirement['public']) {
             $returnCode = 200;
         } else {
-            $auth = new Simple('default-sp');
+            $auth = new SimpleSAML_Auth_Simple('default-sp');
             if ($auth->isAuthenticated()) {
                 if(Authenticator::isAllowed($auth->getAttributes(), $adfsRequirement)) {
                     // The user is already authenticated, everything is in order

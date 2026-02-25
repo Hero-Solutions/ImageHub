@@ -5,7 +5,7 @@ namespace App\Utils;
 
 class StringUtil
 {
-    public static function stripExtension($filename)
+    public static function stripExtension(string $filename): string
     {
         $dotIndex = strrpos($filename, '.');
         if($dotIndex > 0) {
@@ -14,12 +14,12 @@ class StringUtil
         return $filename;
     }
 
-    public static function getDateRange($earliestDate, $latestDate)
+    public static function getDateRange(string $earliestDate, string $latestDate): string
     {
         return StringUtil::getFullDate($earliestDate, '01', '01') . ',' . StringUtil::getFullDate($latestDate,'12', '31');
     }
 
-    public static function getFullDate($date, $monthAppend, $dayAppend)
+    public static function getFullDate(string $date, string $monthAppend, string $dayAppend): string
     {
         if(preg_match('/^[0-9]+-[0-9]+-[0-9]+$/', $date)) {
             return $date;
@@ -32,9 +32,10 @@ class StringUtil
         }
     }
 
-    public static function filterPhotographer($name) {
-        if($name == null) {
-            return $name;
+    public static function filterPhotographer(?string $name): ?string
+    {
+        if($name === null) {
+            return null;
         }
 
         $filters = array(
@@ -62,7 +63,7 @@ class StringUtil
         return $name;
     }
 
-    public static function cleanObjectNumber($nr)
+    public static function cleanObjectNumber(string $nr): string
     {
         // Patterns, see https://github.com/PACKED-vzw/resolver/blob/master/resolver/util.py, def cleanID
         $patterns = array(

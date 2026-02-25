@@ -4,26 +4,34 @@ namespace App\Controller;
 
 use App\Entity\IIIfManifest;
 use App\Utils\Authenticator;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class MeemooCollectionController extends AbstractController
 {
-    /**
-     * @Route("/meemoo/iiif/{iiifVersion}/collection/top", name="meemoo_collection", requirements={"iiifVersion"="2|3"})
-     */
+    private $parameterBag;
+    private $entityManager;
+
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager) {
+        $this->parameterBag = $parameterBag;
+        $this->entityManager = $entityManager;
+    }
+
+    #[Route(path: '/meemoo/iiif/{iiifVersion}/collection/top', name: 'meemoo_collection', requirements: ['iiifVersion' => '2|3'])]
     public function collectionAction(Request $request, $iiifVersion)
     {
         // Authenticate the user through the AD FS with SAML
-        if(!Authenticator::authenticate($this->getParameter('adfs_requirements'))) {
+        if(!Authenticator::authenticate($this->parameterBag->get('adfs_requirements'))) {
             return new Response('Sorry, you are not allowed to access this document.', 403);
         } else {
             // Make sure the service URL name ends with a trailing slash
-            $baseUrl = rtrim($this->getParameter('meemoo')['service_url'], '/') . '/';
+            $baseUrl = rtrim($this->parameterBag->get('meemoo')['service_url'], '/') . '/';
 
-            $manifest = $this->get('doctrine')->getRepository(IIIfManifest::class)->findOneBy(['id' => 2000000000]);
+            $manifest = $this->entityManager->getRepository(IIIfManifest::class)->findOneBy(['id' => 2000000000]);
             if ($manifest != null) {
                 $headers = array(
                     'Content-Type' => 'application/json',

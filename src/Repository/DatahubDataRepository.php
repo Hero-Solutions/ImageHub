@@ -3,8 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\DatahubData;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\ORM\EntityRepository;
 
 /**
  * @method DatahubData|null find($id, $lockMode = null, $lockVersion = null)
@@ -12,18 +11,9 @@ use Doctrine\Common\Persistence\ManagerRegistry;
  * @method DatahubData[]    findAll()
  * @method DatahubData[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class DatahubDataRepository extends ServiceEntityRepository
+class DatahubDataRepository extends EntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
-        parent::__construct($registry, DatahubData::class);
-    }
-
-    // /**
-    //  * @return DatahubData[] Returns an array of DatahubData objects
-    //  */
-
-    public function findById($id)
+    public function findById($id): array
     {
         return $this->createQueryBuilder('i')
             ->andWhere('i.id = :val')

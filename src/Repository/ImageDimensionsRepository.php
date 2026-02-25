@@ -4,6 +4,6 @@ namespace App\Repository;
 
 use Doctrine\ORM\EntityRepository;
 
-class IIIfManifestRepository extends EntityRepository
+class ImageDimensionsRepository extends EntityRepository
 {
 }

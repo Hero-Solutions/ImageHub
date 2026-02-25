@@ -9,16 +9,16 @@
 namespace App\Utils;
 
 
-use SimpleSAML\Auth\Simple;
+use SimpleSAML_Auth_Simple;
 
 class Authenticator
 {
-    public static function authenticate($adfsRequirements)
+    public static function authenticate($adfsRequirements): bool
     {
         if($adfsRequirements['public']) {
             return true;
         } else {
-            $auth = new Simple('default-sp');
+            $auth = new SimpleSAML_Auth_Simple('default-sp');
             if ($auth->isAuthenticated()) {
                 return Authenticator::isAllowed($auth->getAttributes(), $adfsRequirements);
             } else {
@@ -32,7 +32,7 @@ class Authenticator
         }
     }
 
-    public static function isAllowed($attributes, $adfsRequirements)
+    public static function isAllowed($attributes, $adfsRequirements): bool
     {
         $allowed = false;
         foreach ($attributes as $key => $values) {

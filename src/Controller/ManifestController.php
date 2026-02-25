@@ -5,27 +5,34 @@ namespace App\Controller;
 use App\Entity\IIIfManifest;
 use App\Entity\IIIfManifestV2;
 use App\Utils\Authenticator;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class ManifestController extends AbstractController
 {
-    /**
-     * @Route("/iiif/{iiifVersion}/{manifestId}/manifest.json", name="manifest", requirements={"iiifVersion"="2|3"})
-     */
+    private $parameterBag;
+    private $entityManager;
+
+    public function __construct(ParameterBagInterface $parameterBag, EntityManagerInterface $entityManager) {
+        $this->parameterBag = $parameterBag;
+        $this->entityManager = $entityManager;
+    }
+
+    #[Route(path: '/iiif/{iiifVersion}/{manifestId}/manifest.json', name: 'manifest', requirements: ['iiifVersion' => '2|3'])]
     public function manifestAction(Request $request, $iiifVersion, $manifestId = '')
     {
         // Make sure the service URL name ends with a trailing slash
-        $baseUrl = rtrim($this->getParameter('service_url'), '/') . '/';
+        $baseUrl = rtrim($this->parameterBag->get('service_url'), '/') . '/';
 
         $class = $iiifVersion === '2' ? IIIfManifestV2::class : IIIfManifest::class;
 
         if($request->getMethod() == 'HEAD') {
-            $ids = $this->container->get('doctrine')
-                ->getManager()
+            $ids = $this->entityManager
                 ->createQueryBuilder()
                 ->select('m.id')
                 ->from($class, 'm')
@@ -39,11 +46,11 @@ class ManifestController extends AbstractController
                 return new Response('', 404);
             }
         } else {
-            $manifest = $this->get('doctrine')->getRepository($class)->findOneBy(['id' => $manifestId]);
+            $manifest = $this->entityManager->getRepository($class)->findOneBy(['id' => $manifestId]);
             if ($manifest === null) {
                 //Check if we want to return the matching IIIF 3 manifest instead
                 if($iiifVersion === '2') {
-                    $manifest = $this->get('doctrine')->getRepository($class)->findOneBy(['id' => $manifestId]);
+                    $manifest = $this->entityManager->getRepository($class)->findOneBy(['id' => $manifestId]);
                     if($manifest === null) {
                         return new Response('Sorry, the requested document does not exist.', 404);
                     } else {
@@ -54,7 +61,7 @@ class ManifestController extends AbstractController
                 }
             } else {
                 $authenticated = true;
-                $whitelist = $this->getParameter('authentication_whitelist');
+                $whitelist = $this->parameterBag->get('authentication_whitelist');
                 $whitelisted = false;
                 if ($request->getClientIp() != null) {
                     if (in_array($request->getClientIp(), $whitelist)) {
@@ -75,7 +82,7 @@ class ManifestController extends AbstractController
                 }
                 if (!$authenticated) {
                     // Authenticate the user through the AD FS with SAML
-                    if (Authenticator::authenticate($this->getParameter('adfs_requirements'))) {
+                    if (Authenticator::authenticate($this->parameterBag->get('adfs_requirements'))) {
                         $authenticated = true;
                     }
                 }

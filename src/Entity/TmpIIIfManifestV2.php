@@ -4,9 +4,9 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: "App\Repository\IIIfManifestRepository")]
-#[ORM\Table(name: "iiif_manifest")]
-class IIIfManifest
+#[ORM\Entity(repositoryClass: "App\Repository\TmpIIIfManifestV2Repository")]
+#[ORM\Table(name: "tmp_iiif_manifest_v2")]
+class TmpIIIfManifestV2
 {
     #[ORM\Id()]
     #[ORM\Column(type: "integer")]

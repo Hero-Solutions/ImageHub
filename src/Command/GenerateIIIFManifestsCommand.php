@@ -4,8 +4,13 @@ namespace App\Command;
 
 use App\Entity\IIIfManifest;
 use App\Entity\IIIfManifestV2;
+use App\Entity\ImageDimensions;
 use App\Entity\ResourceData;
+use App\Entity\TmpIIIfManifest;
+use App\Entity\TmpIIIfManifestV2;
+use App\Entity\Transcription;
 use App\ResourceSpace\ResourceSpace;
+use App\Utils\GenerateTranscriptionFromAlto;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Psr\Log\LoggerAwareInterface;
@@ -16,48 +21,59 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInterface, LoggerAwareInterface
+class GenerateIIIFManifestsCommand extends Command
 {
-    private $verbose;
-    private $datahubUrl;
-    private $metadataPrefix;
-    private $cantaloupeUrl;
-    private $cantaloupeCurlOpts;
-    private $publicUse;
-    private $oneManifestPerObject;
+    private ParameterBagInterface $parameterBag;
+    private EntityManagerInterface $entityManager;
+    private LoggerInterface $logger;
+    private string $projectDir;
 
-    private $usePlaceholderForImagesInCopyright;
-    private $inCopyrightKey;
+    private bool $verbose;
+    private string $resourceSpaceAnnotationsUrl;
+    private string $datahubUrl;
+    private string $metadataPrefix;
+    private string $cantaloupeUrl;
+    private array $publicUse;
+    private bool $oneManifestPerObject;
 
-    private $manifestLanguages;
+    private bool $storeDatahubMetadata;
+    private array $datahubMetadataFields;
 
-    private $labelFieldsV2;
-    private $licenseLabelsV2;
-    private $attributionFieldV2;
 
-    private $publishers;
-    private $manifestLabelV3;
-    private $canvasLabelV3;
-    private $rightsSourceV3;
-    private $requiredStatementV3;
-    private $metadataFieldsV3;
+    private array $labelFieldsV2;
+    private string $attributionFieldV2;
 
-    private $resourceSpace;
-    private $imageData;
+    private array $publishers;
+    private array $manifestLabelV3;
+    private array $canvasLabelV3;
+    private string $rightsSourceV3;
+    private array $requiredStatementV3;
+    private array $metadataFieldsV3;
 
-    private $iiifVersions;
-    private $mainIiifVersion;
-    private $serviceUrl;
-    private $createTopLevelCollection;
-    private $resourceSpaceManifestField;
+    private ResourceSpace $resourceSpace;
+    private array $imageData;
+    private array $altoTranscriptionFiles = [];
+    private array $altoTranscriptions = [];
+    private array $annotations = [];
 
-    private $manifestsToStore = [];
-    private $placeholderId;
+    private array $iiifVersions;
+    private string $mainIiifVersion;
+    private string $serviceUrl;
+    private bool $createTopLevelCollection;
+    private string $resourceSpaceManifestField;
 
-    protected function configure()
+    private array $imageIds = [];
+    private array $fileChecksums = [];
+    private array $datahubMetadataToStore = [];
+    private array $manifestsToStore = [];
+    private int $placeholderId;
+    private int $memoryInUseByManifests = 0;
+    private int $flushSize = 50 * 1024 * 1024;//Flush every 50MB of data
+
+    protected function configure(): void
     {
         $this
             ->setName('app:generate-iiif-manifests')
@@ -66,16 +82,16 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             ->setHelp('');
     }
 
-    /**
-     * Sets the container.
-     */
-    public function setContainer(ContainerInterface $container = null)
-    {
-        $this->container = $container;
-    }
-
-    public function setLogger(LoggerInterface $logger): void
-    {
+    public function __construct(
+        ParameterBagInterface $parameterBag,
+        EntityManagerInterface $entityManager,
+        LoggerInterface $logger,
+        #[Autowire('%kernel.project_dir%')] string $projectDir
+    ) {
+        parent::__construct();
+        $this->parameterBag = $parameterBag;
+        $this->entityManager = $entityManager;
+        $this->projectDir = $projectDir;
         $this->logger = $logger;
     }
 
@@ -83,39 +99,33 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
     {
         $this->verbose = $input->getOption('verbose');
 
-        $this->datahubUrl = $this->container->getParameter('datahub_url');
-        $this->metadataPrefix = $this->container->getParameter('datahub_metadataprefix');
-        $this->oneManifestPerObject = $this->container->getParameter('one_manifest_per_object');
-        $this->usePlaceholderForImagesInCopyright = $this->container->getParameter('use_placeholder_for_images_in_copyright');
-        $this->inCopyrightKey = $this->container->getParameter('in_copyright');
+        $this->resourceSpaceAnnotationsUrl = $this->parameterBag->get('resourcespace_annotations_url');
+        $this->datahubUrl = $this->parameterBag->get('datahub_url');
+        $this->metadataPrefix = $this->parameterBag->get('datahub_metadataprefix');
+        $this->oneManifestPerObject = $this->parameterBag->get('one_manifest_per_object');
+        $this->storeDatahubMetadata = $this->parameterBag->get('store_datahub_metadata');
+        $this->datahubMetadataFields = $this->parameterBag->get('datahub_metadata_fields');
 
-        $this->iiifVersions = $this->container->getParameter('iiif_versions');
-        $this->mainIiifVersion = $this->container->getParameter('main_iiif_version');
+        $this->iiifVersions = $this->parameterBag->get('iiif_versions');
+        $this->mainIiifVersion = $this->parameterBag->get('main_iiif_version');
         // Make sure the service URL name ends with a trailing slash
-        $this->serviceUrl = rtrim($this->container->getParameter('service_url'), '/') . '/';
+        $this->serviceUrl = rtrim($this->parameterBag->get('service_url'), '/') . '/';
 
-        $this->manifestLanguages = $this->container->getParameter('manifest_languages');
-        $this->labelFieldsV2 = $this->container->getParameter('iiif2_labels');
-        $this->licenseLabelsV2 = $this->container->getParameter('iiif2_license_labels');
-        $this->attributionFieldV2 = $this->container->getParameter('iiif2_attribution');
+        $this->labelFieldsV2 = $this->parameterBag->get('iiif2_labels');
+        $this->attributionFieldV2 = $this->parameterBag->get('iiif2_attribution');
 
-        $this->publishers = $this->container->getParameter('publishers');
-        $this->manifestLabelV3 = $this->container->getParameter('iiif_manifest_label');
-        $this->canvasLabelV3 = $this->container->getParameter('iiif_canvas_label');
-        $this->rightsSourceV3 = $this->container->getParameter('iiif_rights_source');
-        $this->requiredStatementV3 = $this->container->getParameter('iiif_required_statement');
-        $this->metadataFieldsV3 = $this->container->getParameter('iiif_metadata_fields');
+        $this->publishers = $this->parameterBag->get('publishers');
+        $this->manifestLabelV3 = $this->parameterBag->get('iiif_manifest_label');
+        $this->canvasLabelV3 = $this->parameterBag->get('iiif_canvas_label');
+        $this->rightsSourceV3 = $this->parameterBag->get('iiif_rights_source');
+        $this->requiredStatementV3 = $this->parameterBag->get('iiif_required_statement');
+        $this->metadataFieldsV3 = $this->parameterBag->get('iiif_metadata_fields');
 
-        $this->placeholderId = $this->container->getParameter('placeholder_id');
+        $this->placeholderId = $this->parameterBag->get('placeholder_id');
 
-        $this->cantaloupeUrl = $this->container->getParameter('cantaloupe_url');
-        $curlOpts = $this->container->getParameter('cantaloupe_curl_opts');
-        $this->cantaloupeCurlOpts = array();
-        foreach($curlOpts as $key => $value) {
-            $this->cantaloupeCurlOpts[constant($key)] = $value;
-        }
+        $this->cantaloupeUrl = $this->parameterBag->get('cantaloupe_url');
 
-        $this->resourceSpace = new ResourceSpace($this->container);
+        $this->resourceSpace = new ResourceSpace($this->parameterBag);
 
         $resourceSpaceId = $input->getArgument('rs_id');
         if(!empty($resourceSpaceId) && !preg_match('/^[0-9]+$/', $resourceSpaceId)) {
@@ -124,43 +134,71 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         // Always create a top-level collection
         $this->createTopLevelCollection = $resourceSpaceId == null;
 
-        $this->resourceSpaceManifestField = $this->container->getParameter('resourcespace_manifest_field');
+        $this->resourceSpaceManifestField = $this->parameterBag->get('resourcespace_manifest_field');
 
         $resources = $this->resourceSpace->getAllResources();
         if ($resources === null) {
             $this->logger->error( 'Error: no resourcespace data.');
             return 0;
         }
+
+        if(!empty($this->resourceSpaceAnnotationsUrl)) {
+            $annotations = json_decode(file_get_contents($this->resourceSpaceAnnotationsUrl . '?key=' . $this->parameterBag->get('resourcespace_api_key')), true);
+            if(isset($annotations['error'])) {
+                $this->logger->error( 'Error fetching annotations: ' . $annotations['error']);
+            } else if(isset($annotations['data'])) {
+                $this->annotations = $annotations['data'];
+            }
+        }
+
         $this->imageData = array();
 
-        $this->publicUse = $this->container->getParameter('public_use');
-        $em = $this->container->get('doctrine')->getManager();
-        //Disable SQL logging to improve performance
-        $em->getConnection()->getConfiguration()->setSQLLogger(null);
+        $this->publicUse = $this->parameterBag->get('public_use');
+
+        if($this->createTopLevelCollection) {
+            $this->createTmpManifestTables();
+        }
 
         foreach($resources as $resource) {
             $resourceId = $resource['ref'];
+            if($resourceSpaceId !== null && $resourceId != $resourceSpaceId) {
+                continue;
+            }
+
             /* @var $publicData ResourceData[] */
-            $publicData = $em->createQueryBuilder()
+            $publicData = $this->entityManager->createQueryBuilder()
                 ->select('i')
                 ->from(ResourceData::class, 'i')
                 ->where('i.id = :id')
                 ->andWhere('i.name IN(:name)')
                 ->setParameter('id', $resourceId)
-                ->setParameter('name', ['is_public', 'is_in_copyright'])
+                ->setParameter('name', ['is_public', 'is_in_copyright', 'is_alto_transcription', 'iiif_sort_number', 'sourceinvnr'])
                 ->getQuery()
                 ->getResult();
             $isPublic = false;
             $isInCopyright = false;
+            $isAltoTranscription = false;
+            $iiifSortNumber = null;
+            $inventoryNumber = null;
             foreach($publicData as $data) {
                 if($data->getName() === 'is_public') {
                     $isPublic = $data->getValue() === '1';
                 } else if($data->getName() === 'is_in_copyright') {
                     $isInCopyright = $data->getValue() === '1';
+                } else if($data->getName() === 'is_alto_transcription') {
+                    $isAltoTranscription = $data->getValue() === '1';
+                } else if($data->getName() === 'iiif_sort_number') {
+                    $iiifSortNumber = $data->getValue();
+                } else if($data->getName() === 'sourceinvnr') {
+                    $inventoryNumber = $data->getValue();
                 }
             }
-            if($isInCopyright) {
-                if(!array_key_exists($this->placeholderId, $this->imageData)) {
+            if($isAltoTranscription) {
+                if($inventoryNumber !== null && $iiifSortNumber !== null) {
+                    $this->altoTranscriptionFiles[$inventoryNumber . '@' . $iiifSortNumber] = $this->resourceSpace->getResourcePath($resourceId, 'xml');
+                }
+            } else if ($isInCopyright) {
+                if (!array_key_exists($this->placeholderId, $this->imageData)) {
                     $this->getImageData($this->placeholderId, true);
                 }
                 if(array_key_exists($this->placeholderId, $this->imageData)) {
@@ -174,17 +212,22 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         // For good measure, sort the image data based on ResourceSpace id
         ksort($this->imageData);
 
-        $this->generateAndStoreManifests($em);
-        $this->storeAllManifestsInSqlite();
+        $this->generateAndStoreManifests();
+        $this->entityManager->flush();
+        $this->entityManager->clear();
+        if($this->createTopLevelCollection) {
+            $this->storeAllManifestsInSqlite();
+            $this->renameTmpManifestTables();
+        }
 
-        if($this->createTopLevelCollection && file_exists($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite')) {
-            rename($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite', $this->container->get('kernel')->getProjectDir() . '/public/import.iiif_manifests.sqlite');
+        if($this->createTopLevelCollection && file_exists($this->projectDir . '/public/new_import.iiif_manifests.sqlite')) {
+            rename($this->projectDir . '/public/new_import.iiif_manifests.sqlite', $this->projectDir . '/public/import.iiif_manifests.sqlite');
         }
 
         return 0;
     }
 
-    private function getImageData($resourceId, $isPublic)
+    private function getImageData($resourceId, $isPublic): void
     {
         if($isPublic) {
             $url = $this->publicUse['public_folder'];
@@ -193,8 +236,16 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         }
         $url .= $resourceId;
 
-        $imageData = $this->getCantaloupeData($url);
-        if($imageData) {
+        /* @var $imageDimensions ImageDimensions[] */
+        $imageDimensions = $this->entityManager->createQueryBuilder()
+            ->select('i')
+            ->from(ImageDimensions::class, 'i')
+            ->where('i.id = :id')
+            ->setParameter('id', $resourceId)
+            ->getQuery()
+            ->getResult();
+        if(!empty($imageDimensions)) {
+            $imageData = [ 'width' => $imageDimensions[0]->getWidth(), 'height' => $imageDimensions[0]->getHeight() ];
             $imageData['canvas_base'] = $this->serviceUrl;
             $imageData['service_id'] = $this->cantaloupeUrl . $url . '.tif';
             $imageData['image_url'] = $this->cantaloupeUrl . $url . '.tif/full/full/0/default.jpg';
@@ -203,54 +254,25 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         }
     }
 
-    private function getCantaloupeData($resourceId)
+    private function generateAndStoreManifests(): void
     {
-        try {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch, CURLOPT_URL, $this->cantaloupeUrl . $resourceId . '.tif/info.json');
-            foreach($this->cantaloupeCurlOpts as $key => $value) {
-                curl_setopt($ch, $key, $value);
-            }
-            $jsonData = curl_exec($ch);
-            if (curl_errno($ch)) {
-                $this->logger->error(curl_error($ch));
-                curl_close($ch);
-            } else {
-                curl_close($ch);
-                $data = json_decode($jsonData);
-                if($this->verbose) {
-//                echo 'Retrieved image ' . $resourceId . ' from Cantaloupe' . PHP_EOL;
-                    $this->logger->info('Retrieved image ' . $resourceId . ' from Cantaloupe');
-                }
-                return array('height' => $data->height, 'width' => $data->width);
-            }
-        } catch(Exception $e) {
-//            echo $e->getMessage() . PHP_EOL;
-            $this->logger->error($e->getMessage());
-        }
-        return null;
-    }
-
-    private function generateAndStoreManifests(EntityManagerInterface $em)
-    {
-        $validate = $this->container->getParameter('validate_manifests');
-        $validatorUrl = $this->container->getParameter('validator_url');
+        $validate = $this->parameterBag->get('validate_manifests');
+        $validatorUrl = $this->parameterBag->get('validator_url');
 
         // Top-level collection containing a link to all manifests
         $manifestsv2 = array();
         $manifestsv3 = array();
 
         if($this->createTopLevelCollection) {
-            $this->deleteAllManifestsV2($em);
-            $this->deleteAllManifests($em);
+            $this->deleteAllTmpManifestsV2();
+            $this->deleteAllTmpManifests();
         }
 
         if(in_array('2', $this->iiifVersions)) {
-            $this->generateAndStoreManifestsV2($em, $this->mainIiifVersion == '2', $validate, $validatorUrl, $manifestsv2);
+            $this->generateAndStoreManifestsV2($this->mainIiifVersion == '2', $validate, $validatorUrl, $manifestsv2);
         }
         if(in_array('3', $this->iiifVersions)) {
-            $this->generateAndStoreManifestsV3($em, $this->mainIiifVersion == '3', $validate, $validatorUrl, $manifestsv3);
+            $this->generateAndStoreManifestsV3($this->mainIiifVersion == '3', $validate, $validatorUrl, $manifestsv3);
         }
 
         //TODO do we actually need a top-level manifest?
@@ -269,9 +291,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'manifests' => $manifestsv2
             );
 
-            $this->deleteManifestV2($em, 0);
-
-            $manifestDocument = $this->storeManifestV2($em, $collection, 0);
+            $manifestDocument = $this->storeTmpManifestV2($collection, 0);
 
             $valid = true;
             if ($validate) {
@@ -279,9 +299,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if (!$valid) {
 //                    echo 'Top-level collection ' . $collectionId . ' is not valid.' . PHP_EOL;
                     $this->logger->error('Top-level collection ' . $collectionId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->remove($manifestDocument);
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
             }
 
@@ -308,9 +328,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'items' => $manifestsv3
             );
 
-            $this->deleteManifest($em, 0);
-
-            $manifestDocument = $this->storeManifest($em, $collection, 0);
+            $manifestDocument = $this->storeTmpManifest($collection, 0);
 
             $valid = true;
             if ($validate) {
@@ -318,9 +336,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if (!$valid) {
 //                    echo 'Top-level collection ' . $collectionId . ' is not valid.' . PHP_EOL;
                     $this->logger->error('Top-level collection ' . $collectionId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->remove($manifestDocument);
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
             }
 
@@ -335,12 +353,18 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         $this->logger->info('Done, created and stored ' . count($manifestsv3) . ' IIIF 3 manifests.');
     }
 
-    private function generateAndStoreManifestsV2(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
+    private function generateAndStoreManifestsV2($storeInLido, $validate, $validatorUrl, &$manifests): void
     {
-        foreach($this->imageData as $resourceId => $data) {
+        foreach($this->imageData as $resourceId => $data)
+        {
+            if(array_key_exists('is_alto_transcription', $data)) {
+                if($data['is_alto_transcription']) {
+                    continue;
+                }
+            }
 
             /* @var $rsDataRaw ResourceData[] */
-            $rsDataRaw = $em->createQueryBuilder()
+            $rsDataRaw = $this->entityManager->createQueryBuilder()
                 ->select('i')
                 ->from(ResourceData::class, 'i')
                 ->where('i.id = :id')
@@ -357,6 +381,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $data['file_checksum'] = '';
             $publisher = '';
             $iiifSortNumber = -1;
+            $oldManifestId = '';
             $rsData = [];
             foreach($rsDataRaw as $d) {
                 $value = $d->getValue();
@@ -401,19 +426,19 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                 }
-                if ($d->getName() == 'is_recommended_for_pub') {
+                if ($d->getName() === 'is_recommended_for_pub') {
                     $data['recommended_for_publication'] = $value === '1';
                 }
-                if ($d->getName() == 'sourceinvnr') {
+                if ($d->getName() === 'sourceinvnr') {
                     $data['sourceinvnr'] = $value;
                 }
-                if ($d->getName() == 'related_resources') {
+                if ($d->getName() === 'related_resources') {
                     $data['related_resources'] = explode(',', $value);
                 }
-                if ($d->getName() == 'iiifbehavior') {
+                if ($d->getName() === 'iiifbehavior') {
                     $data['iiifbehavior'] = strtolower($value);
                 }
-                if ($d->getName() == 'file_checksum') {
+                if ($d->getName() === 'file_checksum') {
                     $data['file_checksum'] = $value;
                 }
                 if ($d->getName() === 'publisher') {
@@ -421,6 +446,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
                 if ($d->getName() === 'iiif_sort_number') {
                     $iiifSortNumber = intval($value);
+                }
+                if($d->getName() === $this->resourceSpaceManifestField) {
+                    $oldManifestId = $value;
                 }
                 $rsData[$d->getName()] = $value;
             }
@@ -547,6 +575,11 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 }
             }
 
+            //Hack to prevent having the same photographer mentioned twice (with preference for 'photographer')
+            if(array_key_exists('photographer', $metadata) && array_key_exists('creator_of_image', $metadata)) {
+                unset($metadata['creator_of_image']);
+            }
+
             $rightsSource = '';
             $rightsSourceLC = '';
             if(array_key_exists($this->rightsSourceV3, $rsData)) {
@@ -628,7 +661,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             // Generate the canvases
-            $canvases = array();
+            $canvases = [];
             $index = 0;
             $startCanvas = null;
             $thumbnail = null;
@@ -702,10 +735,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             if(!$this->createTopLevelCollection) {
-                $this->deleteManifestV2($em, $resourceId);
+                $this->deleteManifestV2($resourceId);
             }
 
-            $manifestDocument = $this->storeManifestV2($em, $manifest, $resourceId);
+            $manifestDocument = $this->storeTmpManifestV2($manifest, $resourceId);
 
             // Validate the manifest
             // We can only pass a URL to the validator, so the manifest needs to be stored and served already before validation
@@ -716,9 +749,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if (!$valid) {
 //                    echo 'Manifest ' . $manifestId . ' is not valid.' . PHP_EOL;
                     $this->logger->error('Manifest ' . $manifestId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->remove($manifestDocument);
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
             }
 
@@ -737,16 +770,16 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
                 if($storeInLido) {
                     if($resourceId == $this->placeholderId) {
-                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
+                        $this->storeManifestAndThumbnail('placeholder_manifest', $resourceId, $data['related_resources'], $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
                     }
 
                     //Add to ResourceSpace metadata (if enabled)
-                    if($this->resourceSpaceManifestField !== '') {
+                    if($this->resourceSpaceManifestField !== '' && $oldManifestId !== $manifestId) {
                         $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
-                        if($result !== 'true') {
-                            //                    echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
+                        if ($result !== 'true') {
+        //                    echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
                             $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
-                        } else if($this->verbose) {
+                        } else if ($this->verbose) {
                             $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
                         }
                     }
@@ -756,7 +789,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         if (!empty($data['sourceinvnr'])) {
                             $sourceinvnr = $data['sourceinvnr'];
                             if ($publicUse) {
-                                $this->storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
+                                $this->storeManifestAndThumbnail($sourceinvnr, $resourceId, $data['related_resources'], $manifestId, $thumbnail, $data['file_checksum'], $iiifSortNumber);
                             }
                         }
                     }
@@ -765,7 +798,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         }
     }
 
-    private function generateCanvasV2($serviceId, $relatedRef, $imageUrl, $canvasId, $publicUse)
+    private function generateCanvasV2($serviceId, $relatedRef, $imageUrl, $canvasId, $publicUse): array
     {
         $service = array(
             '@context' => 'http://iiif.io/api/image/2/context.json',
@@ -802,19 +835,19 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return $newCanvas;
     }
 
-    private function getAuthenticationService()
+    private function getAuthenticationService(): array
     {
         $arr = array(
             '@context' => 'http://iiif.io/api/auth/1/context.json',
-            '@id'      => $this->container->getParameter('authentication_url'),
+            '@id'      => $this->parameterBag->get('authentication_url'),
         );
-        foreach($this->container->getParameter('authentication_service_description') as $key => $value) {
+        foreach($this->parameterBag->get('authentication_service_description') as $key => $value) {
             $arr[$key] = $value;
         }
         return $arr;
     }
 
-    private function createSequenceV2($canvases, $startCanvas)
+    private function createSequenceV2($canvases, $startCanvas): array
     {
         // Fill in sequence data
         if($startCanvas == null) {
@@ -834,11 +867,16 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return array($manifestSequence);
     }
 
-    public function generateAndStoreManifestsV3(EntityManagerInterface $em, $storeInLido, $validate, $validatorUrl, &$manifests)
+    public function generateAndStoreManifestsV3($storeInLido, $validate, $validatorUrl, &$manifests): void
     {
         foreach($this->imageData as $resourceId => $imageData) {
+            if(array_key_exists('is_alto_transcription', $imageData)) {
+                if($imageData['is_alto_transcription']) {
+                    continue;
+                }
+            }
 
-            $rsDataRaw = $em->createQueryBuilder()
+            $rsDataRaw = $this->entityManager->createQueryBuilder()
                 ->select('i')
                 ->from(ResourceData::class, 'i')
                 ->where('i.id = :id')
@@ -855,6 +893,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             $inventoryNumber = '';
             $publisher = '';
             $datahubRecordId = '';
+            $oldManifestId = '';
 
             /* @var $d ResourceData */
             foreach ($rsDataRaw as $d) {
@@ -877,8 +916,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     $recommendedForPublication = $value === '1';
                 } else if($d->getName() === 'sourceinvnr') {
                     $inventoryNumber = $value;
-                } else if($d->getName() == 'dh_record_id') {
+                } else if($d->getName() === 'dh_record_id') {
                     $datahubRecordId = $value;
+                } else if($d->getName() === $this->resourceSpaceManifestField) {
+                    $oldManifestId = $value;
                 } else {
                     $rsData[$d->getName()] = $value;
                 }
@@ -1011,7 +1052,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     continue;
                 }
 
-                $rsDataRaw = $em->createQueryBuilder()
+                $rsDataRaw = $this->entityManager->createQueryBuilder()
                     ->select('i')
                     ->from(ResourceData::class, 'i')
                     ->where('i.id = :id')
@@ -1045,6 +1086,47 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                     $rsData[$d->getName()] = $value;
+                }
+
+                $index++;
+                $canvasId = $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/canvas/' . $index;
+                if($index === 1) {
+                    $publicUse = $this->imageData[$relatedRef]['public_use'];
+                }
+                $serviceId = $this->imageData[$relatedRef]['service_id'];
+                $imageUrl = $this->imageData[$relatedRef]['image_url'];
+                $manifestId = $this->serviceUrl . '3/'. $resourceId . '/manifest.json';
+
+                $rendering = null;
+                $annotations = null;
+                if(array_key_exists('sourceinvnr', $rsData) && array_key_exists('iiif_sort_number', $rsData)) {
+                    if (!empty($rsData['sourceinvnr']) && !empty($rsData['iiif_sort_number'])) {
+                        $key = $rsData['sourceinvnr'] . '@' . $rsData['iiif_sort_number'];
+                        if (array_key_exists($key, $this->altoTranscriptionFiles)) {
+                            $rendering = [[
+                                'id' => $this->altoTranscriptionFiles[$key],
+                                'type' => 'Text',
+                                'format' => 'application/xml',//TODO application/alto-xml?
+                                'profile' => 'http://www.loc.gov/standards/alto/',//TODO is this correct?
+                                'label' => [
+                                    'en' => [
+                                        'ALTO XML'
+                                    ]
+                                ]
+                            ]];
+                            if (!array_key_exists($key, $this->altoTranscriptions)) {
+                                $transcription = GenerateTranscriptionFromAlto::generate($this->altoTranscriptionFiles[$key], $canvasId, $manifestId, $this->serviceUrl, '3', $resourceId, $index);
+                                if($transcription !== null) {
+                                    $this->altoTranscriptions[$key] = $transcription;
+                                    $this->storeTranscription($transcription);
+                                    $annotations = [
+                                        'id' => $transcription->getTranscriptionId(),
+                                        'type' => 'AnnotationPage'
+                                    ];
+                                }
+                            }
+                        }
+                    }
                 }
 
                 $label = $this->generateLabel($rsData, $this->canvasLabelV3);
@@ -1124,6 +1206,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         }
                     }
                 }
+                //Hack to prevent having the same photographer mentioned twice (with preference for 'photographer')
+                if(array_key_exists('photographer', $metadata) && array_key_exists('creator_of_image', $metadata)) {
+                    unset($metadata['creator_of_image']);
+                }
 
                 //Store as indexed array, instead of key-value pairs
                 $metadata_ = [];
@@ -1135,14 +1221,6 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 // When the related resource ID is the ID of the resource we're currently processing,
                 // we know that this canvas is in fact the main canvas.
                 $isStartCanvas = $relatedRef == $resourceId;
-
-                $index++;
-                $canvasId = $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/canvas/' . $index;
-                if($index === 1) {
-                    $publicUse = $this->imageData[$relatedRef]['public_use'];
-                }
-                $serviceId = $this->imageData[$relatedRef]['service_id'];
-                $imageUrl = $this->imageData[$relatedRef]['image_url'];
 
                 if(strpos($serviceId, '/iiif/2/') !== false) {
                     $service = array(array(
@@ -1196,7 +1274,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'format'  => 'image/jpeg',
                     'service' => $service
                 ));
-                $canvases[] = array(
+                $canvas = array(
                     'id'                => $canvasId,
                     'type'              => 'Canvas',
                     'label'             => !empty($label) ? $label : new stdClass(),
@@ -1206,10 +1284,67 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'items'             => array($annotationPage),
                     'thumbnail'         => $thmb
                 );
+                if(array_key_exists($relatedRef, $this->annotations)) {
+                    if(!empty($this->annotations[$relatedRef])) {
+                        $annotationItems = [];
+                        $annotationIndex = 0;
+                        foreach($this->annotations[$relatedRef] as $annotation) {
+                            $annotationIndex++;
+                            $scaleX = $annotation['preview_width'] <= 0 ? 1 : $this->imageData[$relatedRef]['width'] / $annotation['preview_width'];
+                            $scaleY = $annotation['preview_height'] <= 0 ? 1 : $this->imageData[$relatedRef]['height'] / $annotation['preview_height'];
+                            $x = round($annotation['left_pos'] * $scaleX);
+                            $y = round($annotation['top_pos'] * $scaleY);
+                            $w = round($annotation['width'] * $scaleX);
+                            $h = round($annotation['height'] * $scaleY);
+                            $annotationItems[] = [
+                                'id'         => $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/annotation/' . $annotationIndex,
+                                'type'       => 'Annotation',
+                                'motivation' => 'commenting',
+                                'body' => [
+                                    'type'   => 'TextualBody',
+                                    'value'  => $annotation['annotation'],
+                                    'format' => 'text/plain'
+                                ],
+                                'target' => $canvasId . '#xywh=' . $x . ',' . $y . ',' . $w . ',' . $h
+                            ];
+                        }
+                        $canvas['annotations'] = [
+                            'id'    => $this->imageData[$relatedRef]['canvas_base'] . '3/' . $resourceId . '/page/' . $index,
+                            'type'  => 'AnnotationPage',
+                            'items' => $annotationItems
+                        ];
+                    }
+                }
+                if(!empty($rendering)) {
+                    $canvas['rendering'] = $rendering;
+                }
+                if(!empty($annotations)) {
+                    $canvas['annotations'] = $annotations;
+                }
+                $canvases[] = $canvas;
 
                 if ($isStartCanvas && $startCanvas == null) {
                     $startCanvas = $canvasId;
                     $thumbnail = $serviceId;
+                }
+
+                if($this->storeDatahubMetadata) {
+                    $metadata = [];
+                    foreach($this->datahubMetadataFields as $field => $label) {
+                        if(array_key_exists($field, $rsData)) {
+                            $metadata[] = [
+                                'label' => $label,
+                                'value' => $rsData[$field]
+                            ];
+                        }
+                    }
+                    if(!empty($metadata)) {
+                        $this->datahubMetadataToStore[$relatedRef] = $metadata;
+                    }
+                    if(array_key_exists('file_checksum', $rsData)) {
+                        $this->fileChecksums[$relatedRef] = $rsData['file_checksum'];
+                    }
+                    $this->imageIds[$relatedRef] = $serviceId;
                 }
             }
 
@@ -1252,6 +1387,13 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 ];
             }
 
+            if($startCanvas !== null) {
+                $manifest['start'] = [
+                    'id' => $startCanvas,
+                    'type' => 'Canvas'
+                ];
+            }
+
             $manifest['items'] = $canvases;
 
             // This image is not for public use, therefore we also don't want this manifest to be public
@@ -1260,10 +1402,10 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             }
 
             if(!$this->createTopLevelCollection) {
-                $this->deleteManifest($em, $resourceId);
+                $this->deleteManifest($resourceId);
             }
 
-            $manifestDocument = $this->storeManifest($em, $manifest, $resourceId);
+            $manifestDocument = $this->storeTmpManifest($manifest, $resourceId);
 
             // Validate the manifest
             // We can only pass a URL to the validator, so the manifest needs to be stored and served already before validation
@@ -1274,9 +1416,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 if (!$valid) {
 //                    echo 'Manifest ' . $manifestId . ' is not valid.' . PHP_EOL;
                     $this->logger->error('Manifest ' . $manifestId . ' is not valid.');
-                    $em->remove($manifestDocument);
-                    $em->flush();
-                    $em->clear();
+                    $this->entityManager->remove($manifestDocument);
+                    $this->entityManager->flush();
+                    $this->entityManager->clear();
                 }
             }
 
@@ -1295,14 +1437,14 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
 
                 if($storeInLido) {
                     if($resourceId == $this->placeholderId) {
-                        $this->storeManifestAndThumbnail('placeholder_manifest', $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
+                        $this->storeManifestAndThumbnail('placeholder_manifest', $resourceId, $relatedResources, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
                     }
 
                     //Add to ResourceSpace metadata (if enabled)
-                    if ($this->resourceSpaceManifestField !== '') {
+                    if ($this->resourceSpaceManifestField !== '' && $oldManifestId !== $manifestId) {
                         $result = $this->resourceSpace->updateField($resourceId, $this->resourceSpaceManifestField, $manifestId);
                         if ($result !== 'true') {
-//                        echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
+    //                        echo 'Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
                             $this->logger->error('Error adding manifest URL to resource with id ' . $resourceId . ':' . PHP_EOL . $result);
                         } else if ($this->verbose) {
                             $this->logger->info('Added manifest URL to resource with id ' . $resourceId);
@@ -1313,7 +1455,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                         // Update the LIDO data to include the manifest, thumbnail and file checksum
                         if (!empty($inventoryNumber)) {
                             if ($publicUse) {
-                                $this->storeManifestAndThumbnail($inventoryNumber, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
+                                $this->storeManifestAndThumbnail($inventoryNumber, $resourceId, $relatedResources, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber);
                             }
                         }
                     }
@@ -1363,69 +1505,147 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return $label;
     }
 
-    private function deleteAllManifestsV2(EntityManagerInterface $em)
+    private function deleteAllTmpManifestsV2(): void
     {
-        $qb = $em->createQueryBuilder();
-        $query = $qb->delete(IIIfManifestV2::class, 'manifest')->getQuery();
+        $qb = $this->entityManager->createQueryBuilder();
+        $query = $qb->delete(TmpIIIfManifestV2::class, 'manifest')->getQuery();
         $query->execute();
-        $em->flush();
+        $this->entityManager->flush();
     }
 
-    private function deleteAllManifests(EntityManagerInterface $em)
+    private function deleteAllTmpManifests(): void
     {
-        $qb = $em->createQueryBuilder();
-        $query = $qb->delete(IIIfManifest::class, 'manifest')->getQuery();
+        $qb = $this->entityManager->createQueryBuilder();
+        $query = $qb->delete(TmpIIIfManifest::class, 'manifest')->getQuery();
         $query->execute();
-        $em->flush();
+        $this->entityManager->flush();
     }
 
-    private function deleteManifestV2(EntityManagerInterface $em, $manifestId)
+    private function deleteManifestV2($manifestId): void
     {
-        $qb = $em->createQueryBuilder();
+        $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(IIIfManifestV2::class, 'manifest')
                     ->where('manifest.id = :manif_id')
                     ->setParameter('manif_id', $manifestId)
                     ->getQuery();
         $query->execute();
-        $em->flush();
+        $this->entityManager->flush();
     }
 
-    private function deleteManifest(EntityManagerInterface $em, $manifestId)
+    private function deleteManifest($manifestId): void
     {
-        $qb = $em->createQueryBuilder();
+        $qb = $this->entityManager->createQueryBuilder();
         $query = $qb->delete(IIIfManifest::class, 'manifest')
             ->where('manifest.id = :manif_id')
             ->setParameter('manif_id', $manifestId)
             ->getQuery();
         $query->execute();
-        $em->flush();
+        $this->entityManager->flush();
     }
 
-    private function storeManifestV2(EntityManagerInterface $em, $manifest, $manifestId)
+    private function createTmpManifestTables(): void
     {
+        $connection = $this->entityManager->getConnection();
+        $connection->executeStatement("CREATE TABLE IF NOT EXISTS tmp_iiif_manifest LIKE iiif_manifest");
+        $connection->executeStatement("TRUNCATE TABLE tmp_iiif_manifest");
+        $connection->executeStatement("CREATE TABLE IF NOT EXISTS tmp_iiif_manifest_v2 LIKE iiif_manifest_v2");
+        $connection->executeStatement("TRUNCATE TABLE tmp_iiif_manifest_v2");
+    }
+
+    private function renameTmpManifestTables(): void
+    {
+        $connection = $this->entityManager->getConnection();
+        $errors = [];
+
+        $countV3 = (int) $connection->fetchOne("SELECT COUNT(*) FROM tmp_iiif_manifest");
+        if ($countV3 > 0) {
+            $connection->executeStatement("RENAME TABLE iiif_manifest TO iiif_manifest_old, tmp_iiif_manifest TO iiif_manifest");
+            $connection->executeStatement("DROP TABLE iiif_manifest_old");
+            $connection->executeStatement("CREATE TABLE tmp_iiif_manifest LIKE iiif_manifest");
+        } else {
+            $errors[] = "Old manifests not overwritten - no new manifests were generated.";
+        }
+
+        $countV2 = (int) $connection->fetchOne("SELECT COUNT(*) FROM tmp_iiif_manifest_v2");
+        if ($countV2 > 0) {
+            $connection->executeStatement("RENAME TABLE iiif_manifest_v2 TO iiif_manifest_v2_old, tmp_iiif_manifest_v2 TO iiif_manifest_v2");
+            $connection->executeStatement("DROP TABLE iiif_manifest_v2_old");
+            $connection->executeStatement("CREATE TABLE tmp_iiif_manifest_v2 LIKE iiif_manifest_v2");
+        } else {
+            $errors[] = "Old V2 manifests not overwritten - no new V2 manifests were generated.";
+        }
+
+        foreach($errors as $err) {
+            $this->logger->error($err);
+        }
+    }
+
+    private function storeTranscription($transcription): void
+    {
+        $qb = $this->entityManager->createQueryBuilder();
+        $query = $qb->delete(Transcription::class, 'transcription')
+            ->where('transcription.transcriptionId = :id')
+            ->setParameter('id', $transcription->getTranscriptionId())
+            ->getQuery();
+        $query->execute();
+        $this->entityManager->flush();
+
+        $this->entityManager->persist($transcription);
+        $this->entityManager->flush();
+    }
+
+    private function storeTmpManifestV2($manifest, $manifestId): TmpIIIfManifestV2
+    {
+        $baseMemoryUsage = memory_get_usage();
+
         // Store the manifest in mysql
-        $manifestDocument = new IIIFManifestV2();
+        $manifestDocument = new TmpIIIFManifestV2();
         $manifestDocument->setId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
-        $em->persist($manifestDocument);
-        $em->flush();
-        $em->clear();
+        $this->entityManager->persist($manifestDocument);
+
+        $extraMemory = memory_get_usage() - $baseMemoryUsage;
+
+        //Flush at least every 100 manifests
+        if($extraMemory < $this->flushSize / 100) {
+            $extraMemory = $this->flushSize / 100;
+        }
+        $this->memoryInUseByManifests += $extraMemory;
+        if($this->memoryInUseByManifests >= $this->flushSize) {
+            $this->entityManager->flush();
+            $this->entityManager->clear();
+            $this->memoryInUseByManifests = 0;
+        }
+
         return $manifestDocument;
     }
 
-    private function storeManifest(EntityManagerInterface $em, $manifest, $manifestId)
+    private function storeTmpManifest($manifest, $manifestId): TmpIIIfManifest
     {
+        $baseMemoryUsage = memory_get_usage();
+
         // Store the manifest in mysql
-        $manifestDocument = new IIIFManifest();
+        $manifestDocument = new TmpIIIFManifest();
         $manifestDocument->setId($manifestId);
         $manifestDocument->setData(json_encode($manifest));
-        $em->persist($manifestDocument);
-        $em->flush();
-        $em->clear();
+        $this->entityManager->persist($manifestDocument);
+
+        $extraMemory = memory_get_usage() - $baseMemoryUsage;
+
+        //Flush at least every 100 manifests
+        if($extraMemory < $this->flushSize / 100) {
+            $extraMemory = $this->flushSize / 100;
+        }
+        $this->memoryInUseByManifests += $extraMemory;
+        if($this->memoryInUseByManifests >= $this->flushSize) {
+            $this->entityManager->flush();
+            $this->entityManager->clear();
+            $this->memoryInUseByManifests = 0;
+        }
         return $manifestDocument;
     }
 
-    private function validateManifest($validatorUrl, $manifestId)
+    private function validateManifest($validatorUrl, $manifestId): bool
     {
         $valid = true;
         try {
@@ -1457,7 +1677,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
         return $valid;
     }
 
-    private function storeManifestAndThumbnail($sourceinvnr, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber)
+    private function storeManifestAndThumbnail($sourceinvnr, $resourceId, $relatedResources, $manifestId, $thumbnail, $fileChecksum, $iiifSortNumber): void
     {
         if($this->oneManifestPerObject) {
             $store = false;
@@ -1475,7 +1695,9 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                     'iiif_sort_number' => $iiifSortNumber,
                     'manifest' => $manifestId,
                     'thumbnail' => $thumbnail,
-                    'checksum' => $fileChecksum
+                    'checksum' => $fileChecksum,
+                    'resource_id' => $resourceId,
+                    'related_resources' => $relatedResources
                 ];
             }
         } else {
@@ -1492,20 +1714,22 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 'iiif_sort_number' => $iiifSortNumber,
                 'manifest' => $manifestId,
                 'thumbnail' => $thumbnail,
-                'checksum' => $fileChecksum
+                'checksum' => $fileChecksum,
+                'resource_id' => $resourceId,
+                'related_resources' => $relatedResources
             ];
             ksort($this->manifestsToStore[$sourceinvnr], SORT_NUMERIC);
         }
     }
 
-    private function storeAllManifestsInSqlite()
+    private function storeAllManifestsInSqlite(): void
     {
-        $manifestDb = new SQLite3($this->container->get('kernel')->getProjectDir() . '/public/new_import.iiif_manifests.sqlite');
+        $manifestDb = new SQLite3($this->projectDir . '/public/new_import.iiif_manifests.sqlite');
         $manifestDb->exec('DROP TABLE IF EXISTS data');
         $manifestDb->exec('CREATE TABLE data("data" BLOB, "id" TEXT UNIQUE NOT NULL)');
         foreach($this->manifestsToStore as $sourceinvnr => $manifestData) {
             if($this->oneManifestPerObject) {
-                $query = '{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '"}';
+                $query = $this->getQueryToStoreInDatahub($manifestData);
                 $stmt = $manifestDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
                 $stmt->bindValue(':data', $query);
                 $stmt->bindValue(':id', $sourceinvnr);
@@ -1514,7 +1738,7 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
             } else {
                 $query = '';
                 foreach($manifestData as $manifest) {
-                    $query .= (strlen($query) === 0 ? '{"manifests":[' : ',') . '{"manifest":"' . $manifest['manifest'] . '","thumbnail":"' . $manifest['thumbnail'] . '","checksum":"' . $manifest['checksum'] . '"}';
+                    $query .= (strlen($query) === 0 ? '{"manifests":[' : ',') . $this->getQueryToStoreInDatahub($manifest);
                 }
                 $query .= ']}';
                 $stmt = $manifestDb->prepare('INSERT INTO data(data, id) VALUES(:data, :id)');
@@ -1524,5 +1748,40 @@ class GenerateIIIFManifestsCommand extends Command implements ContainerAwareInte
                 $stmt->close();
             }
         }
+    }
+
+    private function getQueryToStoreInDatahub($manifestData): string
+    {
+        $images = [];
+        $metadata = [];
+        foreach($manifestData['related_resources'] as $relatedResource) {
+            if(intval($relatedResource) === intval($manifestData['resource_id'])) {
+                if(array_key_exists($relatedResource, $this->imageIds) && array_key_exists($relatedResource, $this->datahubMetadataToStore)) {
+                    $metadata = $this->datahubMetadataToStore[$relatedResource];
+                }
+            } else {
+                if(array_key_exists($relatedResource, $this->imageIds)) {
+                    $image = [];
+                    if (array_key_exists($relatedResource, $this->fileChecksums)) {
+                        $image['checksum'] = $this->fileChecksums[$relatedResource];
+                    }
+                    if (array_key_exists($relatedResource, $this->datahubMetadataToStore)) {
+                        $image['metadata'] = $this->datahubMetadataToStore[$relatedResource];
+                    }
+                    if (!empty($image)) {
+                        $image['id'] = $this->imageIds[$relatedResource];
+                        $images[] = $image;
+                    }
+                }
+            }
+        }
+
+        $query = '{"manifest":"' . $manifestData['manifest'] . '","thumbnail":"' . $manifestData['thumbnail'] . '","checksum":"' . $manifestData['checksum'] . '","metadata":' . json_encode($metadata);
+        if(!empty($images)) {
+            $query .= ',"images":' . json_encode($images);
+        }
+        $query .= '}';
+
+        return $query;
     }
 }

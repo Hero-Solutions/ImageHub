@@ -4,28 +4,20 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass="App\Repository\ResourceDataRepository")
- * @ORM\Table(name="resource_data")
- */
+#[ORM\Entity(repositoryClass: "App\Repository\ResourceDataRepository")]
+#[ORM\Table(name: "resource_data")]
 class ResourceData
 {
-    /**
-     * @ORM\Id()
-     * @ORM\Column(type="integer")
-     */
-    private $id;
+    #[ORM\Id()]
+    #[ORM\Column(type: "integer")]
+    private int $id;
 
-    /**
-     * @ORM\Id()
-     * @ORM\Column(type="string", length=50)
-     */
-    private $name;
+    #[ORM\Id()]
+    #[ORM\Column(type: "string", length: 50)]
+    private string $name;
 
-    /**
-     * @ORM\Column(type="text")
-     */
-    private $value;
+    #[ORM\Column(type: "text")]
+    private string $value;
 
     public function getId(): ?string
     {
