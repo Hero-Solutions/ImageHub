@@ -18,3 +18,4 @@ config/imagehub.yaml
 config/imagehub.yaml.old
 keys/
 composer.phar
+composer.lock
