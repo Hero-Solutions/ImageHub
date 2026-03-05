@@ -15,7 +15,7 @@
         "ext-sqlite3": "*",
         "caseyamcl/phpoaipmh": "^3.3",
         "doctrine/doctrine-bundle": "*",
-        "doctrine/orm": "^3.3",
+        "doctrine/orm": "^2.20",
         "simplesamlphp/simplesamlphp": "*",
         "symfony/asset": "7.4.*",
         "symfony/console": "7.4.*",
