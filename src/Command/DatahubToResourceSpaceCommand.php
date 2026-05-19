@@ -944,6 +944,10 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
 //                        echo 'Mismatching field ' . $key . ', should be ' . $value . ', is ' . $oldData[$key] . PHP_EOL;
                     $this->logger->info('Mismatching field ' . $key . '. Should be "' . $value . '", is "' . (array_key_exists($key, $rsData) ? $rsData[$key] : '') . '"');
                 }
+                //RS API 10.5+ requires date ranges separated by slash
+                if($key === 'datecreatedofartwork') {
+                    $value = str_replace(',', '/', $value);
+                }
                 $result = $this->resourceSpace->updateField($resourceId, $key, $value);
                 if($result !== 'true') {
 //                    echo 'Error updating field ' . $key . ' for resource id ' . $resourceId . ':' . PHP_EOL . $result . PHP_EOL;
