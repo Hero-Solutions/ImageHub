@@ -672,27 +672,23 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                     } else if(array_key_exists('xpath', $dataDef)) {
                         $xpaths[] = $dataDef['xpath'];
                     }
-                    $value = null;
+                    $values = array();
                     foreach($xpaths as $xpath_) {
                         $query = $this->buildXpath($xpath_, $this->datahubLanguage);
                         $extracted = $xpath->query($query);
                         if ($extracted) {
                             if (count($extracted) > 0) {
                                 foreach ($extracted as $extr) {
-                                    if ($extr->nodeValue !== 'n/a') {
-                                        if($value == null) {
-                                            $value = $extr->nodeValue;
-                                        }
-                                        else if($key != 'keywords' || !in_array($extr->nodeValue, explode(",", $value))) {
-                                            $value .= ', ' . $extr->nodeValue;
-                                        }
+                                    $extractedValue = trim($extr->nodeValue);
+                                    if ($extractedValue !== '' && $extractedValue !== 'n/a' && !in_array($extractedValue, $values, true)) {
+                                        $values[] = $extractedValue;
                                     }
                                 }
                             }
                         }
                     }
-                    if ($value != null) {
-                        $value = trim($value);
+                    if (!empty($values)) {
+                        $value = implode(', ', $values);
                         if($dataDef['field'] == 'id') {
                             $id = $value;
                         } else {
