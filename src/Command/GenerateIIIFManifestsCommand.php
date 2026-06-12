@@ -615,11 +615,8 @@ class GenerateIIIFManifestsCommand extends Command
                 $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
-            if(!empty($rightsSource)) {
-                $rightsSource = '<p style="font-size: 16px">' . $rightsSource . '</p>';
-            }
-            $rightsSourceNL = $rightsSource . $buttonURL;
-            $rightsSourceEN = $rightsSource . $buttonURL;
+            $rightsSourceNL = $rightsSource;
+            $rightsSourceEN = $rightsSource;
             if(strpos($rightsSourceLC, 'sabam') !== false) {
                 if(preg_match('/.*sabam [0-9]{4}.*/', $rightsSourceLC)) {
                     $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
@@ -650,14 +647,12 @@ class GenerateIIIFManifestsCommand extends Command
                         }
                     }
                 }
-                $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
-                if(!empty($publisherName)) {
-                    $publisherName = '<p style="font-size: 16px">' . $publisherName . '</p>';
-                }
-                if(!empty($extraInfo)) {
-                    $extraInfo = '<p style="font-size: 16px">' . $extraInfo . '</p>';
-                }
-                $creditlines[] = array('@language' => $language, '@value' => $prefix . $publisherName . $extraInfo);
+                $creditlines[] = array('@language' => $language, '@value' => $this->formatAttributionHtmlLines([
+                    $language === 'nl' ? $rightsSourceNL : $rightsSourceEN,
+                    $buttonURL,
+                    $publisherName,
+                    $extraInfo,
+                ]));
             }
 
             // Fill in (multilingual) manifest data
@@ -984,11 +979,8 @@ class GenerateIIIFManifestsCommand extends Command
                 $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
-            if(!empty($rightsSource)) {
-                $rightsSource = $rightsSource .'&#10;';
-            }
-            $rightsSourceNL = $rightsSource . $buttonURL;
-            $rightsSourceEN = $rightsSource . $buttonURL;
+            $rightsSourceNL = $rightsSource;
+            $rightsSourceEN = $rightsSource;
             if(strpos($rightsSourceLC, 'sabam') !== false) {
                 if(preg_match('/.*sabam [0-9]{4}.*/', $rightsSourceLC)) {
                     $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
@@ -1031,14 +1023,12 @@ class GenerateIIIFManifestsCommand extends Command
                             }
                         }
                     }
-                    $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
-                    if(!empty($publisherName)) {
-                        $publisherName = '&#10;' . $publisherName;
-                    }
-                    if(!empty($extra)) {
-                        $extra = '&#10;' . $extra;
-                    }
-                    $requiredStatement['value'][$language] = array($prefix . $publisherName . $extra);
+                    $requiredStatement['value'][$language] = array($this->formatAttributionHtmlLines([
+                        $language === 'nl' ? $rightsSourceNL : $rightsSourceEN,
+                        $buttonURL,
+                        $publisherName,
+                        $extra,
+                    ]));
                 } else {
                     $requiredStatement['value'][$language] = array('');
                 }
@@ -1046,7 +1036,10 @@ class GenerateIIIFManifestsCommand extends Command
             foreach ($this->requiredStatementV3['value'] as $language => $field) {
                 if (!array_key_exists($field, $rsData)) {
                     $requiredStatement['label'][$language] = array($this->requiredStatementV3['label'][$language]);
-                    $requiredStatement['value'][$language] = array($fallbackValue . $this->requiredStatementV3['extra_info'][$language]);
+                    $requiredStatement['value'][$language] = array($this->formatAttributionHtmlLines([
+                        $fallbackValue,
+                        $this->requiredStatementV3['extra_info'][$language],
+                    ]));
                 }
             }
 
@@ -1610,6 +1603,28 @@ class GenerateIIIFManifestsCommand extends Command
 
         $this->entityManager->persist($transcription);
         $this->entityManager->flush();
+    }
+
+    private function formatAttributionHtmlLines(array $lines): string
+    {
+        $filteredLines = [];
+        foreach ($lines as $line) {
+            if (trim($line) !== '') {
+                $filteredLines[] = $line;
+            }
+        }
+
+        $html = '';
+        $lastIndex = count($filteredLines) - 1;
+        foreach ($filteredLines as $index => $line) {
+            $html .= '<span>' . $line;
+            if ($index < $lastIndex) {
+                $html .= '<br>';
+            }
+            $html .= '</span>';
+        }
+
+        return $html;
     }
 
     private function storeTmpManifestV2($manifest, $manifestId): TmpIIIfManifestV2
