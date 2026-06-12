@@ -944,7 +944,7 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
 //                        echo 'Mismatching field ' . $key . ', should be ' . $value . ', is ' . $oldData[$key] . PHP_EOL;
                     $this->logger->info('Mismatching field ' . $key . '. Should be "' . $value . '", is "' . (array_key_exists($key, $rsData) ? $rsData[$key] : '') . '"');
                 }
-                //RS API does not accept date ranges separated by comma
+                //RS API 10.5+ requires date ranges separated by slash
                 if($key === 'datecreatedofartwork') {
                     $value = str_replace(',', '/', $value);
                 }
