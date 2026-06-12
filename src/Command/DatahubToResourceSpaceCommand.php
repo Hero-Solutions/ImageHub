@@ -335,6 +335,15 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                         }
                         $recordIdsToResourceIds[$recordId][] = $resourceId;
                         $recordIds[$resourceId] = $recordId;
+                        if($this->isMuzeeDebugTarget($inventoryNumber) || $this->isMuzeeDebugTarget($recordId)) {
+                            $this->logMuzeeDebug('ResourceSpace/Datahub mapping', [
+                                'resource_id' => $resourceId,
+                                'sourceinvnr' => $inventoryNumber,
+                                'record_id' => $recordId,
+                                'is_public' => $isPublic,
+                                'is_recommended_for_publication' => $isRecommendedForPub,
+                            ]);
+                        }
                         $key = $resourceId . '@dh_record_id';
                         if(!array_key_exists($key, $resourceKeys)) {
                             $resourceData = new ResourceData();
@@ -410,6 +419,14 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 // Add all resources of related records (with different inventory numbers)
                 if(array_key_exists($resourceId, $recordIds)) {
                     $recordId = $recordIds[$resourceId];
+                    if($this->isMuzeeDebugTarget($inventoryNumber) || $this->isMuzeeDebugTarget($recordId)) {
+                        $this->logMuzeeDebug('Relation map for ResourceSpace resource', [
+                            'resource_id' => $resourceId,
+                            'sourceinvnr' => $inventoryNumber,
+                            'record_id' => $recordId,
+                            'relations' => $this->relations[$recordId],
+                        ]);
+                    }
                     foreach ($this->relations[$recordId] as $k => $v) {
                         if($v['record_id'] == $recordId) {
                             $thisSortOrder = $v['sort_order'];
@@ -423,6 +440,13 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                                 }
                                 $potentialRelations[$otherResourceId] = $otherSortOrder;
                             }
+                        } else if($this->isMuzeeDebugTarget($inventoryNumber) || $this->isMuzeeDebugTarget($recordId) || $this->isMuzeeDebugTarget($k)) {
+                            $this->logMuzeeDebug('Related record has no ResourceSpace mapping', [
+                                'resource_id' => $resourceId,
+                                'sourceinvnr' => $inventoryNumber,
+                                'record_id' => $recordId,
+                                'related_record_id' => $k,
+                            ]);
                         }
                     }
                 }
@@ -437,6 +461,13 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                     }
                 }
                 asort($potentialRelations);
+                if($this->isMuzeeDebugTarget($inventoryNumber) || (array_key_exists($resourceId, $recordIds) && $this->isMuzeeDebugTarget($recordIds[$resourceId]))) {
+                    $this->logMuzeeDebug('Potential related ResourceSpace resources', [
+                        'resource_id' => $resourceId,
+                        'sourceinvnr' => $inventoryNumber,
+                        'potential_relations' => $potentialRelations,
+                    ]);
+                }
 
                 $relations = array();
                 $isThisPublic = $publicImages[$resourceId];
@@ -448,10 +479,25 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                 foreach($potentialRelations as $otherResourceId => $index) {
                     $isOtherPublic = $publicImages[$otherResourceId];
                     $isOtherRecommendedForPublication = $recommendedImagesForPub[$otherResourceId];
-                    if ($resourceId == $otherResourceId
+                    $accepted = $resourceId == $otherResourceId
                         || $isThisPublic && $isThisRecommendedForPublication && $isOtherPublic && $isOtherRecommendedForPublication
                         || !$isThisPublic && $isOtherPublic && $isOtherRecommendedForPublication
-                        && $rsIdsToInventoryNumbers[$resourceId] == $rsIdsToInventoryNumbers[$otherResourceId]) {
+                        && $rsIdsToInventoryNumbers[$resourceId] == $rsIdsToInventoryNumbers[$otherResourceId];
+                    if($this->isMuzeeDebugTarget($inventoryNumber) || $this->isMuzeeDebugTarget($rsIdsToInventoryNumbers[$otherResourceId])) {
+                        $this->logMuzeeDebug('Relation filter', [
+                            'resource_id' => $resourceId,
+                            'sourceinvnr' => $inventoryNumber,
+                            'other_resource_id' => $otherResourceId,
+                            'other_sourceinvnr' => $rsIdsToInventoryNumbers[$otherResourceId],
+                            'sort_index' => $index,
+                            'is_this_public' => $isThisPublic,
+                            'is_this_recommended_for_publication' => $isThisRecommendedForPublication,
+                            'is_other_public' => $isOtherPublic,
+                            'is_other_recommended_for_publication' => $isOtherRecommendedForPublication,
+                            'accepted' => $accepted,
+                        ]);
+                    }
+                    if ($accepted) {
                         if (!array_key_exists($index, $relations)) {
                             $relations[$index] = array();
                         }
@@ -486,6 +532,13 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                             $relatedResources[] = $rsId;
                         }
                     }
+                }
+                if($this->isMuzeeDebugTarget($inventoryNumber)) {
+                    $this->logMuzeeDebug('Final related ResourceSpace resources', [
+                        'resource_id' => $resourceId,
+                        'sourceinvnr' => $inventoryNumber,
+                        'related_resources' => $relatedResources,
+                    ]);
                 }
                 $key = $resourceId . '@related_resources';
                 if(!array_key_exists($key, $resourceKeys)) {
@@ -652,6 +705,14 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                     // Find all related works (hasPart, isPartOf, relatedTo)
                     $query = $this->buildXpath($this->relatedWorksXpath, $this->datahubLanguage);
                     $domNodes = $xpath->query($query);
+                    if($this->isMuzeeDebugTarget($recordId) || $this->isMuzeeDebugTarget($id)) {
+                        $this->logMuzeeDebug('Related works XPath result', [
+                            'sourceinvnr' => $id,
+                            'record_id' => $recordId,
+                            'query' => $query,
+                            'matches' => $domNodes ? $domNodes->length : false,
+                        ]);
+                    }
                     $value = null;
                     if ($domNodes) {
                         if (count($domNodes) > 0) {
@@ -702,6 +763,17 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
                                             }
                                         }
                                     }
+                                }
+
+                                if($this->isMuzeeDebugTarget($recordId) || $this->isMuzeeDebugTarget($id) || $this->isMuzeeDebugTarget($relatedRecordId)) {
+                                    $this->logMuzeeDebug('Related work candidate', [
+                                        'sourceinvnr' => $id,
+                                        'record_id' => $recordId,
+                                        'related_record_id' => $relatedRecordId,
+                                        'relation' => $relation,
+                                        'sort_order' => $sortOrder,
+                                        'excluded' => $exclude,
+                                    ]);
                                 }
 
                                 if ($relatedRecordId != null && !$exclude) {
@@ -901,6 +973,17 @@ class DatahubToResourceSpaceCommand extends Command implements LoggerAwareInterf
     private function sortRelatedWorks($a, $b): int
     {
         return $a['sort_order'] - $b['sort_order'];
+    }
+
+    private function isMuzeeDebugTarget(?string $value): bool
+    {
+        return $value !== null && str_contains($value, 'MZ000044');
+    }
+
+    private function logMuzeeDebug(string $message, array $context = []): void
+    {
+        $suffix = empty($context) ? '' : ' ' . json_encode($context, JSON_UNESCAPED_SLASHES);
+        $this->logger->info('[MZ000044 debug] ' . $message . $suffix);
     }
 
     function updateResourceSpaceFields($resourceId, $rsData, $dhData): void
