@@ -984,8 +984,11 @@ class GenerateIIIFManifestsCommand extends Command
                 $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
-            $rightsSourceNL = $rightsSource . '<br>' . $buttonURL . '<br>';
-            $rightsSourceEN = $rightsSource . '<br>' . $buttonURL . '<br>';
+            if(!empty($rightsSource)) {
+                $rightsSource = '<div>' . $rightsSource . '</div>';
+            }
+            $rightsSourceNL = $rightsSource . '<div>' . $buttonURL . '</div>>';
+            $rightsSourceEN = $rightsSource . '<div>' . $buttonURL . '</div>>';
             if(strpos($rightsSourceLC, 'sabam') !== false) {
                 if(preg_match('/.*sabam [0-9]{4}.*/', $rightsSourceLC)) {
                     $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
@@ -1029,7 +1032,13 @@ class GenerateIIIFManifestsCommand extends Command
                         }
                     }
                     $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
-                    $requiredStatement['value'][$language] = array($prefix . $publisherName . '<br>' . $extra);
+                    if(!empty($publisherName)) {
+                        $publisherName = '<div>' . $publisherName . '</div>';
+                    }
+                    if(!empty($extra)) {
+                        $extra = '<div>' . $extra . '</div>';
+                    }
+                    $requiredStatement['value'][$language] = array($prefix . $publisherName . $extra);
                 } else {
                     $requiredStatement['value'][$language] = array('');
                 }
