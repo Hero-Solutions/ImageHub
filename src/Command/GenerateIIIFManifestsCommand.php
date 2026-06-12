@@ -615,8 +615,8 @@ class GenerateIIIFManifestsCommand extends Command
                 $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
-            $rightsSourceNL = $rightsSource . '<p>' . $buttonURL . '</p>';
-            $rightsSourceEN = $rightsSource . '<p>' . $buttonURL . '</p>';
+            $rightsSourceNL = $rightsSource . '<br>' . $buttonURL . '<br>';
+            $rightsSourceEN = $rightsSource . '<br>' . $buttonURL . '<br>';
             if(strpos($rightsSourceLC, 'sabam') !== false) {
                 if(preg_match('/.*sabam [0-9]{4}.*/', $rightsSourceLC)) {
                     $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
@@ -975,8 +975,8 @@ class GenerateIIIFManifestsCommand extends Command
                 $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
-            $rightsSourceNL = $rightsSource . '<p>' . $buttonURL . '</p>';
-            $rightsSourceEN = $rightsSource . '<p>' . $buttonURL . '</p>';
+            $rightsSourceNL = $rightsSource . '<br>' . $buttonURL . '<br>';
+            $rightsSourceEN = $rightsSource . '<br>' . $buttonURL . '<br>';
             if(strpos($rightsSourceLC, 'sabam') !== false) {
                 if(preg_match('/.*sabam [0-9]{4}.*/', $rightsSourceLC)) {
                     $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
@@ -1020,7 +1020,7 @@ class GenerateIIIFManifestsCommand extends Command
                         }
                     }
                     $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
-                    $requiredStatement['value'][$language] = array($prefix . $publisherName . '<br>' . $extra . '</p>');
+                    $requiredStatement['value'][$language] = array($prefix . $publisherName . '<br>' . $extra);
                 } else {
                     $requiredStatement['value'][$language] = array('');
                 }
