@@ -985,10 +985,10 @@ class GenerateIIIFManifestsCommand extends Command
             }
 
             if(!empty($rightsSource)) {
-                $rightsSource = '<li>' . $rightsSource .'</li>';
+                $rightsSource = $rightsSource .'&#10;';
             }
-            $rightsSourceNL = $rightsSource . '<li>' . $buttonURL . '</li>';
-            $rightsSourceEN = $rightsSource . '<li>' . $buttonURL . '</li>';
+            $rightsSourceNL = $rightsSource . $buttonURL;
+            $rightsSourceEN = $rightsSource . $buttonURL;
             if(strpos($rightsSourceLC, 'sabam') !== false) {
                 if(preg_match('/.*sabam [0-9]{4}.*/', $rightsSourceLC)) {
                     $rightsSourceNL = preg_replace('/(.*)(sabam [0-9]{4})(.*)/i', '$1<a href="https://www.unisono.be/nl">$2</a>$3', $rightsSourceNL);
@@ -1033,12 +1033,12 @@ class GenerateIIIFManifestsCommand extends Command
                     }
                     $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
                     if(!empty($publisherName)) {
-                        $publisherName = '<li>' . $publisherName . '</li>';
+                        $publisherName = '&#10;' . $publisherName;
                     }
                     if(!empty($extra)) {
-                        $extra = '<li>' . $extra . '</li>';
+                        $extra = '&#10;' . $extra;
                     }
-                    $requiredStatement['value'][$language] = array('<lu>' . $prefix . $publisherName . $extra . '</ul>');
+                    $requiredStatement['value'][$language] = array($prefix . $publisherName . $extra);
                 } else {
                     $requiredStatement['value'][$language] = array('');
                 }
