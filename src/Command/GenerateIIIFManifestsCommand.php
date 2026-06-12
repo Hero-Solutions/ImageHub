@@ -984,9 +984,6 @@ class GenerateIIIFManifestsCommand extends Command
                 $buttonURL = '<a href="http://rightsstatements.org/vocab/UND/1.0/"><img src="https://vlaamsekunstcollectie.be/volumes/general/copyrightundetermined.png"/></a>';
             }
 
-            if(!empty($rightsSource)) {
-                $rightsSource = '<div>' . $rightsSource . '</div>';
-            }
             $rightsSourceNL = $rightsSource . '<div>' . $buttonURL . '</div>';
             $rightsSourceEN = $rightsSource . '<div>' . $buttonURL . '</div>';
             if(strpos($rightsSourceLC, 'sabam') !== false) {
@@ -1034,9 +1031,6 @@ class GenerateIIIFManifestsCommand extends Command
                     $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
                     if(!empty($publisherName)) {
                         $publisherName = '<div>' . $publisherName . '</div>';
-                    }
-                    if(!empty($extra)) {
-                        $extra = '<div>' . $extra . '</div>';
                     }
                     $requiredStatement['value'][$language] = array($prefix . $publisherName . $extra);
                 } else {
