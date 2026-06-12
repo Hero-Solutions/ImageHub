@@ -616,7 +616,7 @@ class GenerateIIIFManifestsCommand extends Command
             }
 
             if(!empty($rightsSource)) {
-                $rightsSource = '<p style="font-size: 16px>' . $rightsSource . '</p>';
+                $rightsSource = '<p style="font-size: 16px">' . $rightsSource . '</p>';
             }
             $rightsSourceNL = $rightsSource . $buttonURL;
             $rightsSourceEN = $rightsSource . $buttonURL;
@@ -652,10 +652,10 @@ class GenerateIIIFManifestsCommand extends Command
                 }
                 $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
                 if(!empty($publisherName)) {
-                    $publisherName = '<p style="font-size: 16px>' . $publisherName . '</p>';
+                    $publisherName = '<p style="font-size: 16px">' . $publisherName . '</p>';
                 }
                 if(!empty($extraInfo)) {
-                    $extraInfo = '<p style="font-size: 16px>' . $extraInfo . '</p>';
+                    $extraInfo = '<p style="font-size: 16px">' . $extraInfo . '</p>';
                 }
                 $creditlines[] = array('@language' => $language, '@value' => $prefix . $publisherName . $extraInfo);
             }
@@ -985,7 +985,7 @@ class GenerateIIIFManifestsCommand extends Command
             }
 
             if(!empty($rightsSource)) {
-                $rightsSource = '<p style="font-size: 16px>' . $rightsSource '</p>';
+                $rightsSource = '<p style="font-size: 16px">' . $rightsSource .'</p>';
             }
             $rightsSourceNL = $rightsSource . $buttonURL;
             $rightsSourceEN = $rightsSource . $buttonURL;
@@ -1033,7 +1033,7 @@ class GenerateIIIFManifestsCommand extends Command
                     }
                     $prefix = ($language === 'nl' ? $rightsSourceNL : $rightsSourceEN);
                     if(!empty($publisherName)) {
-                        $publisherName = '<p style="font-size: 16px>' . $publisherName . '</p>';
+                        $publisherName = '<p style="font-size: 16px">' . $publisherName . '</p>';
                     }
                     $requiredStatement['value'][$language] = array($prefix . $publisherName . $extra);
                 } else {
